@@ -115,7 +115,7 @@ onMounted(() => { fetchBottles(); fetchStorageLocations() })
 <template>
   <div class="min-h-screen bg-[#0d1117] text-gray-300 font-sans selection:bg-[#58a6ff]/30">
     
-    <header class="sticky top-0 z-40 bg-[#0d1117]/90 backdrop-blur-md border-b border-[#30363d]">
+    <header class="sticky top-0 z-40 bg-[#020408] backdrop-blur-md border-b border-[#30363d]">
       <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
         <router-link to="/" class="flex items-center gap-2">
           <span class="text-2xl sm:text-3xl">🍷</span>
