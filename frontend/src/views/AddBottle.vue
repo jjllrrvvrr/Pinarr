@@ -24,7 +24,33 @@
         <div v-if="activeTab === 'identity'" class="space-y-4">
           <div>
             <label class="block text-xs font-medium text-[#8b949e] mb-1">Nom du vin *</label>
-            <input v-model="form.name" class="w-full bg-[#0d1117] border border-[#30363d] rounded-md p-2.5 text-white focus:border-[#58a6ff] focus:ring-1 focus:ring-[#58a6ff] outline-none text-sm" placeholder="ex: Château Margaux">
+            <input v-model="form.name" @input="onNameInput" @blur="hideSuggestions" @focus="showSuggestionsIfResults" class="w-full bg-[#0d1117] border border-[#30363d] rounded-md p-2.5 text-white focus:border-[#58a6ff] focus:ring-1 focus:ring-[#58a6ff] outline-none text-sm" placeholder="ex: Château Margaux" autocomplete="off">
+            
+            <!-- Liste de suggestions -->
+            <div v-if="showSuggestions && searchResults.length > 0" class="absolute z-50 w-full mt-1 bg-[#161b22] border border-[#30363d] rounded-md shadow-xl max-h-60 overflow-y-auto">
+              <div class="px-3 py-2 text-xs text-[#8b949e] border-b border-[#30363d]">
+                Vins similaires déjà présents :
+              </div>
+              <div v-for="wine in searchResults" :key="wine.id" @mousedown.prevent="selectWine(wine)" class="flex items-center gap-3 px-3 py-2 hover:bg-[#21262d] cursor-pointer border-b border-[#30363d] last:border-0">
+                <img v-if="wine.image_path" :src="getImageUrl(wine.image_path)" class="w-10 h-10 object-cover rounded border border-[#30363d]" @error="$event.target.style.display='none'">
+                <div v-else class="w-10 h-10 bg-[#0d1117] rounded border border-[#30363d] flex items-center justify-center">
+                  <span class="text-lg">🍷</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm text-white font-medium truncate">{{ wine.name }}</div>
+                  <div class="text-xs text-[#8b949e]">
+                    {{ wine.year || 'Année inconnue' }}
+                    <span v-if="wine.domaine" class="text-[#58a6ff]"> • {{ wine.domaine }}</span>
+                  </div>
+                </div>
+                <div class="text-xs text-[#3fb950] whitespace-nowrap">
+                  {{ wine.quantity }} en cave
+                </div>
+              </div>
+              <div class="px-3 py-2 text-xs text-[#8b949e] bg-[#0d1117] border-t border-[#30363d]">
+                Cliquez sur un vin pour l'éditer, ou continuez pour créer un nouveau
+              </div>
+            </div>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -228,7 +254,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { StarIcon as StarIconSolid } from '@heroicons/vue/24/solid'
 import { CloudArrowUpIcon } from '@heroicons/vue/24/outline'
@@ -252,6 +278,10 @@ const dragOver = ref(false)
 const fileInput = ref(null)
 const showDuplicateModal = ref(false)
 const duplicateMatches = ref([])
+const showSuggestions = ref(false)
+const searchResults = ref([])
+const searchTimeout = ref(null)
+const API_BASE_URL = "http://127.0.0.1:8000"
 
 const caves = ref([])
 const availableColumns = ref([])
@@ -551,4 +581,74 @@ onMounted(async () => {
     await fetchBottle(route.params.id)
   }
 })
+
+// Watch avec debounce sur le nom pour afficher les suggestions
+watch(() => form.value.name, (newValue) => {
+  if (searchTimeout.value) {
+    clearTimeout(searchTimeout.value)
+  }
+  
+  if (!newValue || newValue.length < 2) {
+    searchResults.value = []
+    showSuggestions.value = false
+    return
+  }
+  
+  // Debounce de 300ms
+  searchTimeout.value = setTimeout(() => {
+    searchSimilarWines(newValue)
+  }, 300)
+})
+
+// Méthode de recherche des vins similaires
+const searchSimilarWines = async (name) => {
+  if (!name || name.length < 2) return
+  
+  try {
+    const response = await fetch(`${API_BASE_URL}/bottles/search/?q=${encodeURIComponent(name)}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    
+    if (response.ok) {
+      const data = await response.json()
+      searchResults.value = data.results || []
+      showSuggestions.value = searchResults.value.length > 0
+    }
+  } catch (error) {
+    console.error('Erreur recherche:', error)
+    searchResults.value = []
+    showSuggestions.value = false
+  }
+}
+
+// Gestionnaires d'événements
+const onNameInput = () => {
+  // Le watch s'occupe de la recherche
+}
+
+const hideSuggestions = () => {
+  // Petit délai pour permettre le clic sur un résultat
+  setTimeout(() => {
+    showSuggestions.value = false
+  }, 200)
+}
+
+const showSuggestionsIfResults = () => {
+  if (searchResults.value.length > 0) {
+    showSuggestions.value = true
+  }
+}
+
+const selectWine = (wine) => {
+  // Rediriger vers la page d'édition du vin existant
+  router.push(`/edit/${wine.id}`)
+}
+
+const getImageUrl = (path) => {
+  if (!path) return null
+  if (path.startsWith('http')) return path
+  return `${API_BASE_URL}${path}`
+}
+
 </script>

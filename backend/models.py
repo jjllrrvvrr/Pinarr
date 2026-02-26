@@ -31,6 +31,10 @@ class Bottle(Base):
     is_favorite = Column(Boolean, nullable=True, default=False)
     image_path = Column(String, nullable=True)
 
+    position_at = relationship(
+        "Position", back_populates="bottle_at_position", uselist=False
+    )
+
 
 class Cave(Base):
     __tablename__ = "caves"
