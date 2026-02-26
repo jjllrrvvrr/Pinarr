@@ -29,6 +29,28 @@ class BottleCreate(BottleBase):
     pass
 
 
+class BottlePatch(BaseModel):
+    name: Optional[str] = None
+    domaine: Optional[str] = None
+    country: Optional[str] = None
+    year: Optional[int] = None
+    type: Optional[str] = None
+    region: Optional[str] = None
+    cepage: Optional[str] = None
+    alcohol: Optional[float] = None
+    size: Optional[str] = None
+    apogee_start: Optional[int] = None
+    apogee_end: Optional[int] = None
+    buy_link: Optional[str] = None
+    quantity: Optional[int] = None
+    price: Optional[float] = None
+    description: Optional[str] = None
+    rating: Optional[int] = None
+    tags: Optional[str] = None
+    is_favorite: Optional[bool] = None
+    image_path: Optional[str] = None
+
+
 class Bottle(BottleBase):
     id: int
 

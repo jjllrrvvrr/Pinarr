@@ -16,152 +16,116 @@
       </div>
     </div>
 
-    <div class="flex items-center gap-2 mb-4">
-      <button @click="showHistory = false" 
-              :class="['px-3 py-1 rounded-md text-xs font-medium transition', !showHistory ? 'bg-[#238636] text-white' : 'bg-[#21262d] text-[#8b949e] hover:text-white']">
-        En cave ({{ inStockCount }})
-      </button>
-      <button @click="showHistory = true" 
-              :class="['px-3 py-1 rounded-md text-xs font-medium transition', showHistory ? 'bg-[#f85149] text-white' : 'bg-[#21262d] text-[#8b949e] hover:text-white']">
-        Historique ({{ archivedCount }})
-      </button>
-    </div>
-
-    <div v-if="hasActiveFilters" class="mb-4 flex flex-wrap items-center gap-2">
-      <span class="text-[#8b949e] text-xs">Filtres:</span>
-      <button v-if="filters.cepage" @click="clearFilter('cepage')" 
-              class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-[#f85149]/20 text-[#f85149] border border-[#f85149]/30 hover:bg-[#f85149]/30 transition">
-        Cépage: {{ filters.cepage }} ×
-      </button>
-      <button v-if="filters.region" @click="clearFilter('region')" 
-              class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-[#a371f7]/20 text-[#a371f7] border border-[#a371f7]/30 hover:bg-[#a371f7]/30 transition">
-        Région: {{ filters.region }} ×
-      </button>
-      <button v-if="filters.year" @click="clearFilter('year')" 
-              class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-[#58a6ff]/20 text-[#58a6ff] border border-[#58a6ff]/30 hover:bg-[#58a6ff]/30 transition">
-        Année: {{ filters.year }} ×
-      </button>
-      <button v-if="filters.domaine" @click="clearFilter('domaine')" 
-              class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-[#e3b341]/20 text-[#e3b341] border border-[#e3b341]/30 hover:bg-[#e3b341]/30 transition">
-        Domaine: {{ filters.domaine }} ×
-      </button>
-      <button v-if="filters.country" @click="clearFilter('country')" 
-              class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-[#3fb950]/20 text-[#3fb950] border border-[#3fb950]/30 hover:bg-[#3fb950]/30 transition">
-        Pays: {{ filters.country }} ×
-      </button>
-      <button v-if="filters.tag" @click="clearFilter('tag')" 
-              class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-[#db61a2]/20 text-[#db61a2] border border-[#db61a2]/30 hover:bg-[#db61a2]/30 transition">
-        Tag: {{ filters.tag }} ×
-      </button>
-      <button @click="clearAllFilters" class="text-xs text-[#8b949e] hover:text-white underline ml-2">
-        Effacer tout
-      </button>
-    </div>
-
-    <div v-if="visibleBottles.length === 0" class="text-center py-20 border border-[#30363d] rounded-md bg-[#0d1117]">
-      <div class="text-[#8b949e] text-sm">{{ showHistory ? 'Aucune bouteille dans l\'historique' : 'Aucune bouteille en cave' }}</div>
-    </div>
-
-    <div v-else :class="viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4' : 'space-y-2'">
-      <div v-for="bottle in visibleBottles" :key="bottle.id" 
-           :class="[
-             'bg-[#161b22] border border-[#30363d] rounded-md transition-all cursor-pointer group',
-             bottle.quantity === 0 ? 'opacity-50 hover:opacity-70' : 'hover:border-[#58a6ff]',
-             viewMode === 'grid' ? 'max-h-[250px] flex' : 'flex items-center'
-           ]"
-           @click="goToBottle(bottle.id)">
-        
-        <template v-if="viewMode === 'grid'">
-          <div class="w-24 flex-shrink-0 bg-[#0d1117] flex items-center justify-center overflow-hidden rounded-l-md border-r border-[#30363d] relative">
-            <img v-if="bottle.image_path" :src="getImageUrl(bottle.image_path)" :alt="bottle.name" class="w-full h-full object-contain" />
-            <WineBottleIcon v-else :type="bottle.type" :size="48" />
-            <span v-if="bottle.quantity === 0" class="absolute top-1 left-1 bg-[#f85149] text-white text-[8px] px-1 rounded">Épuisé</span>
-          </div>
-          
-          <div class="flex-1 flex flex-col min-w-0">
-            <div class="flex-1 p-2.5 border-b border-[#30363d] flex flex-col justify-center gap-0.5">
-              <div class="flex items-center justify-between">
-                <span class="inline-flex items-center gap-1.5">
-                  <span :class="['w-2 h-2 rounded-full', getTypeDot(bottle.type)]"></span>
-                  <span class="text-xs text-white font-medium">{{ bottle.type }}</span>
-                </span>
-                <div class="flex items-center gap-2 text-xs text-[#8b949e]">
-                  <span v-if="bottle.cepage" @click.stop="setFilter('cepage', bottle.cepage)" 
-                        class="truncate max-w-[70px] hover:text-[#f85149] cursor-pointer transition">{{ bottle.cepage }}</span>
-                  <span class="font-mono text-white hover:text-[#58a6ff] cursor-pointer transition" @click.stop="setFilter('year', bottle.year)">{{ bottle.year }}</span>
-                </div>
-              </div>
-              <h3 class="text-white font-semibold truncate group-hover:text-[#58a6ff] transition text-sm leading-tight">{{ bottle.name }}</h3>
-              <p v-if="bottle.domaine" @click.stop="setFilter('domaine', bottle.domaine)" 
-                 class="text-[#8b949e] text-xs truncate hover:text-[#e3b341] cursor-pointer transition">{{ bottle.domaine }}</p>
-              <p v-else class="text-[#8b949e] text-xs truncate">—</p>
-              <div v-if="bottle.location" class="flex items-center gap-1 text-xs text-[#8b949e] mt-1">
-                <MapPinIcon class="w-3 h-3 flex-shrink-0" />
-                <span class="truncate">{{ bottle.location }}</span>
-              </div>
-            </div>
-            
-            <div class="px-2.5 py-2 flex items-center gap-2">
-              <div class="flex flex-wrap gap-1 flex-1 min-w-0">
-                <span v-for="tag in bottle.tags?.split(',').slice(0,2)" :key="tag"
-                      @click.stop="setFilter('tag', tag.trim())"
-                      class="text-[10px] px-1.5 py-0.5 rounded text-[#8b949e] bg-[#21262d] hover:text-[#db61a2] transition cursor-pointer truncate">
-                  {{ tag.trim() }}
-                </span>
-              </div>
-
-              <div class="flex items-center gap-1" @click.stop>
-                <button @click="updateQty(bottle.id, bottle.quantity - 1)" 
-                        class="w-5 h-5 flex items-center justify-center text-[#8b949e] hover:text-white hover:bg-[#21262d] rounded text-xs transition">−</button>
-                <span class="w-4 text-center text-white font-bold text-xs">{{ bottle.quantity }}</span>
-                <button @click="updateQty(bottle.id, bottle.quantity + 1)" 
-                        class="w-5 h-5 flex items-center justify-center text-[#8b949e] hover:text-white hover:bg-[#21262d] rounded text-xs transition">+</button>
-              </div>
-
-              <div class="flex flex-col items-end">
-                <span v-if="bottle.price" class="text-[#3fb950] font-bold text-xs">{{ bottle.price }}€</span>
-                <span v-if="bottle.rating" class="flex items-center gap-0.5 text-[#e3b341] text-[10px]">
-                  <StarSolid class="w-2.5 h-2.5" /> {{ bottle.rating }}/5
-                </span>
-              </div>
-            </div>
-
-            <div class="px-2.5 py-1.5 border-t border-[#30363d] flex items-center justify-between bg-[#0d1117] opacity-0 group-hover:opacity-100 transition" @click.stop>
-              <router-link :to="`/edit/${bottle.id}`" class="text-[10px] text-[#58a6ff] hover:underline">Modifier</router-link>
-              <button v-if="bottle.quantity > 0" @click="archiveBottle(bottle.id)" class="text-[10px] text-[#f85149] hover:underline">Archiver</button>
-              <button v-else @click="updateQty(bottle.id, 1)" class="text-[10px] text-[#3fb950] hover:underline">Restaurer</button>
-            </div>
-          </div>
-        </template>
-
-        <template v-else>
-          <div class="w-12 h-12 flex-shrink-0 bg-[#0d1117] flex items-center justify-center overflow-hidden rounded-l relative">
-            <img v-if="bottle.image_path" :src="getImageUrl(bottle.image_path)" :alt="bottle.name" class="w-full h-full object-cover" />
-            <WineBottleIcon v-else :type="bottle.type" :size="24" />
-            <span v-if="bottle.quantity === 0" class="absolute top-0 left-0 bg-[#f85149] text-white text-[6px] px-0.5 rounded-br">0</span>
-          </div>
-          <div class="flex-1 min-w-0 px-3">
-            <div class="flex items-center gap-2">
-              <span class="text-white font-medium truncate group-hover:text-[#58a6ff] transition">{{ bottle.name }}</span>
-              <span @click.stop="setFilter('year', bottle.year)" class="text-[#8b949e] text-xs font-mono hover:text-[#58a6ff] cursor-pointer">{{ bottle.year }}</span>
-            </div>
-            <div class="flex items-center gap-3 text-xs text-[#8b949e]">
-              <span v-if="bottle.domaine" @click.stop="setFilter('domaine', bottle.domaine)" class="hover:text-[#e3b341] cursor-pointer">{{ bottle.domaine }}</span>
-              <span v-else>—</span>
-              <span v-if="bottle.location">→ {{ bottle.location }}</span>
-            </div>
-          </div>
-          <div class="flex items-center gap-3 pr-3" @click.stop>
-            <div class="flex items-center gap-1">
-              <button @click="updateQty(bottle.id, bottle.quantity - 1)" class="w-5 h-5 flex items-center justify-center text-[#8b949e] hover:text-white transition text-xs">−</button>
-              <span class="w-5 text-center text-white font-mono text-sm">{{ bottle.quantity }}</span>
-              <button @click="updateQty(bottle.id, bottle.quantity + 1)" class="w-5 h-5 flex items-center justify-center text-[#8b949e] hover:text-white transition text-xs">+</button>
-            </div>
-            <span v-if="bottle.price" class="text-[#3fb950] text-sm font-mono">{{ bottle.price }}€</span>
-          </div>
-        </template>
+    <!-- MODE RECHERCHE ACTIVE -->
+    <template v-if="searchQuery.trim()">
+      <!-- Section: En cave -->
+      <div v-if="inStockSearchResults.length > 0" class="mb-8">
+        <h2 class="text-sm font-semibold text-[#3fb950] mb-4 flex items-center gap-2 px-1">
+          <span class="w-2 h-2 rounded-full bg-[#3fb950]"></span>
+          En cave ({{ inStockSearchResults.length }} résultat{{ inStockSearchResults.length > 1 ? 's' : '' }})
+        </h2>
+        <div :class="viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4' : 'space-y-2'">
+          <BottleCard 
+            v-for="bottle in inStockSearchResults" 
+            :key="bottle.id"
+            :bottle="bottle"
+            :view-mode="viewMode"
+            :archived="false"
+            @navigate="goToBottle"
+            @filter="setFilter"
+            @update-quantity="updateQty"
+          />
+        </div>
       </div>
-    </div>
+
+      <!-- Section: Dans l'historique -->
+      <div v-if="archivedSearchResults.length > 0" class="mb-8">
+        <h2 class="text-sm font-semibold text-[#8b949e] mb-4 flex items-center gap-2 px-1">
+          <ArchiveBoxIcon class="w-4 h-4" />
+          Dans l'historique ({{ archivedSearchResults.length }} résultat{{ archivedSearchResults.length > 1 ? 's' : '' }})
+        </h2>
+        <div :class="viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4' : 'space-y-2'" class="opacity-60">
+          <BottleCard 
+            v-for="bottle in archivedSearchResults" 
+            :key="bottle.id"
+            :bottle="bottle"
+            :view-mode="viewMode"
+            :archived="true"
+            @navigate="goToBottle"
+            @filter="setFilter"
+            @update-quantity="updateQty"
+          />
+        </div>
+      </div>
+
+      <!-- Aucun résultat -->
+      <div v-if="inStockSearchResults.length === 0 && archivedSearchResults.length === 0" class="text-center py-20">
+        <div class="text-[#8b949e] text-sm mb-2">Aucune bouteille trouvée pour "{{ searchQuery }}"</div>
+        <div class="text-[#8b949e] text-xs">Essayez avec un autre terme de recherche</div>
+      </div>
+    </template>
+
+    <!-- MODE NORMAL (sans recherche) -->
+    <template v-else>
+      <div class="flex items-center gap-2 mb-4">
+        <button @click="showHistory = false" 
+                :class="['px-3 py-1 rounded-md text-xs font-medium transition', !showHistory ? 'bg-[#238636] text-white' : 'bg-[#21262d] text-[#8b949e] hover:text-white']">
+          En cave ({{ inStockCount }})
+        </button>
+        <button @click="showHistory = true" 
+                :class="['px-3 py-1 rounded-md text-xs font-medium transition', showHistory ? 'bg-[#f85149] text-white' : 'bg-[#21262d] text-[#8b949e] hover:text-white']">
+          Historique ({{ archivedCount }})
+        </button>
+      </div>
+
+      <div v-if="hasActiveFilters" class="mb-4 flex flex-wrap items-center gap-2">
+        <span class="text-[#8b949e] text-xs">Filtres:</span>
+        <button v-if="filters.cepage" @click="clearFilter('cepage')" 
+                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-[#f85149]/20 text-[#f85149] border border-[#f85149]/30 hover:bg-[#f85149]/30 transition">
+          Cépage: {{ filters.cepage }} ×
+        </button>
+        <button v-if="filters.region" @click="clearFilter('region')" 
+                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-[#a371f7]/20 text-[#a371f7] border border-[#a371f7]/30 hover:bg-[#a371f7]/30 transition">
+          Région: {{ filters.region }} ×
+        </button>
+        <button v-if="filters.year" @click="clearFilter('year')" 
+                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-[#58a6ff]/20 text-[#58a6ff] border border-[#58a6ff]/30 hover:bg-[#58a6ff]/30 transition">
+          Année: {{ filters.year }} ×
+        </button>
+        <button v-if="filters.domaine" @click="clearFilter('domaine')" 
+                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-[#e3b341]/20 text-[#e3b341] border border-[#e3b341]/30 hover:bg-[#e3b341]/30 transition">
+          Domaine: {{ filters.domaine }} ×
+        </button>
+        <button v-if="filters.country" @click="clearFilter('country')" 
+                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-[#3fb950]/20 text-[#3fb950] border border-[#3fb950]/30 hover:bg-[#3fb950]/30 transition">
+          Pays: {{ filters.country }} ×
+        </button>
+        <button v-if="filters.tag" @click="clearFilter('tag')" 
+                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-[#db61a2]/20 text-[#db61a2] border border-[#db61a2]/30 hover:bg-[#db61a2]/30 transition">
+          Tag: {{ filters.tag }} ×
+        </button>
+        <button @click="clearAllFilters" class="text-xs text-[#8b949e] hover:text-white underline ml-2">
+          Effacer tout
+        </button>
+      </div>
+
+      <div v-if="visibleBottles.length === 0" class="text-center py-20 border border-[#30363d] rounded-md bg-[#0d1117]">
+        <div class="text-[#8b949e] text-sm">{{ showHistory ? 'Aucune bouteille dans l\'historique' : 'Aucune bouteille en cave' }}</div>
+      </div>
+
+      <div v-else :class="viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4' : 'space-y-2'">
+        <BottleCard 
+          v-for="bottle in visibleBottles" 
+          :key="bottle.id"
+          :bottle="bottle"
+          :view-mode="viewMode"
+          :archived="bottle.quantity === 0"
+          @navigate="goToBottle"
+          @filter="setFilter"
+          @update-quantity="updateQty"
+        />
+      </div>
+    </template>
   </main>
 </template>
 
@@ -169,10 +133,10 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
-  MagnifyingGlassIcon, MapPinIcon, StarIcon as StarSolid,
+  MagnifyingGlassIcon, ArchiveBoxIcon,
   Squares2X2Icon, ListBulletIcon
 } from '@heroicons/vue/24/solid'
-import WineBottleIcon from '@/components/WineBottleIcon.vue'
+import BottleCard from '@/components/BottleCard.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -239,24 +203,6 @@ const updateQty = (id, qty) => {
   emit('update-quantity', id, qty)
 }
 
-const archiveBottle = (id) => {
-  emit('update-quantity', id, 0)
-}
-
-const getTypeDot = (type) => {
-  if (type === 'Rouge') return 'bg-[#f85149]'
-  if (type === 'Blanc') return 'bg-[#e3b341]'
-  if (type === 'Rosé') return 'bg-[#db61a2]'
-  if (type === 'Champagne') return 'bg-[#a371f7]'
-  return 'bg-[#8b949e]'
-}
-
-const getImageUrl = (path) => {
-  if (!path) return null
-  if (path.startsWith('http')) return path
-  return `http://127.0.0.1:8000${path}`
-}
-
 const normalize = (text) => {
   if (!text) return ''
   return text.toString()
@@ -309,9 +255,20 @@ const filteredBottles = computed(() => {
 
 const visibleBottles = computed(() => {
   if (showHistory.value) {
-    return filteredBottles.value
+    return filteredBottles.value.filter(b => b.quantity === 0)
   }
   return filteredBottles.value.filter(b => b.quantity > 0)
+})
+
+// Nouvelles computed properties pour la recherche séparée
+const inStockSearchResults = computed(() => {
+  if (!searchQuery.value.trim()) return []
+  return filteredBottles.value.filter(b => b.quantity > 0)
+})
+
+const archivedSearchResults = computed(() => {
+  if (!searchQuery.value.trim()) return []
+  return filteredBottles.value.filter(b => b.quantity === 0)
 })
 
 const inStockCount = computed(() => filteredBottles.value.filter(b => b.quantity > 0).length)

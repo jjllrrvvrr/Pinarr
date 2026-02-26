@@ -170,6 +170,8 @@ import WineBottleIcon from '@/components/WineBottleIcon.vue'
 const route = useRoute()
 const router = useRouter()
 
+const emit = defineEmits(['refresh-data'])
+
 const bottle = ref(null)
 const showQRModal = ref(false)
 
@@ -198,12 +200,13 @@ const updateQty = async (qty) => {
   if (qty < 0) return
   try {
     const res = await fetch(`${API_URL}/${route.params.id}`, {
-      method: 'PUT',
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ quantity: qty })
     })
     if (res.ok) {
       bottle.value.quantity = qty
+      emit('refresh-data')
     }
   } catch (e) {
     console.error(e)

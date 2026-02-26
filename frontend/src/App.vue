@@ -59,7 +59,7 @@ const updateQuantity = async (id, newQuantity) => {
   if (newQuantity < 0) return
   try {
     const res = await fetch(`${API_URL}/${id}`, {
-      method: 'PUT',
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ quantity: newQuantity })
     })

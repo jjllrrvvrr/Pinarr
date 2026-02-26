@@ -158,6 +158,22 @@ def update_bottle(
     return db_bottle
 
 
+@app.patch("/bottles/{bottle_id}", response_model=schemas.Bottle)
+def patch_bottle(
+    bottle_id: int, bottle: schemas.BottlePatch, db: Session = Depends(get_db)
+):
+    db_bottle = db.query(models.Bottle).filter(models.Bottle.id == bottle_id).first()
+    if db_bottle is None:
+        raise HTTPException(status_code=404, detail="Bottle not found")
+    for key, value in bottle.model_dump(exclude_unset=True).items():
+        if value is not None:
+            setattr(db_bottle, key, value)
+    db.add(db_bottle)
+    db.commit()
+    db.refresh(db_bottle)
+    return db_bottle
+
+
 @app.delete("/bottles/{bottle_id}")
 def delete_bottle(bottle_id: int, db: Session = Depends(get_db)):
     db_bottle = db.query(models.Bottle).filter(models.Bottle.id == bottle_id).first()
