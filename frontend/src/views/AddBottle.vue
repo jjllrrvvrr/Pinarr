@@ -31,7 +31,7 @@
               <div class="px-3 py-2 text-xs text-[#8b949e] border-b border-[#30363d]">
                 Vins similaires déjà présents :
               </div>
-              <div v-for="wine in searchResults" :key="wine.id" @mousedown.prevent="selectWine(wine)" class="flex items-center gap-3 px-3 py-2 hover:bg-[#21262d] cursor-pointer border-b border-[#30363d] last:border-0">
+              <div v-for="wine in searchResults" :key="wine.id" @click.stop="selectWine(wine)" class="flex items-center gap-3 px-3 py-2 hover:bg-[#21262d] cursor-pointer border-b border-[#30363d] last:border-0">
                 <img v-if="wine.image_path" :src="getImageUrl(wine.image_path)" class="w-10 h-10 object-cover rounded border border-[#30363d]" @error="$event.target.style.display='none'">
                 <div v-else class="w-10 h-10 bg-[#0d1117] rounded border border-[#30363d] flex items-center justify-center">
                   <span class="text-lg">🍷</span>
@@ -641,8 +641,8 @@ const showSuggestionsIfResults = () => {
 }
 
 const selectWine = (wine) => {
-  // Rediriger vers la page d'édition du vin existant
-  router.push(`/edit/${wine.id}`)
+  // Rediriger vers la page de détail du vin existant
+  router.push({ name: 'wine-detail', params: { id: wine.id } })
 }
 
 const getImageUrl = (path) => {
