@@ -1,0 +1,288 @@
+<script setup>
+import { ref, onMounted, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { PencilIcon, XMarkIcon } from '@heroicons/vue/24/outline'
+import WineBottleIcon from '../components/WineBottleIcon.vue'
+
+const route = useRoute()
+const router = useRouter()
+
+const API_URL = 'http://127.0.0.1:8000'
+
+const cave = ref(null)
+const loading = ref(true)
+const selectedColumn = ref(null)
+const selectedPosition = ref(null)
+const bottles = ref([])
+
+const caveId = computed(() => route.params.id)
+
+const fetchCave = async () => {
+  loading.value = true
+  try {
+    const res = await fetch(`${API_URL}/caves/${caveId.value}`)
+    if (res.ok) {
+      cave.value = await res.json()
+      if (cave.value.columns?.length > 0) {
+        selectedColumn.value = cave.value.columns[0]
+      }
+    }
+  } catch (e) {
+    console.error('Erreur:', e)
+  } finally {
+    loading.value = false
+  }
+}
+
+const fetchBottles = async () => {
+  try {
+    const res = await fetch(`${API_URL}/bottles/`)
+    if (res.ok) {
+      bottles.value = await res.json()
+    }
+  } catch (e) {
+    console.error('Erreur:', e)
+  }
+}
+
+const getBottleAtPosition = (rowId, line, pos) => {
+  const row = cave.value?.columns
+    ?.flatMap(c => c.rows || [])
+    ?.find(r => r.id === rowId)
+  
+  if (!row) return null
+  
+  const position = row.positions?.find(p => p.line === line && p.position === pos)
+  if (!position || !position.bottle_at_position) return null
+  
+  return bottles.value.find(b => b.id === position.bottle_at_position.id)
+}
+
+const getPositionData = (rowId, line, pos) => {
+  const row = cave.value?.columns
+    ?.flatMap(c => c.rows || [])
+    ?.find(r => r.id === rowId)
+  
+  if (!row) return null
+  
+  return row.positions?.find(p => p.line === line && p.position === pos)
+}
+
+const selectPosition = (row, line, pos) => {
+  const positionData = getPositionData(row.id, line, pos)
+  const bottle = getBottleAtPosition(row.id, line, pos)
+  
+  selectedPosition.value = {
+    row,
+    line,
+    position: pos,
+    positionData,
+    bottle
+  }
+}
+
+const clearPosition = async () => {
+  if (!selectedPosition.value?.positionData?.id) return
+  
+  try {
+    await fetch(`${API_URL}/positions/${selectedPosition.value.positionData.id}/bottle`, {
+      method: 'DELETE'
+    })
+    await fetchCave()
+    selectedPosition.value = null
+  } catch (e) {
+    alert('Erreur: ' + e.message)
+  }
+}
+
+const availableBottles = computed(() => {
+  const positionBottleIds = cave.value?.columns
+    ?.flatMap(c => c.rows || [])
+    ?.flatMap(r => r.positions || [])
+    ?.filter(p => p.bottle_at_position)
+    ?.map(p => p.bottle_at_position.id) || []
+  
+  return bottles.value.filter(b => b.quantity > 0 || positionBottleIds.includes(b.id))
+})
+
+<arg_value>const assignBottle = async (bottleId) => {
+  if (!selectedPosition.value?.positionData?.id) {
+    const positionData = selectedPosition.value.positionData
+    
+    let newPosition = false
+    
+    if (!positionData) {
+      const row = selectedPosition.value.row
+      const res = await fetch(`${API_URL}/rows/${row.id}/positions/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          line: selectedPosition.value.line,
+          position: selectedPosition.value.position
+        }))
+      })
+      await res.json()
+      newPosition = true
+    }
+    
+    try {
+      await fetch(`${API_URL}/positions/${newPosition.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': ' 'application/json' },
+        body: JSON.stringify({ bottle_id: bottleId })
+      })
+      await fetchCave()
+      selectedPosition.value = null
+    } catch (e) {
+      alert('Erreur: ' + e.message)
+    }
+  }
+}
+}
+
+onMounted(() => {
+  fetchCave()
+  fetchBottles()
+})
+</script>
+
+<template>
+  <main class="max-w-6xl mx-auto px-4 py-8 pb-20">
+    <div class="flex items-center gap-2 mb-6 text-[#8b949e] text-sm">
+      <router-link to="/caves" class="hover:text-[#58a6ff]">Caves</router-link>
+      <span>/</span>
+      <span class="text-white">{{ cave?.name || 'Chargement...' }}</span>
+    </div>
+
+    <div v-if="loading" class="text-center py-12 text-[#8b949e]">Chargement...</div>
+
+    <div v-else-if="!cave" class="text-center py-12 text-[#8b949e]">Cave non trouvée</div>
+
+    <div v-else class="space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-xl font-bold text-white">{{ cave.name }}</h1>
+          <p class="text-sm text-[#8b949e]">{{ cave.columns?.length || 0 }} colonne(s)</p>
+        </div>
+        <router-link :to="`/caves/${cave.id}/edit`" class="flex items-center gap-2 px-3 py-2 text-[#8b949e] hover:text-white hover:bg-[#21262d] rounded-md transition text-sm">
+          <PencilIcon class="w-4 h-4" />
+          Modifier
+        </router-link>
+      </div>
+
+      <div v-if="cave.columns?.length > 1" class="flex gap-2 overflow-x-auto pb-2">
+        <button
+          v-for="col in cave.columns"
+          :key="col.id"
+          @click="selectedColumn = col"
+          :class="['px-4 py-2 rounded-md text-sm font-medium transition whitespace-nowrap', selectedColumn?.id === col.id ? 'bg-[#238636] text-white' : 'bg-[#21262d] text-[#8b949e] hover:bg-[#30363d]']"
+        >
+          {{ col.name }}
+        </button>
+      </div>
+
+      <div v-if="selectedColumn" class="space-y-6">
+        <div v-for="row in selectedColumn.rows" :key="row.id" class="bg-[#161b22] rounded-md border border-[#30363d] overflow-hidden">
+          <div class="px-4 py-2 border-b border-[#30363d] bg-[#0d1117]/50 flex items-center justify-between">
+            <span class="text-sm font-medium text-white">{{ row.name }}</span>
+            <span class="text-xs text-[#8b949e]">{{ row.width }}×{{ row.height }}</span>
+          </div>
+          
+          <div class="p-4 overflow-x-auto">
+            <div class="flex gap-1 mb-1">
+              <div class="w-8 flex-shrink-0"></div>
+              <div v-for="pos in row.width" :key="pos" class="w-16 text-center text-xs text-[#8b949e]">
+                {{ pos }}
+              </div>
+            </div>
+            
+            <div v-for="line in row.height" :key="line" class="flex gap-1 items-center mb-1">
+              <div class="w-8 flex-shrink-0 text-xs text-[#8b949e] text-center">L{{ row.height - line + 1 }}</div>
+              <div
+                v-for="pos in row.width"
+                :key="pos"
+                @click="selectPosition(row, row.height - line + 1, pos)"
+                :class="[
+                  'w-16 h-16 rounded border flex items-center justify-center cursor-pointer transition',
+                  getBottleAtPosition(row.id, row.height - line + 1, pos)
+                    ? 'bg-[#238636]/20 border-[#238636] hover:bg-[#238636]/30'
+                    : 'bg-[#0d1117] border-[#30363d] hover:border-[#58a6ff]'
+                ]"
+              >
+                <div v-if="getBottleAtPosition(row.id, row.height - line + 1, pos)" class="text-center">
+                  <WineBottleIcon :type="getBottleAtPosition(row.id, row.height - line + 1, pos).type" class="w-6 h-10 mx-auto" />
+                  <div class="text-[10px] text-white truncate mt-0.5 px-1">
+                    {{ getBottleAtPosition(row.id, row.height - line + 1, pos).name?.substring(0, 8) }}
+                  </div>
+                </div>
+                <div v-else class="text-[#30363d] text-xs">+</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div v-else-if="cave.columns?.length === 0" class="text-center py-12 text-[#8b949e] bg-[#161b22] rounded-md border border-[#30363d]">
+        Cette cave n'a pas encore de colonnes.
+        <router-link :to="`/caves/${cave.id}/edit`" class="text-[#58a6ff] hover:underline">Modifier la cave</router-link>
+      </div>
+    </div>
+
+    <div v-if="selectedPosition" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="selectedPosition = null">
+      <div class="bg-[#161b22] rounded-md w-full max-w-md border border-[#30363d]">
+        <div class="p-4 border-b border-[#30363d] flex items-center justify-between">
+          <div>
+            <h3 class="font-medium text-white">Position {{ selectedPosition.row?.name }} - L{{ selectedPosition.line }}/{{ selectedPosition.position }}</h3>
+          </div>
+          <button @click="selectedPosition = null" class="text-[#8b949e] hover:text-white">
+            <XMarkIcon class="w-5 h-5" />
+          </button>
+        </div>
+
+        <div class="p-4">
+          <div v-if="selectedPosition.bottle" class="mb-4">
+            <div class="text-sm text-[#8b949e] mb-2">Bouteille assignée:</div>
+            <router-link
+              :to="`/wine/${selectedPosition.bottle.id}`"
+              class="flex items-center gap-3 p-3 bg-[#0d1117] rounded-md border border-[#30363d] hover:border-[#58a6ff] transition"
+            >
+              <WineBottleIcon :type="selectedPosition.bottle.type" class="w-8 h-12" />
+              <div>
+                <div class="font-medium text-white">{{ selectedPosition.bottle.name }}</div>
+                <div class="text-xs text-[#8b949e]">{{ selectedPosition.bottle.year }} · {{ selectedPosition.bottle.type }}</div>
+              </div>
+            </router-link>
+            <button
+              @click="clearPosition"
+              class="w-full mt-3 px-4 py-2 bg-[#f85149]/20 text-[#f85149] rounded-md text-sm hover:bg-[#f85149]/30 transition"
+            >
+              Retirer la bouteille
+            </button>
+          </div>
+
+          <div v-else>
+            <div class="text-sm text-[#8b949e] mb-2">Assigner une bouteille:</div>
+            <div class="max-h-64 overflow-y-auto space-y-1">
+              <button
+                v-for="bottle in availableBottles"
+                :key="bottle.id"
+                @click="assignBottle(bottle.id)"
+                class="w-full flex items-center gap-3 p-2 bg-[#0d1117] rounded border border-[#30363d] hover:border-[#58a6ff] transition text-left"
+              >
+                <WineBottleIcon :type="bottle.type" class="w-6 h-8" />
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm text-white truncate">{{ bottle.name }}</div>
+                  <div class="text-xs text-[#8b949e]">{{ bottle.year }}</div>
+                </div>
+                <div class="text-xs text-[#8b949e]">×{{ bottle.quantity }}</div>
+              </button>
+              <div v-if="availableBottles.length === 0" class="text-center py-4 text-[#8b949e]">
+                Aucune bouteille disponible
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</template>
