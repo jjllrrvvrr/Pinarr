@@ -79,15 +79,15 @@ onMounted(fetchCaves)
 
     <div v-else class="space-y-4">
       <div v-for="cave in caves" :key="cave.id" class="bg-[#161b22] rounded-md border border-[#30363d] overflow-hidden">
-        <div class="p-4 flex items-center justify-between">
-          <div>
-            <h2 class="text-lg font-medium text-white">{{ cave.name }}</h2>
-            <p class="text-sm text-[#8b949e]">
+        <div class="p-4 flex items-center justify-between hover:bg-[#21262d]/30 transition">
+          <router-link :to="`/caves/${cave.id}`" class="flex-1 group cursor-pointer">
+            <h2 class="text-lg font-medium text-white group-hover:text-[#58a6ff] transition-colors duration-200 ease-in-out">{{ cave.name }}</h2>
+            <p class="text-sm text-[#8b949e] group-hover:text-[#8b949e]">
               {{ cave.columns?.length || 0 }} colonne(s) · 
               {{ getTotalPositions(cave) }} positions · 
               {{ getOccupiedPositions(cave) }} occupées
             </p>
-          </div>
+          </router-link>
           <div class="flex gap-2">
             <router-link :to="`/caves/${cave.id}`" class="p-2 text-[#8b949e] hover:text-white hover:bg-[#21262d] rounded-md transition" title="Voir">
               <EyeIcon class="w-5 h-5" />

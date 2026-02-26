@@ -3,6 +3,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { PencilIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 import WineBottleIcon from '../components/WineBottleIcon.vue'
+import BottlePreview from '../components/BottlePreview.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -23,6 +24,11 @@ const dragSourcePosition = ref(null)
 const isDragging = ref(false)
 const dropConflict = ref(null)
 const hoveredDropZone = ref(null)
+
+// États pour la vignette de preview
+const previewBottle = ref(null)
+const previewPosition = ref({ x: 0, y: 0 })
+const previewShow = ref(false)
 
 const caveId = computed(() => route.params.id)
 
@@ -105,13 +111,23 @@ const clearPosition = async () => {
 }
 
 const availableBottles = computed(() => {
-  const positionBottleIds = cave.value?.columns
-    ?.flatMap(c => c.rows || [])
-    ?.flatMap(r => r.positions || [])
-    ?.filter(p => p.bottle_at_position)
-    ?.map(p => p.bottle_at_position.id) || []
+  // Compter les placements actuels par bouteille
+  const placementCount = {}
+  cave.value?.columns?.forEach(col => {
+    col.rows?.forEach(row => {
+      row.positions?.forEach(pos => {
+        if (pos.bottle_at_position) {
+          placementCount[pos.bottle_at_position.id] = (placementCount[pos.bottle_at_position.id] || 0) + 1
+        }
+      })
+    })
+  })
   
-  return bottles.value.filter(b => b.quantity > 0 || positionBottleIds.includes(b.id))
+  // Filtrer : ne montrer que les bouteilles avec places disponibles
+  return bottles.value.filter(b => {
+    const placedCount = placementCount[b.id] || 0
+    return placedCount < b.quantity
+  })
 })
 
 const assignBottle = async (bottleId) => {
@@ -280,12 +296,63 @@ const handleDrop = async (event, targetRow, targetLine, targetPos) => {
   dragSourcePosition.value = null
 }
 
+// Fonction pour déplacer une bouteille localement (Optimistic UI)
+const moveBottleLocally = (source, target, bottle) => {
+  console.log('=== MOVE BOTTLE LOCALLY ===')
+  
+  // Trouver et modifier la position source (retirer la bouteille)
+  if (source.positionData?.id) {
+    cave.value?.columns?.forEach(col => {
+      col.rows?.forEach(row => {
+        const sourcePos = row.positions?.find(p => p.id === source.positionData.id)
+        if (sourcePos) {
+          console.log('Clearing source position:', sourcePos.id)
+          sourcePos.bottle_at_position = null
+          sourcePos.bottle_id = null
+        }
+      })
+    })
+  }
+  
+  // Trouver ou créer la position cible (ajouter la bouteille)
+  let targetPos = null
+  cave.value?.columns?.forEach(col => {
+    col.rows?.forEach(row => {
+      if (row.id === target.row.id) {
+        targetPos = row.positions?.find(p => p.line === target.line && p.position === target.position)
+        if (targetPos) {
+          console.log('Found existing target position:', targetPos.id)
+          targetPos.bottle_at_position = bottle
+          targetPos.bottle_id = bottle.id
+        }
+      }
+    })
+  })
+  
+  return targetPos
+}
+
 const executeMove = async (source, target) => {
+  console.log('=== EXECUTE MOVE (Optimistic) ===')
+  console.log('Source positionData ID:', source.positionData?.id)
+  console.log('Target:', { rowId: target.row.id, line: target.line, pos: target.position })
+  console.log('Bottle:', draggedBottle.value?.name, 'ID:', draggedBottle.value?.id)
+  
+  const bottle = draggedBottle.value
+  const backupCave = JSON.parse(JSON.stringify(cave.value)) // Backup pour rollback
+  
   try {
-    // 1. Créer la position cible si elle n'existe pas
-    let targetPositionId = target.positionData?.id
+    // ÉTAPE 1: Mettre à jour l'UI immédiatement (Optimistic)
+    console.log('Step 1: Updating UI optimistically...')
+    const targetPos = moveBottleLocally(source, target, bottle)
+    emit('refresh-data')
+    console.log('Step 1 SUCCESS: UI updated')
+    
+    // ÉTAPE 2: Créer la position cible sur le serveur si nécessaire
+    let targetPositionId = targetPos?.id
     
     if (!targetPositionId) {
+      console.log('Step 2: Creating new position on server...')
       const res = await fetch(`${API_URL}/rows/${target.row.id}/positions/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -295,35 +362,53 @@ const executeMove = async (source, target) => {
         })
       })
       
-      if (!res.ok) {
-        const error = await res.text()
-        console.error('Failed to create target position:', error)
-        alert('Erreur lors de la création de la position cible')
-        return
-      }
+      if (!res.ok) throw new Error('Failed to create position')
       
       const newPosition = await res.json()
       targetPositionId = newPosition.id
+      console.log('Step 2 SUCCESS: New position ID:', targetPositionId)
+      
+      // Mettre à jour l'ID local
+      targetPos.id = targetPositionId
     }
     
-    // 2. Assigner la bouteille à la position cible
-    await fetch(`${API_URL}/positions/${targetPositionId}`, {
+    // ÉTAPE 3: Vider la position source sur le serveur (AVANT d'assigner la cible)
+    // Cela évite l'erreur "Quantité maximale atteinte" car la bouteille n'est plus comptée
+    if (source.positionData?.id && source.positionData.id !== targetPositionId) {
+      console.log('Step 3: Clearing source position on server...')
+      const clearRes = await fetch(`${API_URL}/positions/${source.positionData.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bottle_id: null })
+      })
+      
+      if (!clearRes.ok) {
+        const errorData = await clearRes.json()
+        throw new Error(errorData.detail || 'Failed to clear source')
+      }
+      console.log('Step 3 SUCCESS: Source cleared')
+    }
+    
+    // ÉTAPE 4: Assigner la bouteille sur le serveur (APRÈS avoir vidé la source)
+    console.log('Step 4: Assigning bottle on server...')
+    const assignRes = await fetch(`${API_URL}/positions/${targetPositionId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ bottle_id: draggedBottle.value.id })
+      body: JSON.stringify({ bottle_id: bottle.id })
     })
     
-    // 3. Retirer la bouteille de la position source
-    if (source.positionData?.id) {
-      await fetch(`${API_URL}/positions/${source.positionData.id}/bottle`, {
-        method: 'DELETE'
-      })
+    if (!assignRes.ok) {
+      const errorData = await assignRes.json()
+      throw new Error(errorData.detail || 'Failed to assign')
     }
+    console.log('Step 4 SUCCESS: Bottle assigned on server')
     
-    await fetchCave()
-    emit('refresh-data')
+    console.log('=== MOVE COMPLETED SUCCESSFULLY ===')
+    
   } catch (e) {
-    console.error('Error moving bottle:', e)
+    console.error('=== MOVE FAILED - ROLLING BACK ===', e)
+    // ROLLBACK: Restaurer l'état précédent
+    cave.value = backupCave
     alert('Erreur lors du déplacement: ' + e.message)
   }
 }
@@ -376,10 +461,12 @@ const resolveConflict = async (action) => {
       await executeMove(target, newTarget)
       
     } else if (action === 'replace') {
-      // Remplacer - retirer l'ancienne et mettre la nouvelle
+      // Remplacer - vider l'ancienne position et mettre la nouvelle
       if (target.positionData?.id) {
-        await fetch(`${API_URL}/positions/${target.positionData.id}/bottle`, {
-          method: 'DELETE'
+        await fetch(`${API_URL}/positions/${target.positionData.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bottle_id: null })
         })
       }
       await executeMove(source, target)
@@ -395,6 +482,45 @@ const resolveConflict = async (action) => {
   dropConflict.value = null
   draggedBottle.value = null
   dragSourcePosition.value = null
+}
+
+// Fonctions pour la vignette de preview
+const showPreview = (event, bottle) => {
+  previewBottle.value = bottle
+  previewShow.value = true
+  updatePreviewPosition(event)
+}
+
+const hidePreview = () => {
+  previewShow.value = false
+  previewBottle.value = null
+}
+
+const updatePreviewPosition = (event) => {
+  // Position en bas de la souris avec offset de 20px
+  const x = event.clientX
+  const y = event.clientY + 20
+  
+  // Vérifier les bords de l'écran
+  const windowWidth = window.innerWidth
+  const windowHeight = window.innerHeight
+  const previewWidth = 200
+  const previewHeight = 150
+  
+  let finalX = x
+  let finalY = y
+  
+  // Ajuster si dépasse à droite
+  if (x + previewWidth > windowWidth) {
+    finalX = x - previewWidth
+  }
+  
+  // Ajuster si dépasse en bas
+  if (y + previewHeight > windowHeight) {
+    finalY = event.clientY - previewHeight - 10
+  }
+  
+  previewPosition.value = { x: finalX, y: finalY }
 }
 
 onMounted(() => {
@@ -480,6 +606,9 @@ onMounted(() => {
                   draggable="true"
                   @dragstart="(e) => handleDragStart(e, row, row.height - line + 1, pos, getBottleAtPosition(row.id, row.height - line + 1, pos))"
                   @dragend="handleDragEnd"
+                  @mouseenter="(e) => showPreview(e, getBottleAtPosition(row.id, row.height - line + 1, pos))"
+                  @mouseleave="hidePreview"
+                  @mousemove="updatePreviewPosition"
                   :class="{ 'opacity-50': draggedBottle?.id === getBottleAtPosition(row.id, row.height - line + 1, pos).id }"
                 >
                   <div class="flex flex-col items-center">
@@ -663,5 +792,12 @@ onMounted(() => {
         </div>
       </div>
     </div>
+
+    <!-- Vignette de preview -->
+    <BottlePreview
+      :bottle="previewBottle"
+      :show="previewShow"
+      :position="previewPosition"
+    />
   </main>
 </template>

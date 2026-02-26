@@ -1,10 +1,10 @@
 <template>
-  <main class="max-w-7xl mx-auto px-4 pb-20">
+  <main class="max-w-7xl mx-auto px-4 pt-4 pb-20">
     <div class="flex items-center gap-3 mb-4">
       <div class="relative flex-1">
         <MagnifyingGlassIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8b949e]" />
         <input v-model="searchQuery" type="text" placeholder="Rechercher un vin..." 
-               class="w-full bg-[#0d1117] border border-[#30363d] rounded-md py-2 pl-9 pr-4 text-white placeholder-[#8b949e] focus:outline-none focus:border-[#58a6ff] focus:ring-1 focus:ring-[#58a6ff] text-sm">
+               class="w-full bg-[#0d1117] border border-[#30363d] rounded-md py-1.5 pl-9 pr-4 text-white placeholder-[#8b949e] focus:outline-none focus:border-[#58a6ff] focus:ring-1 focus:ring-[#58a6ff] text-sm">
       </div>
       <div class="flex items-center gap-1 border border-[#30363d] rounded-md p-0.5">
         <button @click="viewMode = 'grid'" :class="['p-1.5 rounded transition', viewMode === 'grid' ? 'bg-[#21262d] text-white' : 'text-[#8b949e] hover:text-white']">

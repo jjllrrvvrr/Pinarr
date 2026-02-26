@@ -421,6 +421,22 @@ def update_position(
         if db_bottle is None:
             raise HTTPException(status_code=404, detail="Bottle not found")
 
+        # Vérifier la quantité maximale (en excluant la position actuelle)
+        existing_placements = (
+            db.query(models.Position)
+            .filter(
+                models.Position.bottle_id == position.bottle_id,
+                models.Position.id != position_id,
+            )
+            .count()
+        )
+
+        if existing_placements >= db_bottle.quantity:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Quantité maximale atteinte ({db_bottle.quantity})",
+            )
+
     db_position.bottle_id = position.bottle_id
     db.add(db_position)
     db.commit()
