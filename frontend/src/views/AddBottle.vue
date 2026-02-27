@@ -258,12 +258,14 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { StarIcon as StarIconSolid } from '@heroicons/vue/24/solid'
 import { CloudArrowUpIcon } from '@heroicons/vue/24/outline'
+import config from '../config.js'
+import { apiRequest } from '../services/api.js'
 
 const route = useRoute()
 const router = useRouter()
 
-const API_URL = 'http://127.0.0.1:8000/bottles'
-const API_UPLOAD_URL = 'http://127.0.0.1:8000/upload'
+const API_URL = '/bottles'
+const API_UPLOAD_URL = `${config.API_BASE_URL}/upload`
 
 const countries = ['France', 'Italie', 'Espagne', 'Portugal', 'Allemagne', 'États-Unis', 'Argentine', 'Chili', 'Australie', 'Nouvelle-Zélande', 'Afrique du Sud', 'Autre']
 
@@ -281,7 +283,6 @@ const duplicateMatches = ref([])
 const showSuggestions = ref(false)
 const searchResults = ref([])
 const searchTimeout = ref(null)
-const API_BASE_URL = "http://127.0.0.1:8000"
 
 const caves = ref([])
 const availableColumns = ref([])
@@ -379,8 +380,20 @@ const uploadImage = async () => {
   if (!imageFile.value) return null
   const formData = new FormData()
   formData.append('file', imageFile.value)
+  
+  // Construire les headers avec le token pour l'upload
+  const headers = {}
+  const token = sessionStorage.getItem('auth_token')
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+  
   try {
-    const res = await fetch(API_UPLOAD_URL, { method: 'POST', body: formData })
+    const res = await fetch(API_UPLOAD_URL, { 
+      method: 'POST', 
+      headers,
+      body: formData 
+    })
     if (res.ok) {
       const data = await res.json()
       return data.path
@@ -391,52 +404,46 @@ const uploadImage = async () => {
 
 const fetchBottle = async (id) => {
   try {
-    const res = await fetch(`${API_URL}/${id}`)
-    if (res.ok) {
-      const bottle = await res.json()
-      form.value = { 
-        ...defaultForm,
-        ...bottle 
-      }
-      if (bottle.image_path) {
-        imagePreview.value = bottle.image_path.startsWith('http') 
-          ? bottle.image_path 
-          : `http://127.0.0.1:8000${bottle.image_path}`
-      }
-      if (bottle.position) {
-        form.value.position_row_id = bottle.position.row_id
-        if (caves.value.length > 0) {
-          for (const cave of caves.value) {
-            for (const col of cave.columns || []) {
-              const row = col.rows?.find(r => r.id === bottle.position.row_id)
-              if (row) {
-                form.value.position_cave_id = cave.id
-                form.value.position_column_id = col.id
-                availableColumns.value = cave.columns || []
-                availableRows.value = col.rows || []
-                await loadPositions(bottle.position.row_id)
-                form.value.position_id = bottle.position.id
-                break
-              }
+    const bottle = await apiRequest(`${API_URL}/${id}`)
+    form.value = { 
+      ...defaultForm,
+      ...bottle 
+    }
+    if (bottle.image_path) {
+      imagePreview.value = bottle.image_path.startsWith('http') 
+        ? bottle.image_path 
+        : `${config.API_BASE_URL}${bottle.image_path}`
+    }
+    if (bottle.position) {
+      form.value.position_row_id = bottle.position.row_id
+      if (caves.value.length > 0) {
+        for (const cave of caves.value) {
+          for (const col of cave.columns || []) {
+            const row = col.rows?.find(r => r.id === bottle.position.row_id)
+            if (row) {
+              form.value.position_cave_id = cave.id
+              form.value.position_column_id = col.id
+              availableColumns.value = cave.columns || []
+              availableRows.value = col.rows || []
+              await loadPositions(bottle.position.row_id)
+              form.value.position_id = bottle.position.id
+              break
             }
           }
         }
       }
-      isEditing.value = true
     }
+    isEditing.value = true
   } catch (e) { console.error(e) }
 }
 
 const fetchCaves = async () => {
   try {
-    const res = await fetch(`${CAVES_URL}`)
-    if (res.ok) {
-      caves.value = await res.json()
-    }
+    caves.value = await apiRequest(CAVES_URL)
   } catch (e) { console.error(e) }
 }
 
-const CAVES_URL = 'http://127.0.0.1:8000/caves'
+const CAVES_URL = '/caves'
 
 const onCaveChange = () => {
   form.value.position_column_id = null
@@ -470,27 +477,22 @@ const onRowChange = async () => {
 
 const loadPositions = async (rowId) => {
   try {
-    const res = await fetch(`http://127.0.0.1:8000/rows/${rowId}/positions/`)
-    if (res.ok) {
-      availablePositions.value = (await res.json()).map(p => ({
-        id: p.id,
-        line: p.line,
-        position: p.position,
-        occupied: !!p.bottle_at_position,
-        bottle_id: p.bottle_at_position?.id
-      }))
-    }
+    const data = await apiRequest(`/rows/${rowId}/positions/`)
+    availablePositions.value = data.map(p => ({
+      id: p.id,
+      line: p.line,
+      position: p.position,
+      occupied: !!p.bottle_at_position,
+      bottle_id: p.bottle_at_position?.id
+    }))
   } catch (e) { console.error(e) }
 }
 
 const checkDuplicate = async () => {
   if (!form.value.name || !form.value.year) return []
   try {
-    const res = await fetch(`${API_URL}/check-duplicate/?name=${encodeURIComponent(form.value.name)}&year=${form.value.year}`)
-    if (res.ok) {
-      const data = await res.json()
-      return data.matches || []
-    }
+    const data = await apiRequest(`${API_URL}/check-duplicate/?name=${encodeURIComponent(form.value.name)}&year=${form.value.year}`)
+    return data.matches || []
   } catch (e) { console.error(e) }
   return []
 }
@@ -538,29 +540,21 @@ const saveBottle = async (force = false) => {
   try {
     const method = isEditing.value ? 'PUT' : 'POST'
     const url = isEditing.value ? `${API_URL}/${form.value.id}` : API_URL
-    const res = await fetch(url, {
+    const savedBottle = await apiRequest(url, {
       method,
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     })
-    if (res.ok) {
-      const savedBottle = await res.json()
-      
-      if (form.value.position_id) {
-        await fetch(`http://127.0.0.1:8000/positions/${form.value.position_id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ bottle_id: savedBottle.id })
-        })
-      }
-      
-      router.push(`/wine/${savedBottle.id}`)
-    } else {
-      const txt = await res.text()
-      alert("Erreur: " + txt)
+    
+    if (form.value.position_id) {
+      await apiRequest(`/positions/${form.value.position_id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ bottle_id: savedBottle.id })
+      })
     }
+    
+    router.push(`/wine/${savedBottle.id}`)
   } catch (e) {
-    alert("Erreur réseau: " + e.message)
+    alert("Erreur: " + e.message)
   }
 }
 
@@ -605,16 +599,9 @@ const searchSimilarWines = async (name) => {
   if (!name || name.length < 2) return
   
   try {
-    const response = await fetch(`${API_BASE_URL}/bottles/search/?q=${encodeURIComponent(name)}`, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' }
-    })
-    
-    if (response.ok) {
-      const data = await response.json()
-      searchResults.value = data.results || []
-      showSuggestions.value = searchResults.value.length > 0
-    }
+    const data = await apiRequest(`/bottles/search/?q=${encodeURIComponent(name)}`)
+    searchResults.value = data.results || []
+    showSuggestions.value = searchResults.value.length > 0
   } catch (error) {
     console.error('Erreur recherche:', error)
     searchResults.value = []
@@ -648,7 +635,7 @@ const selectWine = (wine) => {
 const getImageUrl = (path) => {
   if (!path) return null
   if (path.startsWith('http')) return path
-  return `${API_BASE_URL}${path}`
+  return `${config.API_BASE_URL}${path}`
 }
 
 </script>

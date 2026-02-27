@@ -1,4 +1,4 @@
-"""Configuration centralisée de l'application SudoWine."""
+"""Configuration centralisée de l'application Pinarr."""
 
 import os
 from pathlib import Path
@@ -7,7 +7,7 @@ from pathlib import Path
 BASE_DIR = Path(__file__).parent
 
 # Configuration base de données
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./sudo_wine.db")
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./pinarr.db")
 
 # Configuration uploads
 UPLOAD_DIR = BASE_DIR / "uploads"
@@ -24,7 +24,7 @@ CORS_ORIGINS = os.getenv("CORS_ORIGINS", "*").split(",")
 
 # API
 API_PREFIX = "/api/v1"
-API_TITLE = "SudoWine API"
+API_TITLE = "Pinarr API"
 API_VERSION = "1.0.0"
 
 # Pagination

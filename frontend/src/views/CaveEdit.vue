@@ -2,11 +2,10 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { PlusIcon, TrashIcon, ArrowUpIcon, ArrowDownIcon } from '@heroicons/vue/24/outline'
+import { apiRequest } from '../services/api.js'
 
 const route = useRoute()
 const router = useRouter()
-
-const API_URL = 'http://127.0.0.1:8000'
 
 const isNew = computed(() => !route.params.id)
 const caveId = computed(() => route.params.id)
@@ -20,23 +19,20 @@ const fetchCave = async () => {
   if (isNew.value) return
   loading.value = true
   try {
-    const res = await fetch(`${API_URL}/caves/${caveId.value}`)
-    if (res.ok) {
-      const cave = await res.json()
-      caveName.value = cave.name
-      columns.value = cave.columns?.map(col => ({
-        id: col.id,
-        name: col.name,
-        order: col.order,
-        rows: col.rows?.map(row => ({
-          id: row.id,
-          name: row.name,
-          width: row.width,
-          height: row.height,
-          order: row.order
-        })) || []
+    const cave = await apiRequest(`/caves/${caveId.value}`)
+    caveName.value = cave.name
+    columns.value = cave.columns?.map(col => ({
+      id: col.id,
+      name: col.name,
+      order: col.order,
+      rows: col.rows?.map(row => ({
+        id: row.id,
+        name: row.name,
+        width: row.width,
+        height: row.height,
+        order: row.order
       })) || []
-    }
+    })) || []
   } catch (e) {
     console.error('Erreur:', e)
   } finally {
@@ -117,31 +113,24 @@ const saveCave = async () => {
     let savedCaveId = caveId.value
 
     if (isNew.value) {
-      const res = await fetch(`${API_URL}/caves/`, {
+      const cave = await apiRequest('/caves/', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: caveName.value })
       })
-      if (!res.ok) throw new Error('Erreur création cave')
-      const cave = await res.json()
       savedCaveId = cave.id
     } else {
-      await fetch(`${API_URL}/caves/${savedCaveId}`, {
+      await apiRequest(`/caves/${savedCaveId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: caveName.value })
       })
     }
 
     const existingColumnIds = columns.value.filter(c => c.id).map(c => c.id)
     if (!isNew.value) {
-      const existingRes = await fetch(`${API_URL}/caves/${savedCaveId}`)
-      if (existingRes.ok) {
-        const existingCave = await existingRes.json()
-        for (const col of existingCave.columns || []) {
-          if (!existingColumnIds.includes(col.id)) {
-            await fetch(`${API_URL}/columns/${col.id}`, { method: 'DELETE' })
-          }
+      const existingCave = await apiRequest(`/caves/${savedCaveId}`)
+      for (const col of existingCave.columns || []) {
+        if (!existingColumnIds.includes(col.id)) {
+          await apiRequest(`/columns/${col.id}`, { method: 'DELETE' })
         }
       }
     }
@@ -150,33 +139,26 @@ const saveCave = async () => {
       let savedColId = col.id
       
       if (!col.id) {
-        const res = await fetch(`${API_URL}/caves/${savedCaveId}/columns/`, {
+        const saved = await apiRequest(`/caves/${savedCaveId}/columns/`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: col.name, order: col.order })
         })
-        if (!res.ok) continue
-        const saved = await res.json()
         savedColId = saved.id
       } else {
-        await fetch(`${API_URL}/columns/${col.id}`, {
+        await apiRequest(`/columns/${col.id}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: col.name, order: col.order })
         })
       }
 
       const existingRowIds = col.rows.filter(r => r.id).map(r => r.id)
       if (col.id) {
-        const colRes = await fetch(`${API_URL}/caves/${savedCaveId}`)
-        if (colRes.ok) {
-          const caveData = await colRes.json()
-          const existingCol = caveData.columns?.find(c => c.id === savedColId)
-          if (existingCol?.rows) {
-            for (const row of existingCol.rows) {
-              if (!existingRowIds.includes(row.id)) {
-                await fetch(`${API_URL}/rows/${row.id}`, { method: 'DELETE' })
-              }
+        const caveData = await apiRequest(`/caves/${savedCaveId}`)
+        const existingCol = caveData.columns?.find(c => c.id === savedColId)
+        if (existingCol?.rows) {
+          for (const row of existingCol.rows) {
+            if (!existingRowIds.includes(row.id)) {
+              await apiRequest(`/rows/${row.id}`, { method: 'DELETE' })
             }
           }
         }
@@ -184,9 +166,8 @@ const saveCave = async () => {
 
       for (const row of col.rows) {
         if (!row.id) {
-          await fetch(`${API_URL}/columns/${savedColId}/rows/`, {
+          await apiRequest(`/columns/${savedColId}/rows/`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               name: row.name,
               width: row.width,
@@ -195,9 +176,8 @@ const saveCave = async () => {
             })
           })
         } else {
-          await fetch(`${API_URL}/rows/${row.id}`, {
+          await apiRequest(`/rows/${row.id}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               name: row.name,
               width: row.width,

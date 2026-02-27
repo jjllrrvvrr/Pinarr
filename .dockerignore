@@ -1,0 +1,19 @@
+# Global
+.git/
+.gitignore
+
+# Documentation
+README.md
+ARCHITECTURE.md
+*.md
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

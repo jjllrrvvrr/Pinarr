@@ -4,13 +4,12 @@ import { useRoute, useRouter } from 'vue-router'
 import { PencilIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 import WineBottleIcon from '../components/WineBottleIcon.vue'
 import BottlePreview from '../components/BottlePreview.vue'
+import { apiRequest } from '../services/api.js'
 
 const route = useRoute()
 const router = useRouter()
 
 const emit = defineEmits(['refresh-data'])
-
-const API_URL = 'http://127.0.0.1:8000'
 
 const cave = ref(null)
 const loading = ref(true)
@@ -35,12 +34,9 @@ const caveId = computed(() => route.params.id)
 const fetchCave = async () => {
   loading.value = true
   try {
-    const res = await fetch(`${API_URL}/caves/${caveId.value}`)
-    if (res.ok) {
-      cave.value = await res.json()
-      if (cave.value.columns?.length > 0) {
-        selectedColumn.value = cave.value.columns[0]
-      }
+    cave.value = await apiRequest(`/caves/${caveId.value}`)
+    if (cave.value.columns?.length > 0) {
+      selectedColumn.value = cave.value.columns[0]
     }
   } catch (e) {
     console.error('Erreur:', e)
@@ -51,10 +47,7 @@ const fetchCave = async () => {
 
 const fetchBottles = async () => {
   try {
-    const res = await fetch(`${API_URL}/bottles/`)
-    if (res.ok) {
-      bottles.value = await res.json()
-    }
+    bottles.value = await apiRequest('/bottles/')
   } catch (e) {
     console.error('Erreur:', e)
   }
@@ -100,7 +93,7 @@ const clearPosition = async () => {
   if (!selectedPosition.value?.positionData?.id) return
   
   try {
-    await fetch(`${API_URL}/positions/${selectedPosition.value.positionData.id}/bottle`, {
+    await apiRequest(`/positions/${selectedPosition.value.positionData.id}/bottle`, {
       method: 'DELETE'
     })
     await fetchCave()
@@ -145,28 +138,19 @@ const assignBottle = async (bottleId) => {
   if (!positionId) {
     console.log('Position does not exist, creating it first...')
     try {
-      const res = await fetch(`${API_URL}/rows/${selectedPosition.value.row.id}/positions/`, {
+      const newPosition = await apiRequest(`/rows/${selectedPosition.value.row.id}/positions/`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           line: selectedPosition.value.line,
           position: selectedPosition.value.position
         })
       })
       
-      if (!res.ok) {
-        const error = await res.text()
-        console.error('Failed to create position:', error)
-        alert('Erreur lors de la création de la position: ' + error)
-        return
-      }
-      
-      const newPosition = await res.json()
       console.log('Position created:', newPosition)
       positionId = newPosition.id
     } catch (e) {
       console.error('Error creating position:', e)
-      alert('Erreur: ' + e.message)
+      alert('Erreur lors de la création de la position: ' + e.message)
       return
     }
   }
@@ -174,18 +158,10 @@ const assignBottle = async (bottleId) => {
   console.log('Assigning bottle to position:', positionId)
   
   try {
-    const res = await fetch(`${API_URL}/positions/${positionId}`, {
+    await apiRequest(`/positions/${positionId}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ bottle_id: bottleId })
     })
-    
-    if (!res.ok) {
-      const error = await res.text()
-      console.error('Failed to assign bottle:', error)
-      alert('Erreur lors de l\'assignation: ' + error)
-      return
-    }
     
     console.log('Bottle assigned successfully')
     await fetchCave()
@@ -353,18 +329,14 @@ const executeMove = async (source, target) => {
     
     if (!targetPositionId) {
       console.log('Step 2: Creating new position on server...')
-      const res = await fetch(`${API_URL}/rows/${target.row.id}/positions/`, {
+      const newPosition = await apiRequest(`/rows/${target.row.id}/positions/`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           line: target.line,
           position: target.position
         })
       })
       
-      if (!res.ok) throw new Error('Failed to create position')
-      
-      const newPosition = await res.json()
       targetPositionId = newPosition.id
       console.log('Step 2 SUCCESS: New position ID:', targetPositionId)
       
@@ -376,31 +348,19 @@ const executeMove = async (source, target) => {
     // Cela évite l'erreur "Quantité maximale atteinte" car la bouteille n'est plus comptée
     if (source.positionData?.id && source.positionData.id !== targetPositionId) {
       console.log('Step 3: Clearing source position on server...')
-      const clearRes = await fetch(`${API_URL}/positions/${source.positionData.id}`, {
+      await apiRequest(`/positions/${source.positionData.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ bottle_id: null })
       })
-      
-      if (!clearRes.ok) {
-        const errorData = await clearRes.json()
-        throw new Error(errorData.detail || 'Failed to clear source')
-      }
       console.log('Step 3 SUCCESS: Source cleared')
     }
     
     // ÉTAPE 4: Assigner la bouteille sur le serveur (APRÈS avoir vidé la source)
     console.log('Step 4: Assigning bottle on server...')
-    const assignRes = await fetch(`${API_URL}/positions/${targetPositionId}`, {
+    await apiRequest(`/positions/${targetPositionId}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ bottle_id: bottle.id })
     })
-    
-    if (!assignRes.ok) {
-      const errorData = await assignRes.json()
-      throw new Error(errorData.detail || 'Failed to assign')
-    }
     console.log('Step 4 SUCCESS: Bottle assigned on server')
     
     console.log('=== MOVE COMPLETED SUCCESSFULLY ===')
@@ -417,7 +377,7 @@ const handleTrashDrop = async () => {
   if (!draggedBottle.value || !dragSourcePosition.value?.positionData?.id) return
   
   try {
-    await fetch(`${API_URL}/positions/${dragSourcePosition.value.positionData.id}/bottle`, {
+    await apiRequest(`/positions/${dragSourcePosition.value.positionData.id}/bottle`, {
       method: 'DELETE'
     })
     await fetchCave()
@@ -463,9 +423,8 @@ const resolveConflict = async (action) => {
     } else if (action === 'replace') {
       // Remplacer - vider l'ancienne position et mettre la nouvelle
       if (target.positionData?.id) {
-        await fetch(`${API_URL}/positions/${target.positionData.id}`, {
+        await apiRequest(`/positions/${target.positionData.id}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ bottle_id: null })
         })
       }

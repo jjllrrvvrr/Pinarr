@@ -1,7 +1,7 @@
 import config from '../config.js'
 
 /**
- * Client HTTP configuré pour l'API SudoWine
+ * Client HTTP configuré pour l'API Pinarr
  */
 
 const API_BASE_URL = config.API_BASE_URL
@@ -13,13 +13,21 @@ const API_BASE_URL = config.API_BASE_URL
  * @returns {Promise<any>} - Données JSON
  */
 async function apiRequest(endpoint, options = {}) {
-  const url = `${API_BASE_URL}${endpoint}`
+  // Normaliser l'endpoint - enlever le trailing slash
+  const normalizedEndpoint = endpoint.endsWith('/') ? endpoint.slice(0, -1) : endpoint
+  const url = `${API_BASE_URL}${normalizedEndpoint}`
   
   const defaultHeaders = {
     'Content-Type': 'application/json',
   }
   
-  const config = {
+  // Ajouter le token d'authentification si présent
+  const token = sessionStorage.getItem('auth_token')
+  if (token) {
+    defaultHeaders['Authorization'] = `Bearer ${token}`
+  }
+  
+  const fetchConfig = {
     ...options,
     headers: {
       ...defaultHeaders,
@@ -29,11 +37,11 @@ async function apiRequest(endpoint, options = {}) {
   
   // Supprimer Content-Type si c'est un FormData
   if (options.body instanceof FormData) {
-    delete config.headers['Content-Type']
+    delete fetchConfig.headers['Content-Type']
   }
   
   try {
-    const response = await fetch(url, config)
+    const response = await fetch(url, fetchConfig)
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))

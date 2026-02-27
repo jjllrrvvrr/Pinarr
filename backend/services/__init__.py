@@ -1,4 +1,4 @@
-"""Services pour SudoWine."""
+"""Services pour Pinarr."""
 
 from .bottle_service import (
     get_bottles_with_positions,

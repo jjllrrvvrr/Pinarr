@@ -7,10 +7,18 @@ import RegionView from '../views/RegionView.vue'
 import CaveList from '../views/CaveList.vue'
 import CaveEdit from '../views/CaveEdit.vue'
 import CaveView from '../views/CaveView.vue'
+import LoginView from '../views/LoginView.vue'
+import { authGuard, publicGuard } from './guards'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    {
+      path: '/login',
+      name: 'login',
+      component: LoginView,
+      beforeEnter: publicGuard
+    },
     {
       path: '/',
       name: 'home',
@@ -68,5 +76,8 @@ const router = createRouter({
     }
   ],
 })
+
+// Guard global pour protéger toutes les routes
+router.beforeEach(authGuard)
 
 export default router

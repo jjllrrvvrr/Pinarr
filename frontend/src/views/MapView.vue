@@ -63,11 +63,12 @@ import { useRouter } from 'vue-router'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { MapIcon } from '@heroicons/vue/24/outline'
+import { apiRequest } from '../services/api.js'
 
 const router = useRouter()
 
-const API_URL = 'http://127.0.0.1:8000/bottles'
-const API_GEOCODED_URL = 'http://127.0.0.1:8000/geocoded-regions'
+const API_URL = '/bottles'
+const API_GEOCODED_URL = '/geocoded-regions'
 
 const bottles = ref([])
 const map = ref(null)
@@ -200,13 +201,10 @@ const findRegionCoords = (region) => {
 
 const loadGeocodedRegions = async () => {
   try {
-    const res = await fetch(API_GEOCODED_URL)
-    if (res.ok) {
-      const data = await res.json()
-      data.forEach(r => {
-        geocodedRegionsCache.value[r.name] = [r.lat, r.lon]
-      })
-    }
+    const data = await apiRequest(API_GEOCODED_URL)
+    data.forEach(r => {
+      geocodedRegionsCache.value[r.name] = [r.lat, r.lon]
+    })
   } catch (e) {
     console.error('Erreur chargement régions géocodées:', e)
   }
@@ -214,9 +212,8 @@ const loadGeocodedRegions = async () => {
 
 const saveGeocodedRegion = async (name, coords) => {
   try {
-    await fetch(API_GEOCODED_URL, {
+    await apiRequest(API_GEOCODED_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, lat: coords[0], lon: coords[1] })
     })
     geocodedRegionsCache.value[name] = coords
@@ -254,10 +251,7 @@ const geocodeRegion = async (region) => {
 
 const fetchBottles = async () => {
   try {
-    const res = await fetch(API_URL)
-    if (res.ok) {
-      bottles.value = await res.json()
-    }
+    bottles.value = await apiRequest(API_URL)
   } catch (e) {
     console.error(e)
   }

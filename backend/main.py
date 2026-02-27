@@ -1,19 +1,22 @@
 """
-SudoWine API - Routes FastAPI refactorisées.
+Pinarr API - Routes FastAPI refactorisées avec authentification.
 
 Ce module utilise une architecture en services pour une meilleure maintenabilité.
 """
 
-from fastapi import FastAPI, HTTPException, Depends, UploadFile, File
+from fastapi import FastAPI, HTTPException, Depends, UploadFile, File, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from typing import List
 
 from config import API_TITLE, CORS_ORIGINS, UPLOAD_DIR
 from database import create_db_tables, engine
 from dependencies import get_db
-from exceptions import SudoWineException, handle_sudowine_exception
+from exceptions import PinarrException, handle_pinarr_exception
+from routers import auth as auth_router
+from auth import get_current_user
 import schemas
 from services import (
     # Bottle services
@@ -47,10 +50,13 @@ from services import (
 from services.geo_service import get_geocoded_regions, create_geocoded_region
 
 # Création des tables
-# create_db_tables()  # Désactivé temporairement
+create_db_tables()
 
 # Initialisation FastAPI
 app = FastAPI(title=API_TITLE)
+
+# Router principal pour les routes API
+api_router = APIRouter(prefix="/api/v1")
 
 # Middleware CORS
 app.add_middleware(
@@ -61,47 +67,71 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-# Gestionnaire d'exceptions
-@app.exception_handler(SudoWineException)
-async def custom_exception_handler(request, exc):
-    raise handle_sudowine_exception(exc)
+# Routes d'authentification (non protégées)
+app.include_router(auth_router.router, prefix="/api/v1")
 
 
-# Static files pour les uploads
-app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
+# Middleware de protection des routes API
+@app.middleware("http")
+async def auth_middleware(request, call_next):
+    """
+    Middleware qui protège toutes les routes sauf:
+    - /auth/* (routes d'authentification)
+    - /api/v1/auth/* (routes d'auth avec prefix)
+    - / (root)
+    - /uploads/* (static files)
+    """
+    path = request.url.path
+
+    # Routes publiques
+    public_paths = [
+        "/",
+        "/auth",
+        "/api/v1/auth",
+        "/uploads",
+    ]
+
+    # Vérifier si la route est publique
+    is_public = any(path.startswith(pp) for pp in public_paths)
+
+    if not is_public and path != "/":
+        try:
+            # Vérifier l'authentification
+            user = await get_current_user(request)
+        except HTTPException:
+            return JSONResponse(
+                status_code=401, content={"detail": "Authentification requise"}
+            )
+
+    response = await call_next(request)
+    return response
 
 
 @app.get("/")
-def read_root():
-    """Route racine de l'API."""
-    return {"message": "Welcome to Sudo Wine Backend!", "version": "1.0.0"}
+def root():
+    return {"message": "Welcome to Pinarr Backend!", "version": "1.0.0"}
 
 
 # === BOTTLES ===
 
 
-@app.get("/bottles/", response_model=List[schemas.BottleWithPosition])
+@api_router.get("/bottles", response_model=List[schemas.BottleWithPosition])
 def read_bottles(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """Récupère toutes les bouteilles avec leurs positions."""
     return get_bottles_with_positions(db, skip=skip, limit=limit)
 
 
-@app.get("/bottles/check-duplicate/")
-
-@app.get("/bottles/search/")
+@api_router.get("/bottles/check-duplicate/")
+@api_router.get("/bottles/search/")
 def search_bottles(q: str = "", limit: int = 5, db: Session = Depends(get_db)):
     """Recherche des bouteilles par nom."""
     from services.bottle_service import search_bottles_by_name
+
     results = search_bottles_by_name(db, q, limit)
     return {"results": results}
-def check_duplicate(name: str, year: int, db: Session = Depends(get_db)):
-    """Vérifie si des bouteilles similaires existent."""
-    matches = check_duplicate_bottles(db, name, year)
-    return {"matches": matches}
 
 
-@app.get("/bottles/{bottle_id}", response_model=schemas.BottleWithPosition)
+@api_router.get("/bottles/{bottle_id}", response_model=schemas.BottleWithPosition)
 def read_bottle(bottle_id: int, db: Session = Depends(get_db)):
     """Récupère une bouteille spécifique avec sa position."""
     try:
@@ -112,13 +142,13 @@ def read_bottle(bottle_id: int, db: Session = Depends(get_db)):
         raise
 
 
-@app.post("/bottles/", response_model=schemas.Bottle)
+@api_router.post("/bottles", response_model=schemas.Bottle)
 def create_bottle_endpoint(bottle: schemas.BottleCreate, db: Session = Depends(get_db)):
     """Crée une nouvelle bouteille."""
     return create_bottle(db, bottle)
 
 
-@app.put("/bottles/{bottle_id}", response_model=schemas.Bottle)
+@api_router.put("/bottles/{bottle_id}", response_model=schemas.Bottle)
 def update_bottle_endpoint(
     bottle_id: int, bottle: schemas.BottleCreate, db: Session = Depends(get_db)
 ):
@@ -131,7 +161,7 @@ def update_bottle_endpoint(
         raise
 
 
-@app.patch("/bottles/{bottle_id}", response_model=schemas.Bottle)
+@api_router.patch("/bottles/{bottle_id}", response_model=schemas.Bottle)
 def patch_bottle_endpoint(
     bottle_id: int, bottle: schemas.BottlePatch, db: Session = Depends(get_db)
 ):
@@ -144,7 +174,7 @@ def patch_bottle_endpoint(
         raise
 
 
-@app.delete("/bottles/{bottle_id}")
+@api_router.delete("/bottles/{bottle_id}")
 def delete_bottle_endpoint(bottle_id: int, db: Session = Depends(get_db)):
     """Supprime une bouteille."""
     try:
@@ -159,13 +189,13 @@ def delete_bottle_endpoint(bottle_id: int, db: Session = Depends(get_db)):
 # === CAVES ===
 
 
-@app.get("/caves/", response_model=List[schemas.CaveWithColumns])
+@api_router.get("/caves", response_model=List[schemas.CaveWithColumns])
 def read_caves(db: Session = Depends(get_db)):
     """Récupère toutes les caves avec leur structure complète."""
     return get_caves(db)
 
 
-@app.get("/caves/{cave_id}", response_model=schemas.CaveWithColumns)
+@api_router.get("/caves/{cave_id}", response_model=schemas.CaveWithColumns)
 def read_cave(cave_id: int, db: Session = Depends(get_db)):
     """Récupère une cave spécifique."""
     try:
@@ -176,13 +206,13 @@ def read_cave(cave_id: int, db: Session = Depends(get_db)):
         raise
 
 
-@app.post("/caves/", response_model=schemas.Cave)
+@api_router.post("/caves", response_model=schemas.Cave)
 def create_cave_endpoint(cave: schemas.CaveCreate, db: Session = Depends(get_db)):
     """Crée une nouvelle cave."""
     return create_cave(db, cave)
 
 
-@app.put("/caves/{cave_id}", response_model=schemas.Cave)
+@api_router.put("/caves/{cave_id}", response_model=schemas.Cave)
 def update_cave_endpoint(
     cave_id: int, cave: schemas.CaveCreate, db: Session = Depends(get_db)
 ):
@@ -195,7 +225,7 @@ def update_cave_endpoint(
         raise
 
 
-@app.delete("/caves/{cave_id}")
+@api_router.delete("/caves/{cave_id}")
 def delete_cave_endpoint(cave_id: int, db: Session = Depends(get_db)):
     """Supprime une cave."""
     try:
@@ -210,7 +240,7 @@ def delete_cave_endpoint(cave_id: int, db: Session = Depends(get_db)):
 # === COLUMNS ===
 
 
-@app.post("/caves/{cave_id}/columns/", response_model=schemas.CaveColumn)
+@api_router.post("/caves/{cave_id}/columns", response_model=schemas.CaveColumn)
 def create_column_endpoint(
     cave_id: int, column: schemas.CaveColumnCreate, db: Session = Depends(get_db)
 ):
@@ -223,7 +253,7 @@ def create_column_endpoint(
         raise
 
 
-@app.put("/columns/{column_id}", response_model=schemas.CaveColumn)
+@api_router.put("/columns/{column_id}", response_model=schemas.CaveColumn)
 def update_column_endpoint(
     column_id: int, column: schemas.CaveColumnCreate, db: Session = Depends(get_db)
 ):
@@ -236,7 +266,7 @@ def update_column_endpoint(
         raise
 
 
-@app.delete("/columns/{column_id}")
+@api_router.delete("/columns/{column_id}")
 def delete_column_endpoint(column_id: int, db: Session = Depends(get_db)):
     """Supprime une colonne."""
     try:
@@ -251,7 +281,7 @@ def delete_column_endpoint(column_id: int, db: Session = Depends(get_db)):
 # === ROWS ===
 
 
-@app.post("/columns/{column_id}/rows/", response_model=schemas.CaveRow)
+@api_router.post("/columns/{column_id}/rows", response_model=schemas.CaveRow)
 def create_row_endpoint(
     column_id: int, row: schemas.CaveRowCreate, db: Session = Depends(get_db)
 ):
@@ -264,7 +294,7 @@ def create_row_endpoint(
         raise
 
 
-@app.put("/rows/{row_id}", response_model=schemas.CaveRow)
+@api_router.put("/rows/{row_id}", response_model=schemas.CaveRow)
 def update_row_endpoint(
     row_id: int, row: schemas.CaveRowCreate, db: Session = Depends(get_db)
 ):
@@ -277,7 +307,7 @@ def update_row_endpoint(
         raise
 
 
-@app.delete("/rows/{row_id}")
+@api_router.delete("/rows/{row_id}")
 def delete_row_endpoint(row_id: int, db: Session = Depends(get_db)):
     """Supprime une rangée."""
     try:
@@ -292,7 +322,7 @@ def delete_row_endpoint(row_id: int, db: Session = Depends(get_db)):
 # === POSITIONS ===
 
 
-@app.post("/rows/{row_id}/positions/", response_model=schemas.Position)
+@api_router.post("/rows/{row_id}/positions", response_model=schemas.Position)
 def create_position_endpoint(
     row_id: int, position: schemas.PositionCreate, db: Session = Depends(get_db)
 ):
@@ -305,13 +335,15 @@ def create_position_endpoint(
         raise
 
 
-@app.get("/rows/{row_id}/positions/", response_model=List[schemas.PositionWithBottle])
+@api_router.get(
+    "/rows/{row_id}/positions", response_model=List[schemas.PositionWithBottle]
+)
 def read_positions(row_id: int, db: Session = Depends(get_db)):
     """Récupère toutes les positions d'une rangée avec leurs bouteilles."""
     return get_positions_for_row(db, row_id)
 
 
-@app.put("/positions/{position_id}", response_model=schemas.Position)
+@api_router.put("/positions/{position_id}", response_model=schemas.Position)
 def update_position(
     position_id: int, position: schemas.PositionUpdate, db: Session = Depends(get_db)
 ):
@@ -336,7 +368,7 @@ def update_position(
         raise
 
 
-@app.delete("/positions/{position_id}/bottle")
+@api_router.delete("/positions/{position_id}/bottle")
 def remove_bottle_from_position_endpoint(
     position_id: int, db: Session = Depends(get_db)
 ):
@@ -353,7 +385,7 @@ def remove_bottle_from_position_endpoint(
 # === UPLOAD ===
 
 
-@app.post("/upload/")
+@app.post("/upload")
 async def upload_image_endpoint(file: UploadFile = File(...)):
     """Upload une image avec validation complète."""
     try:
@@ -365,15 +397,19 @@ async def upload_image_endpoint(file: UploadFile = File(...)):
 # === GEOCODED REGIONS ===
 
 
-@app.get("/geocoded-regions/", response_model=List[schemas.GeocodedRegion])
+@api_router.get("/geocoded-regions", response_model=List[schemas.GeocodedRegion])
 def read_geocoded_regions(db: Session = Depends(get_db)):
     """Récupère toutes les régions géocodées."""
     return get_geocoded_regions(db)
 
 
-@app.post("/geocoded-regions/", response_model=schemas.GeocodedRegion)
+@api_router.post("/geocoded-regions", response_model=schemas.GeocodedRegion)
 def create_geocoded_region_endpoint(
     region: schemas.GeocodedRegionCreate, db: Session = Depends(get_db)
 ):
     """Crée ou retourne une région géocodée existante."""
     return create_geocoded_region(db, region)
+
+
+# Inclure le router API principal
+app.include_router(api_router)

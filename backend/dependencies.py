@@ -3,7 +3,7 @@
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import SessionLocal
-from exceptions import SudoWineException, handle_sudowine_exception
+from exceptions import PinarrException, handle_pinarr_exception
 from typing import Generator
 
 
@@ -16,6 +16,6 @@ def get_db() -> Generator[Session, None, None]:
         db.close()
 
 
-async def sudowine_exception_handler(request, exc: SudoWineException):
+async def pinarr_exception_handler(request, exc: PinarrException):
     """Gestionnaire d'exceptions personnalisé."""
-    raise handle_sudowine_exception(exc)
+    raise handle_pinarr_exception(exc)

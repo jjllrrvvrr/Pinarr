@@ -1,4 +1,4 @@
-# Architecture Frontend SudoWine
+# Architecture Frontend Pinarr
 
 ## Structure du projet
 

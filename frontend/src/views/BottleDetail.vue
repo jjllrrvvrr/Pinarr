@@ -166,16 +166,18 @@ import {
   ArchiveBoxIcon, ArrowPathIcon
 } from '@heroicons/vue/24/solid'
 import WineBottleIcon from '@/components/WineBottleIcon.vue'
+import { apiRequest } from '../services/api.js'
 
 const route = useRoute()
 const router = useRouter()
+import config from '../config.js'
 
 const emit = defineEmits(['refresh-data'])
 
 const bottle = ref(null)
 const showQRModal = ref(false)
 
-const API_URL = 'http://127.0.0.1:8000/bottles'
+const API_URL = '/bottles'
 
 const qrValue = computed(() => bottle.value ? `${window.location.origin}/wine/${bottle.value.id}` : '')
 
@@ -183,10 +185,7 @@ const fetchBottle = async () => {
   const id = route.params.id
   if (!id) return
   try {
-    const res = await fetch(`${API_URL}/${id}`)
-    if (res.ok) {
-      bottle.value = await res.json()
-    }
+    bottle.value = await apiRequest(`${API_URL}/${id}`)
   } catch (e) {
     console.error('Erreur:', e)
   }
@@ -199,15 +198,12 @@ watch(() => route.params.id, () => {
 const updateQty = async (qty) => {
   if (qty < 0) return
   try {
-    const res = await fetch(`${API_URL}/${route.params.id}`, {
+    await apiRequest(`${API_URL}/${route.params.id}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ quantity: qty })
     })
-    if (res.ok) {
-      bottle.value.quantity = qty
-      emit('refresh-data')
-    }
+    bottle.value.quantity = qty
+    emit('refresh-data')
   } catch (e) {
     console.error(e)
   }
@@ -236,7 +232,7 @@ const getTypeBgColor = (type) => {
 const getImageUrl = (path) => {
   if (!path) return null
   if (path.startsWith('http')) return path
-  return `http://127.0.0.1:8000${path}`
+  return `${config.API_BASE_URL}${path}`
 }
 
 onMounted(() => {

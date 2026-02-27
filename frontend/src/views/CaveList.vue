@@ -2,9 +2,10 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { PlusIcon, PencilIcon, EyeIcon, TrashIcon } from '@heroicons/vue/24/outline'
+import { apiRequest } from '../services/api.js'
 
 const router = useRouter()
-const API_URL = 'http://127.0.0.1:8000/caves'
+const API_URL = '/caves'
 
 const caves = ref([])
 const loading = ref(true)
@@ -12,10 +13,7 @@ const loading = ref(true)
 const fetchCaves = async () => {
   loading.value = true
   try {
-    const res = await fetch(API_URL)
-    if (res.ok) {
-      caves.value = await res.json()
-    }
+    caves.value = await apiRequest(API_URL)
   } catch (e) {
     console.error('Erreur:', e)
   } finally {
@@ -26,11 +24,10 @@ const fetchCaves = async () => {
 const deleteCave = async (id) => {
   if (!confirm('Supprimer cette cave et toutes ses données ?')) return
   try {
-    const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' })
-    if (res.ok) fetchCaves()
-    else alert('Erreur lors de la suppression')
+    await apiRequest(`${API_URL}/${id}`, { method: 'DELETE' })
+    fetchCaves()
   } catch (e) {
-    alert('Erreur réseau')
+    alert('Erreur: ' + e.message)
   }
 }
 

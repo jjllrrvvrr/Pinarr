@@ -103,6 +103,7 @@
 import { useRouter } from 'vue-router'
 import { MapPinIcon, StarIcon as StarSolid } from '@heroicons/vue/24/solid'
 import WineBottleIcon from '@/components/WineBottleIcon.vue'
+import config from '../config.js'
 
 const props = defineProps({
   bottle: {
@@ -134,7 +135,7 @@ const getTypeDot = (type) => {
 const getImageUrl = (path) => {
   if (!path) return null
   if (path.startsWith('http')) return path
-  return `http://127.0.0.1:8000${path}`
+  return `${config.API_BASE_URL}${path}`
 }
 
 const goToDetail = () => {

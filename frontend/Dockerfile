@@ -1,5 +1,5 @@
 # Dockerfile for the Vue.js frontend
-prepa
+
 # Stage 1: Build the Vue.js application
 FROM node:20-alpine as build-stage
 
@@ -9,6 +9,10 @@ COPY package.json package-lock.json ./
 RUN npm install
 
 COPY . .
+
+# Build avec l'URL API depuis une variable d'environnement (défaut: localhost:9994)
+ARG VITE_API_URL=http://localhost:9994
+ENV VITE_API_URL=${VITE_API_URL}
 RUN npm run build
 
 # Stage 2: Serve the application with Nginx

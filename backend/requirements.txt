@@ -3,3 +3,7 @@ fastapi
 uvicorn
 python-multipart
 pydantic
+pyjwt
+python-jose
+passlib
+bcrypt

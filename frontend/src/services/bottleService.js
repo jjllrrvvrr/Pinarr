@@ -12,7 +12,7 @@ const BottleService = {
    */
   async getAll(params = {}) {
     const { skip = 0, limit = 100 } = params
-    return await apiRequest(`/bottles/?skip=${skip}&limit=${limit}`)
+    return await apiRequest(`/bottles?skip=${skip}&limit=${limit}`)
   },
 
   /**

@@ -60,11 +60,12 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { apiRequest } from '../services/api.js'
 
 const route = useRoute()
 const router = useRouter()
 
-const API_URL = 'http://127.0.0.1:8000/bottles'
+const API_URL = '/bottles'
 const regionName = ref('')
 const bottles = ref([])
 
@@ -83,13 +84,10 @@ const goToBottle = (id) => {
 const fetchBottles = async () => {
   regionName.value = decodeURIComponent(route.params.region)
   try {
-    const res = await fetch(API_URL)
-    if (res.ok) {
-      const allBottles = await res.json()
-      bottles.value = allBottles.filter(b => 
-        b.region && b.region.toLowerCase() === regionName.value.toLowerCase()
-      )
-    }
+    const allBottles = await apiRequest(API_URL)
+    bottles.value = allBottles.filter(b => 
+      b.region && b.region.toLowerCase() === regionName.value.toLowerCase()
+    )
   } catch (e) {
     console.error(e)
   }

@@ -1,4 +1,4 @@
-# Architecture Backend SudoWine
+# Architecture Backend Pinarr
 
 ## Vue d'ensemble
 

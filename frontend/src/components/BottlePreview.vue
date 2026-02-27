@@ -37,6 +37,7 @@
 <script setup>
 import { StarIcon } from '@heroicons/vue/24/solid'
 import WineBottleIcon from './WineBottleIcon.vue'
+import config from '../config.js'
 
 const props = defineProps({
   bottle: Object,
@@ -50,6 +51,6 @@ const props = defineProps({
 const getImageUrl = (path) => {
   if (!path) return null
   if (path.startsWith('http')) return path
-  return `http://127.0.0.1:8000${path}`
+  return `${config.API_BASE_URL}${path}`
 }
 </script>

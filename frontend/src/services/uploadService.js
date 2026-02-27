@@ -31,9 +31,17 @@ const UploadService = {
     const formData = new FormData()
     formData.append('file', file)
 
+    // Construire les headers avec le token d'authentification
+    const headers = {}
+    const token = sessionStorage.getItem('auth_token')
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+
     try {
-      const response = await fetch(`${API_BASE_URL}/upload/`, {
+      const response = await fetch(`${API_BASE_URL}/upload`, {
         method: 'POST',
+        headers,
         body: formData,
       })
 

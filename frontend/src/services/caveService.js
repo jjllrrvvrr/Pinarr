@@ -30,7 +30,7 @@ const CaveService = {
    * @returns {Promise<Object>} - Cave créée
    */
   async create(caveData) {
-    return await apiRequest('/caves/', {
+    return await apiRequest('/caves', {
       method: 'POST',
       body: JSON.stringify(caveData),
     })
@@ -69,7 +69,7 @@ const CaveService = {
    * @returns {Promise<Object>} - Colonne créée
    */
   async createColumn(caveId, columnData) {
-    return await apiRequest(`/caves/${caveId}/columns/`, {
+    return await apiRequest(`/caves/${caveId}/columns`, {
       method: 'POST',
       body: JSON.stringify(columnData),
     })
@@ -108,7 +108,7 @@ const CaveService = {
    * @returns {Promise<Object>} - Rangée créée
    */
   async createRow(columnId, rowData) {
-    return await apiRequest(`/columns/${columnId}/rows/`, {
+    return await apiRequest(`/columns/${columnId}/rows`, {
       method: 'POST',
       body: JSON.stringify(rowData),
     })
@@ -146,7 +146,7 @@ const CaveService = {
    * @returns {Promise<Array>} - Liste des positions
    */
   async getPositions(rowId) {
-    return await apiRequest(`/rows/${rowId}/positions/`)
+    return await apiRequest(`/rows/${rowId}/positions`)
   },
 
   /**
@@ -156,7 +156,7 @@ const CaveService = {
    * @returns {Promise<Object>} - Position créée
    */
   async createPosition(rowId, positionData) {
-    return await apiRequest(`/rows/${rowId}/positions/`, {
+    return await apiRequest(`/rows/${rowId}/positions`, {
       method: 'POST',
       body: JSON.stringify(positionData),
     })

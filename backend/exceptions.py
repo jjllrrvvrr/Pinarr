@@ -1,57 +1,57 @@
-"""Exceptions métier personnalisées pour SudoWine."""
+"""Exceptions métier personnalisées pour Pinarr."""
 
 from fastapi import HTTPException
 
 
-class SudoWineException(Exception):
-    """Exception de base pour SudoWine."""
+class PinarrException(Exception):
+    """Exception de base pour Pinarr."""
 
     pass
 
 
-class BottleNotFoundException(SudoWineException):
+class BottleNotFoundException(PinarrException):
     """Bouteille non trouvée."""
 
     pass
 
 
-class CaveNotFoundException(SudoWineException):
+class CaveNotFoundException(PinarrException):
     """Cave non trouvée."""
 
     pass
 
 
-class ColumnNotFoundException(SudoWineException):
+class ColumnNotFoundException(PinarrException):
     """Colonne non trouvée."""
 
     pass
 
 
-class RowNotFoundException(SudoWineException):
+class RowNotFoundException(PinarrException):
     """Rangée non trouvée."""
 
     pass
 
 
-class PositionNotFoundException(SudoWineException):
+class PositionNotFoundException(PinarrException):
     """Position non trouvée."""
 
     pass
 
 
-class MaxQuantityReachedException(SudoWineException):
+class MaxQuantityReachedException(PinarrException):
     """Quantité maximale atteinte."""
 
     pass
 
 
-class InvalidUploadException(SudoWineException):
+class InvalidUploadException(PinarrException):
     """Upload invalide."""
 
     pass
 
 
-def handle_sudowine_exception(exc: SudoWineException) -> HTTPException:
+def handle_pinarr_exception(exc: PinarrException) -> HTTPException:
     """Convertit une exception métier en HTTPException."""
     status_map = {
         BottleNotFoundException: 404,
