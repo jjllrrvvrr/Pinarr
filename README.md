@@ -44,7 +44,7 @@ docker-compose up -d
 
 **4. Accéder**
 
-- Web : `http://localhost:80`
+- Web : `http://localhost:8908`
 - Login par défaut : `admin` / (mot de passe défini dans .env)
 
 ### Commandes utiles
