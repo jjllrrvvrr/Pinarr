@@ -31,9 +31,24 @@ cd Pinarr
 
 ```bash
 cp .env.example .env
-# Éditer .env et changer:
-# - ADMIN_PASSWORD (obligatoire!)
-# - SECRET_KEY (générer avec: openssl rand -hex 32)
+```
+
+**Variables obligatoires à modifier dans `.env` :**
+
+```bash
+# 1. HOST_IP - Votre IP locale (obligatoire!)
+# Trouvez votre IP avec:
+#   - Mac/Linux: ifconfig ou ip addr
+#   - Windows: ipconfig
+# Exemple: 192.168.1.100
+HOST_IP=192.168.1.100
+
+# 2. ADMIN_PASSWORD - Changez le mot de passe par défaut
+ADMIN_PASSWORD=votre_mot_de_passe
+
+# 3. SECRET_KEY - Générez une clé unique
+# openssl rand -hex 32
+SECRET_KEY=votre_cle_secrete_32_caracteres
 ```
 
 **3. Lancer**
