@@ -59,9 +59,21 @@
                 {{ bottle.apogee_start || '?' }}{{ bottle.apogee_end && bottle.apogee_end !== bottle.apogee_start ? ` - ${bottle.apogee_end}` : '' }}
               </div>
             </div>
-            <div v-if="bottle.position">
-              <div class="text-[#8b949e] text-xs uppercase tracking-wide mb-1">Position</div>
-              <div class="text-white font-medium">{{ bottle.position.code }}</div>
+            <div v-if="bottle.positions && bottle.positions.length > 0" class="col-span-2 sm:col-span-3">
+              <div class="text-[#8b949e] text-xs uppercase tracking-wide mb-2">Positions en cave ({{ bottle.positions.length }})</div>
+              <div class="flex flex-wrap gap-2">
+                <button 
+                  v-for="pos in bottle.positions" 
+                  :key="pos.id"
+                  @click="goToCavePosition(pos)"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-[#58a6ff] bg-[#21262d] hover:bg-[#30363d] border border-[#58a6ff]/30 hover:border-[#58a6ff] transition-all cursor-pointer group"
+                  :title="`Cave: ${pos.cave_name} | Colonne: ${pos.column_name} | Rangée: ${pos.row_name}`"
+                >
+                  <MapPinIcon class="w-3.5 h-3.5" />
+                  <span>{{ pos.code }}</span>
+                  <ArrowTopRightOnSquareIcon class="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </button>
+              </div>
             </div>
             <div v-else-if="bottle.location">
               <div class="text-[#8b949e] text-xs uppercase tracking-wide mb-1">Emplacement</div>
@@ -136,6 +148,9 @@
               <ArrowPathIcon class="w-4 h-4" />
               Restaurer
             </button>
+            <button @click="deleteBottle" class="flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-[#8b949e] hover:text-[#f85149] hover:bg-[#30363d] rounded-md transition border border-[#30363d]" title="Supprimer">
+              <TrashIcon class="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>
@@ -163,7 +178,7 @@ import QrcodeVue from 'qrcode.vue'
 import { 
   QrCodeIcon, PencilSquareIcon, StarIcon as StarIconSolid, 
   ArrowTopRightOnSquareIcon, TrashIcon, LinkIcon,
-  ArchiveBoxIcon, ArrowPathIcon
+  ArchiveBoxIcon, ArrowPathIcon, MapPinIcon
 } from '@heroicons/vue/24/solid'
 import WineBottleIcon from '@/components/WineBottleIcon.vue'
 import { apiRequest } from '../services/api.js'
@@ -217,8 +232,27 @@ const restoreBottle = async () => {
   await updateQty(1)
 }
 
+const deleteBottle = async () => {
+  if (confirm(`Supprimer "${bottle.value.name}" ?`)) {
+    try {
+      await apiRequest(`${API_URL}/${route.params.id}`, {
+        method: 'DELETE'
+      })
+      emit('refresh-data')
+      router.push('/')
+    } catch (e) {
+      console.error('Erreur lors de la suppression:', e)
+    }
+  }
+}
+
 const goToFilter = (key, value) => {
   router.push(`/?${key}=${encodeURIComponent(value)}`)
+}
+
+const goToCavePosition = (pos) => {
+  // Naviguer vers la cave avec la position highlightée
+  router.push(`/caves/${pos.cave_id}?column=${pos.column_name}&row=${pos.row_name}&position=${pos.code}`)
 }
 
 const getTypeBgColor = (type) => {

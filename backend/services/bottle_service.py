@@ -14,6 +14,7 @@ def _build_position_data(pos: models.Position) -> Optional[Dict[str, Any]]:
 
     row = pos.row
     col = row.column if row else None
+    cave = col.cave if col else None
 
     return {
         "id": pos.id,
@@ -21,8 +22,10 @@ def _build_position_data(pos: models.Position) -> Optional[Dict[str, Any]]:
         "position": pos.position,
         "row_id": pos.row_id,
         "row_name": row.name if row else None,
+        "column_id": col.id if col else None,
         "column_name": col.name if col else None,
-        "cave_name": col.cave.name if col and col.cave else None,
+        "cave_id": cave.id if cave else None,
+        "cave_name": cave.name if cave else None,
         "code": pos.code,
     }
 
@@ -34,7 +37,7 @@ def get_bottles_with_positions(
     bottles = (
         db.query(models.Bottle)
         .options(
-            joinedload(models.Bottle.position_at)
+            joinedload(models.Bottle.positions)
             .joinedload(models.Position.row)
             .joinedload(models.CaveRow.column)
             .joinedload(models.CaveColumn.cave)
@@ -46,14 +49,15 @@ def get_bottles_with_positions(
 
     result = []
     for bottle in bottles:
-        position_data = None
-        if bottle.position_at:
-            position_data = _build_position_data(bottle.position_at)
+        positions_data = []
+        for pos in bottle.positions:
+            if pos:
+                positions_data.append(_build_position_data(pos))
 
         result.append(
             {
                 **schemas.Bottle.model_validate(bottle).model_dump(),
-                "position": position_data,
+                "positions": positions_data,
             }
         )
 
@@ -61,11 +65,11 @@ def get_bottles_with_positions(
 
 
 def get_bottle_with_position(db: Session, bottle_id: int) -> Dict[str, Any]:
-    """Récupère une bouteille avec sa position."""
+    """Récupère une bouteille avec toutes ses positions."""
     bottle = (
         db.query(models.Bottle)
         .options(
-            joinedload(models.Bottle.position_at)
+            joinedload(models.Bottle.positions)
             .joinedload(models.Position.row)
             .joinedload(models.CaveRow.column)
             .joinedload(models.CaveColumn.cave)
@@ -77,13 +81,14 @@ def get_bottle_with_position(db: Session, bottle_id: int) -> Dict[str, Any]:
     if not bottle:
         raise BottleNotFoundException(f"Bottle {bottle_id} not found")
 
-    position_data = None
-    if bottle.position_at:
-        position_data = _build_position_data(bottle.position_at)
+    positions_data = []
+    for pos in bottle.positions:
+        if pos:
+            positions_data.append(_build_position_data(pos))
 
     return {
         **schemas.Bottle.model_validate(bottle).model_dump(),
-        "position": position_data,
+        "positions": positions_data,
     }
 
 
@@ -181,7 +186,9 @@ def validate_bottle_placement(
         )
 
 
-def search_bottles_by_name(db: Session, query: str, limit: int = 5) -> List[Dict[str, Any]]:
+def search_bottles_by_name(
+    db: Session, query: str, limit: int = 5
+) -> List[Dict[str, Any]]:
     """Recherche des bouteilles par nom (recherche partielle)."""
     bottles = (
         db.query(models.Bottle)
@@ -190,7 +197,7 @@ def search_bottles_by_name(db: Session, query: str, limit: int = 5) -> List[Dict
         .limit(limit)
         .all()
     )
-    
+
     return [
         {
             "id": b.id,

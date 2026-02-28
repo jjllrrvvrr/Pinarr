@@ -63,7 +63,12 @@
         </div>
 
         <div class="px-2.5 py-1.5 border-t border-[#30363d] flex items-center justify-between bg-[#0d1117] opacity-0 group-hover:opacity-100 transition" @click.stop>
-          <router-link :to="`/edit/${bottle.id}`" class="text-[10px] text-[#58a6ff] hover:underline" @click.stop>Modifier</router-link>
+          <div class="flex items-center gap-2">
+            <router-link :to="`/edit/${bottle.id}`" class="text-[10px] text-[#58a6ff] hover:underline" @click.stop>Modifier</router-link>
+            <button @click="deleteBottle" class="text-[10px] text-[#8b949e] hover:text-[#f85149] transition flex items-center gap-1" title="Supprimer">
+              <TrashIcon class="w-3.5 h-3.5" />
+            </button>
+          </div>
           <button v-if="!archived" @click="archive" class="text-[10px] text-[#f85149] hover:underline">Archiver</button>
           <button v-else @click="restore" class="text-[10px] text-[#3fb950] hover:underline">Restaurer</button>
         </div>
@@ -101,7 +106,7 @@
 
 <script setup>
 import { useRouter } from 'vue-router'
-import { MapPinIcon, StarIcon as StarSolid } from '@heroicons/vue/24/solid'
+import { MapPinIcon, StarIcon as StarSolid, TrashIcon } from '@heroicons/vue/24/solid'
 import WineBottleIcon from '@/components/WineBottleIcon.vue'
 import config from '../config.js'
 
@@ -121,7 +126,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['filter', 'update-quantity', 'archive', 'restore'])
+const emit = defineEmits(['filter', 'update-quantity', 'archive', 'restore', 'delete'])
 const router = useRouter()
 
 const getTypeDot = (type) => {
@@ -160,5 +165,11 @@ const archive = () => {
 
 const restore = () => {
   emit('restore', props.bottle.id)
+}
+
+const deleteBottle = () => {
+  if (confirm(`Supprimer "${props.bottle.name}" ?`)) {
+    emit('delete', props.bottle.id)
+  }
 }
 </script>

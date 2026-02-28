@@ -76,7 +76,7 @@ class BottleSummary(BaseModel):
 
 
 class BottleWithPosition(Bottle):
-    position: Optional[dict] = None
+    positions: List[dict] = []
 
     model_config = ConfigDict(from_attributes=True)
 

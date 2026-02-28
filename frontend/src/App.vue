@@ -157,7 +157,6 @@ watch(() => router.currentRoute.value.path, (newPath) => {
 })
 
 const deleteBottle = async (id) => {
-  if (!confirm("Voulez-vous vraiment supprimer cette bouteille ?")) return
   try { 
     await fetch(`${API_URL}/${id}`, { 
       method: 'DELETE',

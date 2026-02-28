@@ -34,6 +34,7 @@
             @navigate="goToBottle"
             @filter="setFilter"
             @update-quantity="updateQty"
+            @delete="deleteBottle"
           />
         </div>
       </div>
@@ -54,6 +55,7 @@
             @navigate="goToBottle"
             @filter="setFilter"
             @update-quantity="updateQty"
+            @delete="deleteBottle"
           />
         </div>
       </div>
@@ -123,6 +125,7 @@
           @navigate="goToBottle"
           @filter="setFilter"
           @update-quantity="updateQty"
+          @delete="deleteBottle"
         />
       </div>
     </template>
@@ -201,6 +204,10 @@ const goToBottle = (id) => {
 const updateQty = (id, qty) => {
   if (qty < 0) return
   emit('update-quantity', id, qty)
+}
+
+const deleteBottle = (id) => {
+  emit('delete-bottle', id)
 }
 
 const normalize = (text) => {
