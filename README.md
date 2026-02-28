@@ -19,31 +19,7 @@ cd Pinarr
 docker-compose up -d
 ```
 
-Accès : `http://votre-ip:8908` | Login : `admin`
-
-## Commandes
-
-```bash
-docker-compose logs -f     # Voir les logs
-docker-compose restart     # Redémarrer
-docker-compose down        # Arrêter
-```
-
-## Sauvegarde
-
-```bash
-tar -czf backup.tar.gz data/ uploads/
-```
-
-## Structure
-
-```
-Pinarr/
-├── backend/      # API FastAPI
-├── frontend/     # App Vue.js 3
-├── data/         # Base de données SQLite
-└── uploads/      # Images des bouteilles
-```
+Accès : `http://localhost:8908` | Login : `admin`
 
 ---
 
