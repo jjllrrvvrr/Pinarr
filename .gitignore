@@ -2,12 +2,23 @@
 frontend/node_modules/
 backend/__pycache__/
 backend/*.pyc
+
+# Environment
+.env
 backend/.env
 
 # Database
-backend/*.db
-backend/*.sqlite
-backend/*.sqlite3
+/data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Uploads
+/uploads/
+
+# Python
+backend/alembic/versions/*.py
+!backend/alembic/versions/.gitkeep
 
 # Logs
 *.log

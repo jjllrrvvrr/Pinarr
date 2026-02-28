@@ -289,15 +289,15 @@ onUnmounted(() => {
           </router-link>
         </div>
         
-        <div class="hidden md:flex items-center gap-6 mr-4">
+        <div class="flex flex-col md:flex-row items-center gap-1 md:gap-6 mr-2 md:mr-4">
           <div class="text-center">
-            <div class="text-[10px] font-bold text-[#8b949e] uppercase tracking-wider">Bouteilles</div>
-            <div class="text-lg font-bold text-white leading-tight">{{ totalBottles }}</div>
+            <div class="text-[8px] md:text-[10px] font-bold text-[#8b949e] uppercase tracking-wider">Bouteilles</div>
+            <div class="text-xs md:text-lg font-bold text-white leading-tight">{{ totalBottles }}</div>
           </div>
-          <div class="w-px h-8 bg-[#30363d]"></div>
+          <div class="hidden md:block w-px h-8 bg-[#30363d]"></div>
           <div class="text-center">
-            <div class="text-[10px] font-bold text-[#8b949e] uppercase tracking-wider">Valeur</div>
-            <div class="text-lg font-bold text-[#3fb950] leading-tight">{{ totalValue }} €</div>
+            <div class="text-[8px] md:text-[10px] font-bold text-[#8b949e] uppercase tracking-wider">Valeur</div>
+            <div class="text-xs md:text-lg font-bold text-[#3fb950] leading-tight">{{ totalValue }} €</div>
           </div>
         </div>
         
@@ -311,14 +311,20 @@ onUnmounted(() => {
           <router-link to="/map" class="hidden sm:flex items-center gap-2 text-gray-400 hover:text-white transition px-3 py-2 rounded-md hover:bg-[#21262d]">
             <MapIcon class="w-5 h-5" /> <span>Carte</span>
           </router-link>
-          <router-link to="/add" class="flex items-center gap-1 sm:gap-2 bg-[#238636] hover:bg-[#2ea043] text-white px-3 sm:px-4 py-2 rounded-md font-medium transition border border-[#238636]">
-            <PlusIcon class="w-5 h-5" /> <span class="hidden sm:inline">Ajouter</span>
-          </router-link>
           <div class="sm:hidden flex gap-1">
             <router-link to="/" class="p-2 text-gray-400 hover:text-white rounded-md hover:bg-[#21262d]">
               <HomeIcon class="w-5 h-5" />
             </router-link>
+            <router-link to="/caves" class="p-2 text-gray-400 hover:text-white rounded-md hover:bg-[#21262d]">
+              <CubeIcon class="w-5 h-5" />
+            </router-link>
+            <router-link to="/map" class="p-2 text-gray-400 hover:text-white rounded-md hover:bg-[#21262d]">
+              <MapIcon class="w-5 h-5" />
+            </router-link>
           </div>
+          <router-link to="/add" class="flex items-center gap-1 sm:gap-2 bg-[#238636] hover:bg-[#2ea043] text-white px-3 sm:px-4 py-2 rounded-md font-medium transition border border-[#238636]">
+            <PlusIcon class="w-5 h-5" /> <span class="hidden sm:inline">Ajouter</span>
+          </router-link>
         </nav>
       </div>
     </header>

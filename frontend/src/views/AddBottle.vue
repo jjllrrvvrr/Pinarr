@@ -26,8 +26,8 @@
             <label class="block text-xs font-medium text-[#8b949e] mb-1">Nom du vin *</label>
             <input v-model="form.name" @input="onNameInput" @blur="hideSuggestions" @focus="showSuggestionsIfResults" class="w-full bg-[#0d1117] border border-[#30363d] rounded-md p-2.5 text-white focus:border-[#58a6ff] focus:ring-1 focus:ring-[#58a6ff] outline-none text-sm" placeholder="ex: Château Margaux" autocomplete="off">
             
-            <!-- Liste de suggestions -->
-            <div v-if="showSuggestions && searchResults.length > 0" class="absolute z-50 w-full mt-1 bg-[#161b22] border border-[#30363d] rounded-md shadow-xl max-h-60 overflow-y-auto">
+            <!-- Liste de suggestions - uniquement en mode ajout -->
+            <div v-if="!isEditing && showSuggestions && searchResults.length > 0" class="absolute z-50 w-full mt-1 bg-[#161b22] border border-[#30363d] rounded-md shadow-xl max-h-60 overflow-y-auto">
               <div class="px-3 py-2 text-xs text-[#8b949e] border-b border-[#30363d]">
                 Vins similaires déjà présents :
               </div>
@@ -410,9 +410,12 @@ const fetchBottle = async (id) => {
       ...bottle 
     }
     if (bottle.image_path) {
+      // Les uploads sont servis directement depuis /uploads/ (pas sous /api/v1)
       imagePreview.value = bottle.image_path.startsWith('http') 
         ? bottle.image_path 
-        : `${config.API_BASE_URL}${bottle.image_path}`
+        : bottle.image_path.startsWith('/uploads/') 
+          ? bottle.image_path 
+          : `${config.API_BASE_URL}${bottle.image_path}`
     }
     if (bottle.position) {
       form.value.position_row_id = bottle.position.row_id
@@ -578,6 +581,11 @@ onMounted(async () => {
 
 // Watch avec debounce sur le nom pour afficher les suggestions
 watch(() => form.value.name, (newValue) => {
+  // Ne pas chercher en mode édition
+  if (isEditing.value) {
+    return
+  }
+  
   if (searchTimeout.value) {
     clearTimeout(searchTimeout.value)
   }
@@ -622,6 +630,10 @@ const hideSuggestions = () => {
 }
 
 const showSuggestionsIfResults = () => {
+  // Ne pas afficher en mode édition
+  if (isEditing.value) {
+    return
+  }
   if (searchResults.value.length > 0) {
     showSuggestions.value = true
   }
@@ -635,6 +647,8 @@ const selectWine = (wine) => {
 const getImageUrl = (path) => {
   if (!path) return null
   if (path.startsWith('http')) return path
+  // Les uploads sont servis directement depuis /uploads/ (pas sous /api/v1)
+  if (path.startsWith('/uploads/')) return path
   return `${config.API_BASE_URL}${path}`
 }
 

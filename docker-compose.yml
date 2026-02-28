@@ -3,7 +3,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: sudowine-backend
+    container_name: pinarr-backend
     ports:
       - "${BACKEND_PORT:-9994}:8000"
     environment:
@@ -29,7 +29,7 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_URL: http://${HOST_IP:-localhost}:${BACKEND_PORT:-9994}
-    container_name: sudowine-frontend
+    container_name: pinarr-frontend
     ports:
       - "${FRONTEND_PORT:-8908}:80"
     environment:

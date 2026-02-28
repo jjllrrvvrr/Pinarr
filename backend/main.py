@@ -55,6 +55,9 @@ create_db_tables()
 # Initialisation FastAPI
 app = FastAPI(title=API_TITLE)
 
+# Servir les fichiers uploadés comme fichiers statiques
+app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
+
 # Router principal pour les routes API
 api_router = APIRouter(prefix="/api/v1")
 
@@ -385,7 +388,7 @@ def remove_bottle_from_position_endpoint(
 # === UPLOAD ===
 
 
-@app.post("/upload")
+@api_router.post("/upload")
 async def upload_image_endpoint(file: UploadFile = File(...)):
     """Upload une image avec validation complète."""
     try:

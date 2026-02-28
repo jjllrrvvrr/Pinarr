@@ -1,0 +1,3 @@
+# Ce dossier contient les fichiers de migration Alembic
+# Chaque fichier représente une migration de base de données
+# Les fichiers .py sont ignorés par .gitignore mais ce .gitkeep permet de versionner le dossier

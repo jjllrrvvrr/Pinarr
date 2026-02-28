@@ -65,6 +65,8 @@ const UploadService = {
   getImageUrl(path) {
     if (!path) return null
     if (path.startsWith('http')) return path
+    // Les uploads sont servis directement depuis /uploads/ (pas sous /api/v1)
+    if (path.startsWith('/uploads/')) return path
     return `${API_BASE_URL}${path}`
   },
 }

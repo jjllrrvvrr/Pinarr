@@ -1,4 +1,5 @@
 sqlalchemy
+alembic
 fastapi
 uvicorn
 python-multipart
