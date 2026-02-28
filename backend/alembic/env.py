@@ -13,7 +13,7 @@ from sqlalchemy import engine_from_config, pool
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from alembic import context
-from database import Base, DATABASE_URL
+from database import Base, SQLALCHEMY_DATABASE_URL
 from models import User, Bottle, Cave, CaveColumn, CaveRow, Position, GeocodedRegion
 
 # Configuration Alembic
@@ -27,7 +27,7 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 # URL de la base de données
-config.set_main_option("sqlalchemy.url", DATABASE_URL)
+config.set_main_option("sqlalchemy.url", SQLALCHEMY_DATABASE_URL)
 
 
 def run_migrations_offline() -> None:
