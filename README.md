@@ -21,6 +21,17 @@ docker-compose up -d
 
 Accès : `http://localhost:8908` | Login : `admin`
 
+## Mise à jour
+
+```bash
+# Récupérer les dernières modifications
+git pull
+
+# Rebuild et redémarrer (les données sont préservées)
+docker-compose down
+docker-compose up -d --build
+```
+
 ---
 
 **MIT License** - [GitHub](https://github.com/jjllrrvvrr/Pinarr)
