@@ -31,14 +31,15 @@ import os
 sys.path.insert(0, '/app/backend')
 
 try:
+    import bcrypt
     from database import SessionLocal, engine
     from models import User
-    from passlib.context import CryptContext
+    from database import Base
     
-    pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
+    def hash_password(password):
+        return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     
     # Créer les tables si elles n'existent pas
-    from database import Base
     Base.metadata.create_all(bind=engine)
     
     session = SessionLocal()
@@ -47,11 +48,14 @@ try:
     admin_user = os.environ.get('ADMIN_USERNAME', 'admin')
     admin_pass = os.environ.get('ADMIN_PASSWORD', 'admin123')
     
+    # Tronquer le mot de passe à 72 bytes pour bcrypt
+    admin_pass = admin_pass[:72]
+    
     if user_count == 0:
         print(f'Création du compte admin par défaut...')
         user = User(
             username=admin_user,
-            password_hash=pwd_context.hash(admin_pass),
+            password_hash=hash_password(admin_pass),
             is_admin=True
         )
         session.add(user)
