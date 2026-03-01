@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { PencilIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 import WineBottleIcon from '../components/WineBottleIcon.vue'
 import BottlePreview from '../components/BottlePreview.vue'
+import BottleSidebar from '../components/BottleSidebar.vue'
 import { apiRequest } from '../services/api.js'
 
 const route = useRoute()
@@ -23,6 +24,11 @@ const dragSourcePosition = ref(null)
 const isDragging = ref(false)
 const dropConflict = ref(null)
 const hoveredDropZone = ref(null)
+const draggedFromSidebar = ref(false)
+
+// Hover highlight
+const hoveredBottleId = ref(null)
+const highlightedPositions = ref([])
 
 // États pour la vignette de preview
 const previewBottle = ref(null)
@@ -226,13 +232,43 @@ const handleDrop = async (event, targetRow, targetLine, targetPos) => {
   event.preventDefault()
   hoveredDropZone.value = null
   
+  const data = JSON.parse(event.dataTransfer.getData('text/plain'))
+  
+  // Drop depuis la sidebar
+  if (data.fromSidebar) {
+    const bottle = bottles.value.find(b => b.id === data.bottleId)
+    if (!bottle) return
+    
+    const bottleAtTarget = getBottleAtPosition(targetRow.id, targetLine, targetPos)
+    
+    if (bottleAtTarget) {
+      // Conflit avec drop depuis sidebar
+      dropConflict.value = {
+        source: { bottle, fromSidebar: true },
+        target: {
+          row: targetRow,
+          line: targetLine,
+          position: targetPos,
+          positionData: getPositionData(targetRow.id, targetLine, targetPos),
+          bottle: bottleAtTarget
+        },
+        draggedBottle: bottle
+      }
+      return
+    }
+    
+    // Placement simple depuis sidebar
+    await placeBottleFromSidebar(bottle, targetRow, targetLine, targetPos)
+    return
+  }
+  
+  // Drop depuis la grille (existing logic)
   if (!draggedBottle.value || !dragSourcePosition.value) return
   
   const sourceRowId = dragSourcePosition.value.row.id
   const sourceLine = dragSourcePosition.value.line
   const sourcePos = dragSourcePosition.value.position
   
-  // Vérifier si on déplace vers la même position
   if (sourceRowId === targetRow.id && sourceLine === targetLine && sourcePos === targetPos) {
     draggedBottle.value = null
     dragSourcePosition.value = null
@@ -242,7 +278,6 @@ const handleDrop = async (event, targetRow, targetLine, targetPos) => {
   const bottleAtTarget = getBottleAtPosition(targetRow.id, targetLine, targetPos)
   
   if (bottleAtTarget) {
-    // Il y a un conflit - afficher le popup
     dropConflict.value = {
       source: dragSourcePosition.value,
       target: {
@@ -257,7 +292,6 @@ const handleDrop = async (event, targetRow, targetLine, targetPos) => {
     return
   }
   
-  // Déplacement simple vers une case vide
   await executeMove(
     dragSourcePosition.value,
     {
@@ -500,7 +534,7 @@ onMounted(() => {
 
     <div v-else-if="!cave" class="text-center py-12 text-[#8b949e]">Cave non trouvée</div>
 
-    <div v-else class="space-y-6">
+    <div v-else class="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6">
       <div class="flex items-center justify-between">
         <div>
           <h1 class="text-xl font-bold text-white">{{ cave.name }}</h1>
@@ -588,6 +622,18 @@ onMounted(() => {
         Cette cave n'a pas encore de colonnes.
         <router-link :to="`/caves/${cave.id}/edit`" class="text-[#58a6ff] hover:underline">Modifier la cave</router-link>
       </div>
+
+      <!-- RIGHT: Bottle Sidebar -->
+      <BottleSidebar
+        :bottles="bottles"
+        :cave="cave"
+        :hovered-bottle-id="hoveredBottleId"
+        :is-dragging="isDragging"
+        @hover-bottle="onHoverBottle"
+        @drag-start="onDragStartFromSidebar"
+        @drag-end="onDragEndFromSidebar"
+        @remove-bottle="removeBottleFromPosition"
+      />
     </div>
 
     <div v-if="selectedPosition" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="selectedPosition = null">
