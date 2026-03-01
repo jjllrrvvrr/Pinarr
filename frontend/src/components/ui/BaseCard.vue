@@ -70,6 +70,6 @@ const bodyClasses = computed(() => {
     lg: 'p-6'
   }
   
-  return `${sizes[props.size]} h-full`
+  return `${sizes[props.size]} h-full flex flex-col`
 })
 </script>
