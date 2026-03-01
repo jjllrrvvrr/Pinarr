@@ -17,8 +17,8 @@ COPY backend/ ./
 # Stage 3: Final Nginx image
 FROM nginx:alpine
 
-# Install Python and dependencies for backend
-RUN apk add --no-cache python3 py3-pip curl
+# Install Python, openssl and dependencies for backend
+RUN apk add --no-cache python3 py3-pip curl openssl
 
 # Copy frontend build
 COPY --from=frontend-build /app/frontend/dist /usr/share/nginx/html
