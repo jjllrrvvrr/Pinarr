@@ -18,7 +18,7 @@
     </template>
     
     <!-- Liste des bouteilles -->
-    <div class="flex-1 overflow-y-auto space-y-3">
+    <div class="flex-1 overflow-y-auto space-y-3 min-h-0">
       <div
         v-for="bottle in sortedBottles"
         :key="bottle.id"

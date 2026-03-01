@@ -1,4 +1,4 @@
-# Pinarr 🍷
+# 🍷 Pinarr 
 
 Application de gestion de cave à vin self-hosted avec Docker.
 
@@ -28,8 +28,8 @@ Accès : `http://localhost:8908` | Login : `admin`
 git pull
 
 # Rebuild et redémarrer (les données sont préservées)
-docker-compose down
-docker-compose up -d --build
+docker compose down
+docker compose up -d --build
 ```
 
 ---

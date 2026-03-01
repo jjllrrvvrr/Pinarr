@@ -1,7 +1,7 @@
 <template>
   <div :class="cardClasses">
     <div v-if="$slots.header || title" class="px-4 py-3 border-b border-gh-border flex items-center justify-between">
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 flex-1">
         <slot name="icon" />
         <h3 v-if="title" class="font-semibold text-gh-text">{{ title }}</h3>
         <slot name="header" />
@@ -70,6 +70,6 @@ const bodyClasses = computed(() => {
     lg: 'p-6'
   }
   
-  return sizes[props.size]
+  return `${sizes[props.size]} h-full`
 })
 </script>
