@@ -1,4 +1,4 @@
-# 🍷 Pinarr 
+# 🍷 Pinarr
 
 Application de gestion de cave à vin self-hosted avec Docker.
 
@@ -10,27 +10,52 @@ Application de gestion de cave à vin self-hosted avec Docker.
 - 📱 Interface web responsive (Vue.js 3)
 - 🐳 Déploiement Docker simple
 
-## Installation
+## Installation rapide (30 secondes)
+
+```bash
+# Télécharger uniquement le docker-compose.yml
+curl -O https://raw.githubusercontent.com/jjllrrvvrr/Pinarr/main/docker-compose.yml
+
+# Lancer l'application
+docker-compose up -d
+```
+
+Accès : `http://localhost:8908` | Login : `admin` / `admin123`
+
+## Installation avec git
 
 ```bash
 git clone https://github.com/jjllrrvvrr/Pinarr.git
 cd Pinarr
-# Modifier .env (HOST_IP et ADMIN_PASSWORD obligatoires)
 docker-compose up -d
 ```
-
-Accès : `http://localhost:8908` | Login : `admin`
 
 ## Mise à jour
 
 ```bash
-# Récupérer les dernières modifications
-git pull
+# Méthode rapide
+docker-compose pull && docker-compose up -d
 
-# Rebuild et redémarrer (les données sont préservées)
-docker compose down
-docker compose up -d --build
+# Ou avec git
+git pull && docker-compose pull && docker-compose up -d
 ```
+
+## Configuration
+
+Les variables d'environnement optionnelles dans `docker-compose.yml` :
+
+| Variable | Défaut | Description |
+|----------|--------|-------------|
+| `PORT` | 8908 | Port de l'interface web |
+| `ADMIN_USERNAME` | admin | Nom d'utilisateur admin |
+| `ADMIN_PASSWORD` | admin123 | Mot de passe admin |
+| `SECRET_KEY` | (auto) | Clé secrète JWT (générée auto) |
+
+## Données persistantes
+
+Les données sont stockées dans les volumes Docker :
+- `./data/` : Base de données SQLite
+- `./uploads/` : Images des bouteilles
 
 ---
 

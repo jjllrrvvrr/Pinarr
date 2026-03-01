@@ -1,46 +1,22 @@
 services:
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: pinarr-backend
+  pinarr:
+    image: ghcr.io/jjllrrvvrr/pinarr:latest
+    container_name: pinarr
+    pull_policy: always
     ports:
-      - "${BACKEND_PORT:-9994}:8000"
+      - "${PORT:-8908}:80"      # Interface web
+      - "${BACKEND_PORT:-9994}:8000"  # API direct (compatibilité)
     environment:
       - DATABASE_URL=sqlite:///./data/pinarr.db
-      - SECRET_KEY=${SECRET_KEY:-$(openssl rand -hex 32)}
+      - SECRET_KEY=${SECRET_KEY:-}
       - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
-      - CORS_ORIGINS=*
     volumes:
       - ./data:/app/data
       - ./uploads:/app/uploads
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 5s
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        VITE_API_URL: http://${HOST_IP:-localhost}:${BACKEND_PORT:-9994}
-    container_name: pinarr-frontend
-    ports:
-      - "${FRONTEND_PORT:-8908}:80"
-    environment:
-      - NGINX_BACKEND_HOST=backend
-      - NGINX_BACKEND_PORT=8000
-    depends_on:
-      backend:
-        condition: service_healthy
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost/"]
+      test: ["CMD", "curl", "-f", "http://localhost/"]
       interval: 30s
       timeout: 10s
       retries: 3
