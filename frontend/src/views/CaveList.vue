@@ -55,7 +55,7 @@ onMounted(fetchCaves)
 </script>
 
 <template>
-  <main class="max-w-4xl mx-auto px-4 py-8 pb-20">
+  <main class="max-w-7xl mx-auto px-4 py-8 pb-20">
     <div class="flex items-center justify-between mb-6">
       <div>
         <h1 class="text-xl font-bold text-white">Mes Caves</h1>

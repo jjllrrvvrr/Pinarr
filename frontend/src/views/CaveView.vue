@@ -612,7 +612,7 @@ const placeBottleFromSidebar = async (bottle, targetRow, targetLine, targetPos) 
 </script>
 
 <template>
-  <main class="max-w-6xl mx-auto px-4 py-8 pb-20">
+  <main class="max-w-7xl mx-auto px-4 py-8 pb-20">
     <div class="flex items-center gap-2 mb-6 text-[#8b949e] text-sm">
       <router-link to="/caves" class="hover:text-[#58a6ff]">Caves</router-link>
       <span>/</span>
@@ -623,26 +623,29 @@ const placeBottleFromSidebar = async (bottle, targetRow, targetLine, targetPos) 
 
     <div v-else-if="!cave" class="text-center py-12 text-[#8b949e]">Cave non trouvée</div>
 
-    <div v-else class="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6">
-      <!-- GAUCHE: Grille de la cave -->
-      <div class="space-y-6">
-        <div class="flex items-center justify-between">
-          <div>
-            <h1 class="text-xl font-bold text-white">{{ cave.name }}</h1>
-            <p class="text-sm text-[#8b949e]">{{ cave.columns?.length || 0 }} colonne(s)</p>
-          </div>
-          <router-link :to="`/caves/${cave.id}/edit`" class="flex items-center gap-2 px-3 py-2 text-[#8b949e] hover:text-white hover:bg-[#21262d] rounded-md transition text-sm">
-            <PencilIcon class="w-4 h-4" />
-            Modifier
-          </router-link>
+    <!-- HEADER: Hors de la grille, pleine largeur -->
+    <div v-else>
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 sm:mb-6">
+        <div>
+          <h1 class="text-lg sm:text-xl font-bold text-white">{{ cave.name }}</h1>
+          <p class="text-sm text-[#8b949e]">{{ cave.columns?.length || 0 }} colonne(s)</p>
         </div>
+        <router-link :to="`/caves/${cave.id}/edit`" class="flex items-center justify-center gap-2 px-3 py-2 text-[#8b949e] hover:text-white hover:bg-[#21262d] rounded-md transition text-sm">
+          <PencilIcon class="w-4 h-4" />
+          <span class="sm:hidden">Éditer</span>
+          <span class="hidden sm:inline">Modifier</span>
+        </router-link>
+      </div>
 
-        <div v-if="cave.columns?.length > 1" class="flex gap-2 overflow-x-auto pb-2">
+      <div class="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4 sm:gap-6">
+        <!-- GAUCHE: Grille de la cave -->
+        <div class="space-y-4 sm:space-y-6">
+          <div v-if="cave.columns?.length > 1" class="flex gap-2 overflow-x-auto pb-2">
           <button
             v-for="col in cave.columns"
             :key="col.id"
             @click="selectedColumn = col"
-            :class="['px-4 py-2 rounded-md text-sm font-medium transition whitespace-nowrap', selectedColumn?.id === col.id ? 'bg-[#238636] text-white' : 'bg-[#21262d] text-[#8b949e] hover:bg-[#30363d]']"
+            :class="['px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition whitespace-nowrap', selectedColumn?.id === col.id ? 'bg-[#238636] text-white' : 'bg-[#21262d] text-[#8b949e] hover:bg-[#30363d]']"
           >
             {{ col.name }}
           </button>
@@ -655,16 +658,16 @@ const placeBottleFromSidebar = async (bottle, targetRow, targetLine, targetPos) 
               <span class="text-xs text-[#8b949e]">{{ row.width }}×{{ row.height }}</span>
             </div>
             
-            <div class="p-4 overflow-x-auto">
-              <div class="flex gap-1 mb-1">
-                <div class="w-8 flex-shrink-0"></div>
-                <div v-for="pos in row.width" :key="pos" class="w-16 text-center text-xs text-[#8b949e]">
+            <div class="p-2 sm:p-4 overflow-x-auto">
+              <div class="flex gap-0.5 sm:gap-1 mb-1">
+                <div class="w-6 sm:w-8 flex-shrink-0"></div>
+                <div v-for="pos in row.width" :key="pos" class="w-10 sm:w-12 md:w-14 lg:w-16 text-center text-[10px] sm:text-xs text-[#8b949e]">
                   {{ pos }}
                 </div>
               </div>
               
-              <div v-for="line in row.height" :key="line" class="flex gap-1 items-center mb-1">
-                <div class="w-8 flex-shrink-0 text-xs text-[#8b949e] text-center">L{{ row.height - line + 1 }}</div>
+              <div v-for="line in row.height" :key="line" class="flex gap-0.5 sm:gap-1 items-center mb-0.5 sm:mb-1">
+                <div class="w-6 sm:w-8 flex-shrink-0 text-[10px] sm:text-xs text-[#8b949e] text-center">L{{ row.height - line + 1 }}</div>
                 <div
                   v-for="pos in row.width"
                   :key="pos"
@@ -673,7 +676,7 @@ const placeBottleFromSidebar = async (bottle, targetRow, targetLine, targetPos) 
                   @dragleave="handleDragLeave"
                   @drop="(e) => handleDrop(e, row, row.height - line + 1, pos)"
                   :class="[
-                    'w-16 h-16 rounded border flex items-center justify-center cursor-pointer transition relative',
+                    'w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 rounded border flex items-center justify-center cursor-pointer transition relative',
                     getBottleAtPosition(row.id, row.height - line + 1, pos)
                       ? 'bg-[#238636]/20 border-[#238636]'
                       : 'bg-[#0d1117] border-[#30363d]',
@@ -699,13 +702,13 @@ const placeBottleFromSidebar = async (bottle, targetRow, targetLine, targetPos) 
                   :class="{ 'opacity-50': draggedBottle?.id === getBottleAtPosition(row.id, row.height - line + 1, pos).id }"
                 >
                   <div class="flex flex-col items-center">
-                    <WineBottleIcon :type="getBottleAtPosition(row.id, row.height - line + 1, pos).type" class="w-6 h-10" />
-                    <div class="text-[10px] text-white truncate px-1 max-w-full">
-                      {{ getBottleAtPosition(row.id, row.height - line + 1, pos).name?.substring(0, 8) }}
+                    <WineBottleIcon :type="getBottleAtPosition(row.id, row.height - line + 1, pos).type" class="w-4 h-6 sm:w-5 sm:h-8 md:w-6 md:h-10" />
+                    <div class="text-[8px] sm:text-[10px] text-white truncate px-0.5 sm:px-1 max-w-full hidden sm:block">
+                      {{ getBottleAtPosition(row.id, row.height - line + 1, pos).name?.substring(0, 6) }}
                     </div>
                   </div>
                 </div>
-                <div v-else class="text-[#30363d] text-xs">+</div>
+                <div v-else class="text-[#30363d] text-[10px] sm:text-xs">+</div>
               </div>
             </div>
           </div>
@@ -719,7 +722,7 @@ const placeBottleFromSidebar = async (bottle, targetRow, targetLine, targetPos) 
     </div>
 
     <!-- DROITE: Sidebar des bouteilles -->
-    <div>
+    <div class="lg:sticky lg:top-20 lg:self-start">
       <BottleSidebar
         :bottles="bottles"
         :cave="cave"
@@ -731,6 +734,7 @@ const placeBottleFromSidebar = async (bottle, targetRow, targetLine, targetPos) 
         @remove-bottle="removeBottleFromPosition"
       />
     </div>
+  </div>
   </div>
 
     <div v-if="selectedPosition" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="selectedPosition = null">

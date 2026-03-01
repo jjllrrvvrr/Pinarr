@@ -1,5 +1,5 @@
 <template>
-  <main class="max-w-4xl mx-auto px-4 py-8 pb-20">
+  <main class="max-w-7xl mx-auto px-4 py-8 pb-20">
     <!-- Breadcrumb -->
     <div class="flex items-center gap-2 mb-6 text-gh-text-secondary text-sm">
       <router-link to="/" class="hover:text-gh-accent transition-fast">Accueil</router-link>

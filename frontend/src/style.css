@@ -4,3 +4,42 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Responsive utilities pour éviter le zoom sur mobile */
+@media screen and (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px; /* Empêche le zoom sur iOS */
+  }
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Touch-action pour améliorer le scroll sur mobile */
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+/* Cacher scrollbar mais garder fonctionnalité */
+.overflow-x-auto::-webkit-scrollbar {
+  height: 6px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-track {
+  background: var(--bg-surface);
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 3px;
+}
+
+/* Amélioration du tap sur mobile */
+@media (hover: none) {
+  button, a {
+    touch-action: manipulation;
+  }
+}
