@@ -1,157 +1,265 @@
 <template>
-  <main class="max-w-3xl mx-auto px-4 py-8 pb-20">
-    <div class="flex items-center gap-2 mb-6 text-[#8b949e] text-sm">
-      <router-link to="/" class="hover:text-[#58a6ff]">Accueil</router-link>
+  <main class="max-w-4xl mx-auto px-4 py-8 pb-20">
+    <!-- Breadcrumb -->
+    <div class="flex items-center gap-2 mb-6 text-gh-text-secondary text-sm">
+      <router-link to="/" class="hover:text-gh-accent transition-fast">Accueil</router-link>
       <span>/</span>
-      <span class="text-white">{{ isEditing ? 'Modifier' : 'Ajouter' }}</span>
+      <span class="text-gh-text">{{ isEditing ? 'Modifier' : 'Ajouter' }}</span>
     </div>
 
-    <div class="bg-[#161b22] rounded-md border border-[#30363d]">
-      <div class="p-4 sm:p-6 border-b border-[#30363d]">
-        <h1 class="text-lg font-bold text-white">{{ isEditing ? 'Modifier le vin' : 'Nouveau vin' }}</h1>
-      </div>
+    <!-- Header -->
+    <div class="mb-6">
+      <h1 class="text-xl font-bold text-gh-text">{{ isEditing ? 'Modifier le vin' : 'Nouveau vin' }}</h1>
+      <p class="text-sm text-gh-text-secondary">Remplissez les informations ci-dessous</p>
+    </div>
 
-      <div class="p-4 sm:p-6 space-y-6">
-        <div class="flex gap-2 border-b border-[#30363d] pb-3 mb-4">
-          <button @click="activeTab='identity'" :class="['pb-2 px-4 font-medium transition text-sm', activeTab==='identity' ? 'text-white border-b-2 border-[#f85149]' : 'text-[#8b949e] hover:text-gray-300']">
-            Identité
-          </button>
-          <button @click="activeTab='stock'" :class="['pb-2 px-4 font-medium transition text-sm', activeTab==='stock' ? 'text-white border-b-2 border-[#f85149]' : 'text-[#8b949e] hover:text-gray-300']">
-            Stock & Évaluation
-          </button>
-        </div>
-
-        <div v-if="activeTab === 'identity'" class="space-y-4">
-          <div>
-            <label class="block text-xs font-medium text-[#8b949e] mb-1">Nom du vin *</label>
-            <input v-model="form.name" @input="onNameInput" @blur="hideSuggestions" @focus="showSuggestionsIfResults" class="w-full bg-[#0d1117] border border-[#30363d] rounded-md p-2.5 text-white focus:border-[#58a6ff] focus:ring-1 focus:ring-[#58a6ff] outline-none text-sm" placeholder="ex: Château Margaux" autocomplete="off">
+    <!-- Formulaire -->
+    <form @submit.prevent="saveBottle" class="space-y-6">
+      
+      <!-- Carte 1: Informations essentielles -->
+      <BaseCard title="Informations essentielles">
+        <template #icon>
+          <WineIcon class="w-5 h-5 text-gh-accent" />
+        </template>
+        
+        <div class="space-y-4">
+          <!-- Nom du vin -->
+          <div class="relative">
+            <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-2">
+              <LabelIcon class="w-4 h-4" />
+              Nom du vin <span class="text-gh-accent-red">*</span>
+            </label>
+            <div class="relative">
+              <input 
+                v-model="form.name" 
+                @input="onNameInput" 
+                @blur="hideSuggestions" 
+                @focus="showSuggestionsIfResults"
+                type="text"
+                required
+                class="w-full bg-gh-bg border border-gh-border rounded-card p-3 text-gh-text placeholder-gh-text-muted focus:border-gh-accent focus:ring-1 focus:ring-gh-accent outline-none transition-fast"
+                :class="{ 'border-gh-accent-red': errors.name }"
+                placeholder="ex: Château Margaux"
+                autocomplete="off"
+              />
+              <MagnifyingGlassIcon v-if="!isEditing && showSuggestions" class="w-5 h-5 text-gh-accent absolute right-3 top-3.5 animate-pulse" />
+            </div>
+            <p v-if="errors.name" class="mt-1 text-sm text-gh-accent-red flex items-center gap-1">
+              <ExclamationCircleIcon class="w-4 h-4" />
+              {{ errors.name }}
+            </p>
             
-            <!-- Liste de suggestions - uniquement en mode ajout -->
-            <div v-if="!isEditing && showSuggestions && searchResults.length > 0" class="absolute z-50 w-full mt-1 bg-[#161b22] border border-[#30363d] rounded-md shadow-xl max-h-60 overflow-y-auto">
-              <div class="px-3 py-2 text-xs text-[#8b949e] border-b border-[#30363d]">
+            <!-- Suggestions -->
+            <div v-if="!isEditing && showSuggestions && searchResults.length > 0" 
+                 class="absolute z-50 w-full mt-1 bg-gh-surface border border-gh-border rounded-card shadow-lg max-h-60 overflow-y-auto">
+              <div class="px-3 py-2 text-xs text-gh-text-secondary border-b border-gh-border">
                 Vins similaires déjà présents :
               </div>
-              <div v-for="wine in searchResults" :key="wine.id" @click.stop="selectWine(wine)" class="flex items-center gap-3 px-3 py-2 hover:bg-[#21262d] cursor-pointer border-b border-[#30363d] last:border-0">
-                <img v-if="wine.image_path" :src="getImageUrl(wine.image_path)" class="w-10 h-10 object-cover rounded border border-[#30363d]" @error="$event.target.style.display='none'">
-                <div v-else class="w-10 h-10 bg-[#0d1117] rounded border border-[#30363d] flex items-center justify-center">
-                  <span class="text-lg">🍷</span>
+              <div v-for="wine in searchResults" :key="wine.id" 
+                   @click.stop="selectWine(wine)"
+                   class="flex items-center gap-3 px-3 py-2 hover:bg-gh-elevated cursor-pointer border-b border-gh-border last:border-0 transition-fast">
+                <div class="w-10 h-10 rounded bg-gh-bg border border-gh-border flex items-center justify-center overflow-hidden">
+                  <img v-if="wine.image_path" :src="getImageUrl(wine.image_path)" class="w-full h-full object-cover" @error="$event.target.style.display='none'">
+                  <WineIcon v-else class="w-5 h-5 text-gh-text-muted" />
                 </div>
                 <div class="flex-1 min-w-0">
-                  <div class="text-sm text-white font-medium truncate">{{ wine.name }}</div>
-                  <div class="text-xs text-[#8b949e]">
+                  <div class="text-sm text-gh-text font-medium truncate">{{ wine.name }}</div>
+                  <div class="text-xs text-gh-text-secondary">
                     {{ wine.year || 'Année inconnue' }}
-                    <span v-if="wine.domaine" class="text-[#58a6ff]"> • {{ wine.domaine }}</span>
+                    <span v-if="wine.domaine" class="text-gh-accent"> • {{ wine.domaine }}</span>
                   </div>
                 </div>
-                <div class="text-xs text-[#3fb950] whitespace-nowrap">
+                <span class="text-xs px-2 py-0.5 rounded-full" :class="wine.quantity > 0 ? 'bg-gh-accent-green/20 text-gh-accent-green-text' : 'bg-gh-accent-red/20 text-gh-accent-red'">
                   {{ wine.quantity }} en cave
-                </div>
-              </div>
-              <div class="px-3 py-2 text-xs text-[#8b949e] bg-[#0d1117] border-t border-[#30363d]">
-                Cliquez sur un vin pour l'éditer, ou continuez pour créer un nouveau
+                </span>
               </div>
             </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-medium text-[#8b949e] mb-1">Domaine viticole</label>
-              <input v-model="form.domaine" class="w-full bg-[#0d1117] border border-[#30363d] rounded-md p-2.5 text-white focus:border-[#58a6ff] outline-none text-sm" placeholder="ex: Domaine de la Romanée-Conti">
-            </div>
-            <div>
-              <label class="block text-xs font-medium text-[#8b949e] mb-1">Année</label>
-              <input v-model="form.year" type="number" class="w-full bg-[#0d1117] border border-[#30363d] rounded-md p-2.5 text-white focus:border-[#58a6ff] outline-none text-sm" placeholder="2020">
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-medium text-[#8b949e] mb-1">Pays</label>
-              <select v-model="form.country" class="w-full bg-[#0d1117] border border-[#30363d] rounded-md p-2.5 text-white focus:border-[#58a6ff] outline-none text-sm">
-                <option :value="null">—</option>
-                <option v-for="c in countries" :key="c">{{ c }}</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs font-medium text-[#8b949e] mb-1">Région</label>
-              <input v-model="form.region" class="w-full bg-[#0d1117] border border-[#30363d] rounded-md p-2.5 text-white focus:border-[#58a6ff] outline-none text-sm" placeholder="ex: Bordeaux, Bourgogne...">
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-medium text-[#8b949e] mb-1">Type</label>
-              <select v-model="form.type" class="w-full bg-[#0d1117] border border-[#30363d] rounded-md p-2.5 text-white focus:border-[#58a6ff] outline-none text-sm">
-                <option>Rouge</option>
-                <option>Blanc</option>
-                <option>Rosé</option>
-                <option>Champagne</option>
-                <option>Spiritueux</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs font-medium text-[#8b949e] mb-1">Cépages</label>
-              <input v-model="form.cepage" class="w-full bg-[#0d1117] border border-[#30363d] rounded-md p-2.5 text-white focus:border-[#58a6ff] outline-none text-sm" placeholder="ex: Merlot, Cabernet Sauvignon">
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label class="block text-xs font-medium text-[#8b949e] mb-1">Degré alcool (%)</label>
-              <input v-model="form.alcohol" type="number" step="0.5" class="w-full bg-[#0d1117] border border-[#30363d] rounded-md p-2.5 text-white focus:border-[#58a6ff] outline-none text-sm" placeholder="ex: 13.5">
-            </div>
-            <div>
-              <label class="block text-xs font-medium text-[#8b949e] mb-1">Contenance</label>
-              <input v-model="form.size" class="w-full bg-[#0d1117] border border-[#30363d] rounded-md p-2.5 text-white focus:border-[#58a6ff] outline-none text-sm" placeholder="75cl">
-            </div>
-          </div>
-
+          <!-- Type de vin -->
           <div>
-            <label class="block text-xs font-medium text-[#8b949e] mb-1">Description</label>
-            <textarea v-model="form.description" rows="3" class="w-full bg-[#0d1117] border border-[#30363d] rounded-md p-2.5 text-white focus:border-[#58a6ff] outline-none text-sm" placeholder="Notes de dégustation, caractéristiques..."></textarea>
+            <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-2">
+              <SwatchIcon class="w-4 h-4" />
+              Type <span class="text-gh-accent-red">*</span>
+            </label>
+            <WineTypeSelector v-model="form.type" />
+            <p v-if="errors.type" class="mt-1 text-sm text-gh-accent-red flex items-center gap-1">
+              <ExclamationCircleIcon class="w-4 h-4" />
+              {{ errors.type }}
+            </p>
           </div>
 
+          <!-- Année -->
           <div>
-            <label class="block text-xs font-medium text-[#8b949e] mb-2">Photo</label>
-            <div v-if="imagePreview" class="relative inline-block mb-3">
-              <img :src="imagePreview" class="w-32 h-32 object-cover rounded-md border border-[#30363d]" />
-              <button @click="removeImage" class="absolute -top-2 -right-2 bg-[#f85149] text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-[#da3633]">×</button>
-            </div>
-            <div v-else @dragover.prevent="dragOver = true" @dragleave.prevent="dragOver = false" @drop.prevent="handleDrop" :class="['border-2 border-dashed rounded-md p-6 text-center transition cursor-pointer', dragOver ? 'border-[#58a6ff] bg-[#58a6ff]/10' : 'border-[#30363d] hover:border-[#58a6ff]']" @click="triggerFileInput">
-              <CloudArrowUpIcon class="w-8 h-8 mx-auto text-[#8b949e] mb-2" />
-              <p class="text-sm text-[#8b949e]">Glissez une photo ou cliquez</p>
-              <input type="file" ref="fileInput" @change="handleImageUpload" accept="image/*" class="hidden" />
-            </div>
-            <div v-if="!imagePreview" class="mt-2">
-              <button type="button" @click="showUrlInput = !showUrlInput" class="text-xs text-[#58a6ff] hover:underline">
-                Utiliser une URL
-              </button>
-              <div v-if="showUrlInput" class="mt-2 flex gap-2">
-                <input v-model="imageUrl" type="url" placeholder="https://..." class="flex-1 bg-[#0d1117] border border-[#30363d] rounded-md p-2 text-white text-sm" />
-                <button type="button" @click="useImageUrl" class="px-3 py-2 bg-[#238636] text-white rounded-md text-sm">OK</button>
-              </div>
-            </div>
+            <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-2">
+              <CalendarIcon class="w-4 h-4" />
+              Année <span class="text-gh-accent-red">*</span>
+            </label>
+            <input 
+              v-model="form.year" 
+              type="number" 
+              required
+              min="1900"
+              :max="new Date().getFullYear() + 1"
+              class="w-full bg-gh-bg border border-gh-border rounded-card p-3 text-gh-text focus:border-gh-accent focus:ring-1 focus:ring-gh-accent outline-none transition-fast"
+              :class="{ 'border-gh-accent-red': errors.year }"
+              placeholder="2024"
+            />
+            <p v-if="errors.year" class="mt-1 text-sm text-gh-accent-red">{{ errors.year }}</p>
           </div>
         </div>
+      </BaseCard>
 
-        <div v-if="activeTab === 'stock'" class="space-y-4">
+      <!-- Carte 2: Origine -->
+      <BaseCard title="Origine">
+        <template #icon>
+          <MapPinIcon class="w-5 h-5 text-gh-accent" />
+        </template>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Pays -->
           <div>
-            <label class="block text-xs font-medium text-[#8b949e] mb-1">Position dans la cave</label>
-            <div class="grid grid-cols-4 gap-2">
-              <select v-model="form.position_cave_id" @change="onCaveChange" class="bg-[#0d1117] border border-[#30363d] rounded-md p-2.5 text-white focus:border-[#58a6ff] outline-none text-sm">
-                <option :value="null">-- Cave --</option>
+            <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-2">
+              <FlagIcon class="w-4 h-4" />
+              Pays
+            </label>
+            <select v-model="form.country" 
+                    class="w-full bg-gh-bg border border-gh-border rounded-card p-3 text-gh-text focus:border-gh-accent focus:ring-1 focus:ring-gh-accent outline-none transition-fast appearance-none cursor-pointer">
+              <option :value="null">Sélectionner un pays</option>
+              <option v-for="c in countries" :key="c" :value="c">{{ c }}</option>
+            </select>
+          </div>
+
+          <!-- Région -->
+          <div>
+            <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-2">
+              <LandscapeIcon class="w-4 h-4" />
+              Région
+            </label>
+            <input 
+              v-model="form.region" 
+              type="text"
+              class="w-full bg-gh-bg border border-gh-border rounded-card p-3 text-gh-text placeholder-gh-text-muted focus:border-gh-accent focus:ring-1 focus:ring-gh-accent outline-none transition-fast"
+              placeholder="ex: Bordeaux, Bourgogne..."
+            />
+          </div>
+
+          <!-- Domaine -->
+          <div class="md:col-span-2">
+            <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-2">
+              <CrestIcon class="w-4 h-4" />
+              Domaine viticole
+            </label>
+            <input 
+              v-model="form.domaine" 
+              type="text"
+              class="w-full bg-gh-bg border border-gh-border rounded-card p-3 text-gh-text placeholder-gh-text-muted focus:border-gh-accent focus:ring-1 focus:ring-gh-accent outline-none transition-fast"
+              placeholder="ex: Domaine de la Romanée-Conti"
+            />
+          </div>
+        </div>
+      </BaseCard>
+
+      <!-- Carte 3: Caractéristiques -->
+      <BaseCard title="Caractéristiques">
+        <template #icon>
+          <InfoTagIcon class="w-5 h-5 text-gh-accent" />
+        </template>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Cépages -->
+          <div class="md:col-span-2">
+            <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-2">
+              <GrapeIcon class="w-4 h-4" />
+              Cépages
+            </label>
+            <input 
+              v-model="form.cepage" 
+              type="text"
+              class="w-full bg-gh-bg border border-gh-border rounded-card p-3 text-gh-text placeholder-gh-text-muted focus:border-gh-accent focus:ring-1 focus:ring-gh-accent outline-none transition-fast"
+              placeholder="ex: Merlot, Cabernet Sauvignon"
+            />
+          </div>
+
+          <!-- Degré d'alcool -->
+          <div>
+            <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-2">
+              <ThermometerIcon class="w-4 h-4" />
+              Degré (%)
+            </label>
+            <input 
+              v-model="form.alcohol" 
+              type="number" 
+              step="0.5"
+              min="0"
+              max="100"
+              class="w-full bg-gh-bg border border-gh-border rounded-card p-3 text-gh-text focus:border-gh-accent focus:ring-1 focus:ring-gh-accent outline-none transition-fast"
+              placeholder="13.5"
+            />
+          </div>
+
+          <!-- Contenance -->
+          <div>
+            <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-2">
+              <RulerIcon class="w-4 h-4" />
+              Contenance
+            </label>
+            <input 
+              v-model="form.size" 
+              type="text"
+              class="w-full bg-gh-bg border border-gh-border rounded-card p-3 text-gh-text focus:border-gh-accent focus:ring-1 focus:ring-gh-accent outline-none transition-fast"
+              placeholder="75cl"
+            />
+          </div>
+
+          <!-- Description -->
+          <div class="md:col-span-2">
+            <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-2">
+              <DocumentTextIcon class="w-4 h-4" />
+              Description
+            </label>
+            <textarea 
+              v-model="form.description" 
+              rows="3"
+              class="w-full bg-gh-bg border border-gh-border rounded-card p-3 text-gh-text placeholder-gh-text-muted focus:border-gh-accent focus:ring-1 focus:ring-gh-accent outline-none transition-fast resize-none"
+              placeholder="Notes de dégustation, caractéristiques..."
+            ></textarea>
+          </div>
+        </div>
+      </BaseCard>
+
+      <!-- Carte 4: Gestion & Évaluation -->
+      <BaseCard title="Gestion & Évaluation">
+        <template #icon>
+          <ChartBarIcon class="w-5 h-5 text-gh-accent" />
+        </template>
+        
+        <div class="space-y-6">
+          <!-- Position dans la cave -->
+          <div>
+            <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-3">
+              <MapPinIcon class="w-4 h-4" />
+              Position dans la cave
+            </label>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <select v-model="form.position_cave_id" @change="onCaveChange" 
+                      class="bg-gh-bg border border-gh-border rounded-card p-2.5 text-gh-text focus:border-gh-accent outline-none transition-fast text-sm">
+                <option :value="null">Cave...</option>
                 <option v-for="cave in caves" :key="cave.id" :value="cave.id">{{ cave.name }}</option>
               </select>
-              <select v-model="form.position_column_id" @change="onColumnChange" :disabled="!form.position_cave_id" class="bg-[#0d1117] border border-[#30363d] rounded-md p-2.5 text-white focus:border-[#58a6ff] outline-none text-sm disabled:opacity-50">
-                <option :value="null">-- Col. --</option>
+              <select v-model="form.position_column_id" @change="onColumnChange" :disabled="!form.position_cave_id"
+                      class="bg-gh-bg border border-gh-border rounded-card p-2.5 text-gh-text focus:border-gh-accent outline-none transition-fast text-sm disabled:opacity-50">
+                <option :value="null">Colonne...</option>
                 <option v-for="col in availableColumns" :key="col.id" :value="col.id">{{ col.name }}</option>
               </select>
-              <select v-model="form.position_row_id" @change="onRowChange" :disabled="!form.position_column_id" class="bg-[#0d1117] border border-[#30363d] rounded-md p-2.5 text-white focus:border-[#58a6ff] outline-none text-sm disabled:opacity-50">
-                <option :value="null">-- Étag. --</option>
+              <select v-model="form.position_row_id" @change="onRowChange" :disabled="!form.position_column_id"
+                      class="bg-gh-bg border border-gh-border rounded-card p-2.5 text-gh-text focus:border-gh-accent outline-none transition-fast text-sm disabled:opacity-50">
+                <option :value="null">Étagère...</option>
                 <option v-for="row in availableRows" :key="row.id" :value="row.id">{{ row.name }}</option>
               </select>
-              <select v-model="form.position_id" :disabled="!form.position_row_id" class="bg-[#0d1117] border border-[#30363d] rounded-md p-2.5 text-white focus:border-[#58a6ff] outline-none text-sm disabled:opacity-50">
-                <option :value="null">-- Pos. --</option>
+              <select v-model="form.position_id" :disabled="!form.position_row_id"
+                      class="bg-gh-bg border border-gh-border rounded-card p-2.5 text-gh-text focus:border-gh-accent outline-none transition-fast text-sm disabled:opacity-50">
+                <option :value="null">Position...</option>
                 <option v-for="pos in availablePositions" :key="pos.id" :value="pos.id" :disabled="pos.occupied && pos.bottle_id !== form.id">
                   L{{ pos.line }}/{{ pos.position }}{{ pos.occupied ? ' (occupée)' : '' }}
                 </option>
@@ -159,93 +267,227 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <!-- Quantité -->
             <div>
-              <label class="block text-xs font-medium text-[#8b949e] mb-1">Quantité</label>
-              <input v-model="form.quantity" type="number" min="0" class="w-full bg-[#0d1117] border border-[#30363d] rounded-md p-2.5 text-white focus:border-[#58a6ff] outline-none text-sm">
+              <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-2">
+                <QuantityIcon class="w-4 h-4" />
+                Quantité
+              </label>
+              <input 
+                v-model="form.quantity" 
+                type="number" 
+                min="0"
+                class="w-full bg-gh-bg border border-gh-border rounded-card p-3 text-gh-text focus:border-gh-accent focus:ring-1 focus:ring-gh-accent outline-none transition-fast"
+              />
             </div>
+
+            <!-- Prix -->
             <div>
-              <label class="block text-xs font-medium text-[#8b949e] mb-1">Prix (€)</label>
-              <input v-model="form.price" type="number" step="0.01" class="w-full bg-[#0d1117] border border-[#30363d] rounded-md p-2.5 text-white focus:border-[#58a6ff] outline-none text-sm" placeholder="45.00">
+              <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-2">
+                <CurrencyIcon class="w-4 h-4" />
+                Prix (€)
+              </label>
+              <input 
+                v-model="form.price" 
+                type="number" 
+                step="0.01"
+                min="0"
+                class="w-full bg-gh-bg border border-gh-border rounded-card p-3 text-gh-text focus:border-gh-accent focus:ring-1 focus:ring-gh-accent outline-none transition-fast"
+                placeholder="45.00"
+              />
             </div>
+
+            <!-- Apogée début -->
             <div>
-              <label class="block text-xs font-medium text-[#8b949e] mb-1">Apogée début</label>
-              <input v-model="form.apogee_start" type="number" class="w-full bg-[#0d1117] border border-[#30363d] rounded-md p-2.5 text-white focus:border-[#58a6ff] outline-none text-sm" placeholder="2025" min="1900" max="2100">
+              <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-2">
+                <CalendarIcon class="w-4 h-4" />
+                Apogée début
+              </label>
+              <input 
+                v-model="form.apogee_start" 
+                type="number"
+                min="1900"
+                max="2100"
+                class="w-full bg-gh-bg border border-gh-border rounded-card p-3 text-gh-text focus:border-gh-accent focus:ring-1 focus:ring-gh-accent outline-none transition-fast"
+                placeholder="2025"
+              />
             </div>
+
+            <!-- Apogée fin -->
             <div>
-              <label class="block text-xs font-medium text-[#8b949e] mb-1">Apogée fin</label>
-              <input v-model="form.apogee_end" type="number" class="w-full bg-[#0d1117] border border-[#30363d] rounded-md p-2.5 text-white focus:border-[#58a6ff] outline-none text-sm" placeholder="2035" min="1900" max="2100">
+              <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-2">
+                <CalendarIcon class="w-4 h-4" />
+                Apogée fin
+              </label>
+              <input 
+                v-model="form.apogee_end" 
+                type="number"
+                min="1900"
+                max="2100"
+                class="w-full bg-gh-bg border border-gh-border rounded-card p-3 text-gh-text focus:border-gh-accent focus:ring-1 focus:ring-gh-accent outline-none transition-fast"
+                placeholder="2035"
+              />
             </div>
           </div>
 
+          <!-- Note -->
           <div>
-            <label class="block text-xs font-medium text-[#8b949e] mb-1">Note</label>
-            <div class="flex items-center gap-1">
-              <button v-for="i in 5" :key="i" @click="form.rating = i" class="p-1 transition" :class="i <= (form.rating || 0) ? 'text-[#e3b341]' : 'text-[#30363d]'">
-                <StarIconSolid class="w-6 h-6" />
-              </button>
-              <span v-if="form.rating" class="ml-2 text-sm text-[#8b949e]">{{ form.rating }}/5</span>
-            </div>
+            <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-2">
+              <StarIcon class="w-4 h-4" />
+              Note
+            </label>
+            <StarRating v-model="form.rating" />
           </div>
 
+          <!-- Tags -->
           <div>
-            <label class="block text-xs font-medium text-[#8b949e] mb-1">Tags</label>
+            <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-2">
+              <TagIcon class="w-4 h-4" />
+              Tags
+            </label>
             <div class="relative">
-              <input v-model="tagInput" @keyup.enter="addTag" @keydown.comma.prevent="addTag" class="w-full bg-[#0d1117] border border-[#30363d] rounded-md p-2.5 text-white focus:border-[#58a6ff] outline-none text-sm" placeholder="Entrée pour ajouter">
+              <input
+                v-model="tagInput"
+                @keydown.enter.prevent="addTag"
+                @input="handleTagInput"
+                class="w-full bg-gh-bg border border-gh-border rounded-card p-3 text-gh-text placeholder-gh-text-muted focus:border-gh-accent focus:ring-1 focus:ring-gh-accent outline-none transition-fast"
+                placeholder="Ajouter des tags séparés par virgule"
+              />
             </div>
             <div class="flex flex-wrap gap-2 mt-2">
-              <span v-for="tag in currentTags" :key="tag" class="inline-flex items-center gap-1 bg-[#21262d] px-2 py-0.5 rounded-full text-xs text-white border border-[#30363d]">
+              <span v-for="tag in currentTags" :key="tag" 
+                    class="inline-flex items-center gap-1 bg-gh-elevated px-3 py-1 rounded-tag text-sm text-gh-text border border-gh-border">
                 {{ tag }}
-                <button @click="removeTag(tag)" class="text-[#8b949e] hover:text-[#f85149]">×</button>
+                <button @click="removeTag(tag)" class="text-gh-text-secondary hover:text-gh-accent-red transition-fast">
+                  <XMarkIcon class="w-4 h-4" />
+                </button>
               </span>
             </div>
           </div>
 
+          <!-- Lien externe -->
           <div>
-            <label class="block text-xs font-medium text-[#8b949e] mb-1">Lien externe</label>
-            <input v-model="form.buy_link" class="w-full bg-[#0d1117] border border-[#30363d] rounded-md p-2.5 text-white focus:border-[#58a6ff] outline-none text-sm" placeholder="https://...">
+            <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-2">
+              <LinkIcon class="w-4 h-4" />
+              Lien externe
+            </label>
+            <input 
+              v-model="form.buy_link" 
+              type="url"
+              class="w-full bg-gh-bg border border-gh-border rounded-card p-3 text-gh-text placeholder-gh-text-muted focus:border-gh-accent focus:ring-1 focus:ring-gh-accent outline-none transition-fast"
+              placeholder="https://..."
+            />
           </div>
         </div>
-      </div>
+      </BaseCard>
 
-      <div class="p-4 sm:p-6 border-t border-[#30363d] flex justify-between">
-        <router-link to="/" class="px-4 py-2 rounded-md text-[#8b949e] hover:bg-[#21262d] transition font-medium border border-[#30363d] text-sm">
+      <!-- Carte 5: Photo -->
+      <BaseCard title="Photo">
+        <template #icon>
+          <CameraIcon class="w-5 h-5 text-gh-accent" />
+        </template>
+        
+        <div>
+          <div v-if="imagePreview" class="relative inline-block mb-4">
+            <img :src="imagePreview" class="w-32 h-32 object-cover rounded-card border border-gh-border" />
+            <button @click="removeImage" 
+                    class="absolute -top-2 -right-2 bg-gh-accent-red text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-gh-accent-red-hover transition-fast shadow-md">
+              <XMarkIcon class="w-4 h-4" />
+            </button>
+          </div>
+          
+          <div v-else 
+               @dragover.prevent="dragOver = true" 
+               @dragleave.prevent="dragOver = false" 
+               @drop.prevent="handleDrop"
+               :class="[
+                 'border-2 border-dashed rounded-card p-8 text-center transition-fast cursor-pointer',
+                 dragOver ? 'border-gh-accent bg-gh-accent/10' : 'border-gh-border hover:border-gh-accent'
+               ]"
+               @click="triggerFileInput">
+            <CameraIcon class="w-10 h-10 mx-auto text-gh-text-secondary mb-3" />
+            <p class="text-sm text-gh-text-secondary mb-1">Glissez une photo ou cliquez</p>
+            <p class="text-xs text-gh-text-muted">JPG, PNG, WEBP jusqu'à 5MB</p>
+            <input type="file" ref="fileInput" @change="handleImageUpload" accept="image/*" class="hidden" />
+          </div>
+          
+          <div v-if="!imagePreview" class="mt-3">
+            <button type="button" @click="showUrlInput = !showUrlInput" 
+                    class="text-sm text-gh-accent hover:text-gh-accent hover:underline transition-fast">
+              Utiliser une URL
+            </button>
+            <div v-if="showUrlInput" class="mt-2 flex gap-2">
+              <input v-model="imageUrl" type="url" placeholder="https://..." 
+                     class="flex-1 bg-gh-bg border border-gh-border rounded-card p-2.5 text-gh-text text-sm" />
+              <button type="button" @click="useImageUrl" 
+                      class="px-4 py-2 bg-gh-accent-green text-white rounded-card text-sm font-medium hover:bg-gh-accent-green-hover transition-fast">
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      </BaseCard>
+
+      <!-- Boutons d'action -->
+      <div class="flex flex-col sm:flex-row justify-between gap-3 pt-4 border-t border-gh-border">
+        <router-link to="/" 
+                     class="px-6 py-3 rounded-card text-gh-text-secondary hover:bg-gh-elevated transition-fast font-medium text-center border border-gh-border">
           Annuler
         </router-link>
-        <button @click="saveBottle" class="px-6 py-2 rounded-md bg-[#238636] hover:bg-[#2ea043] text-white font-medium transition text-sm">
-          {{ isEditing ? 'Enregistrer' : 'Ajouter' }}
-        </button>
+        <div class="flex gap-3">
+          <button type="submit" 
+                  :disabled="isSubmitting"
+                  class="flex-1 sm:flex-none px-8 py-3 rounded-card bg-gh-accent-green hover:bg-gh-accent-green-hover disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium transition-fast flex items-center justify-center gap-2">
+            <span v-if="isSubmitting" class="animate-spin">
+              <ArrowPathIcon class="w-5 h-5" />
+            </span>
+            <span v-else>{{ isEditing ? 'Enregistrer' : 'Ajouter' }}</span>
+          </button>
+        </div>
       </div>
-    </div>
+    </form>
 
-    <div v-if="showDuplicateModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click="showDuplicateModal = false">
-      <div class="bg-[#161b22] p-6 rounded-md max-w-md w-full border border-[#30363d]" @click.stop>
-        <h2 class="text-lg font-bold text-white mb-2">Bouteille similaire trouvée</h2>
-        <p class="text-[#8b949e] text-sm mb-4">
-          Une ou plusieurs bouteilles avec le même nom et la même année existent déjà. Voulez-vous éditer l'existante ou créer une nouvelle entrée ?
+    <!-- Modal doublon -->
+    <div v-if="showDuplicateModal" 
+         class="fixed inset-0 bg-gh-overlay backdrop-blur-sm z-modal flex items-center justify-center p-4"
+         @click="showDuplicateModal = false">
+      <div class="bg-gh-surface p-6 rounded-card max-w-md w-full border border-gh-border shadow-lg" 
+           @click.stop>
+        <h2 class="text-lg font-bold text-gh-text mb-2 flex items-center gap-2">
+          <ExclamationTriangleIcon class="w-5 h-5 text-gh-accent-orange" />
+          Bouteille similaire trouvée
+        </h2>
+        <p class="text-gh-text-secondary text-sm mb-4">
+          Une ou plusieurs bouteilles avec le même nom et la même année existent déjà.
         </p>
-        <div class="space-y-2 mb-4">
+        <div class="space-y-2 mb-4 max-h-40 overflow-y-auto">
           <div v-for="dup in duplicateMatches" :key="dup.id" 
-               class="p-3 bg-[#0d1117] rounded-md border border-[#30363d] flex items-center justify-between">
+               class="p-3 bg-gh-bg rounded-card border border-gh-border flex items-center justify-between">
             <div>
-              <span class="text-white font-medium">{{ dup.name }}</span>
-              <span class="text-[#8b949e] text-xs ml-2">({{ dup.year }})</span>
-              <span v-if="dup.domaine" class="text-[#8b949e] text-xs block">{{ dup.domaine }}</span>
+              <span class="text-gh-text font-medium">{{ dup.name }}</span>
+              <span class="text-gh-text-secondary text-xs ml-2">({{ dup.year }})</span>
             </div>
-            <span :class="['text-xs px-2 py-0.5 rounded', dup.quantity > 0 ? 'bg-[#238636]/20 text-[#3fb950]' : 'bg-[#f85149]/20 text-[#f85149]']">
+            <span :class="[
+              'text-xs px-2 py-0.5 rounded-tag',
+              dup.quantity > 0 ? 'bg-gh-accent-green/20 text-gh-accent-green-text' : 'bg-gh-accent-red/20 text-gh-accent-red'
+            ]">
               {{ dup.quantity > 0 ? `${dup.quantity} en cave` : 'Épuisé' }}
             </span>
           </div>
         </div>
         <div class="flex gap-2">
-          <button @click="editDuplicate" class="flex-1 px-4 py-2 bg-[#58a6ff] text-white rounded-md text-sm font-medium hover:bg-[#388bfd] transition">
+          <button @click="editDuplicate" 
+                  class="flex-1 px-4 py-2.5 bg-gh-accent text-white rounded-card text-sm font-medium hover:bg-gh-accent/90 transition-fast">
             Éditer l'existante
           </button>
-          <button @click="forceCreate" class="flex-1 px-4 py-2 bg-[#21262d] text-white rounded-md text-sm font-medium hover:bg-[#30363d] transition border border-[#30363d]">
+          <button @click="forceCreate" 
+                  class="flex-1 px-4 py-2.5 bg-gh-elevated text-gh-text rounded-card text-sm font-medium hover:bg-gh-border transition-fast border border-gh-border">
             Créer quand même
           </button>
         </div>
-        <button @click="showDuplicateModal = false" class="w-full mt-2 text-xs text-[#8b949e] hover:text-white transition">
+        <button @click="showDuplicateModal = false" 
+                class="w-full mt-2 text-sm text-gh-text-secondary hover:text-gh-text transition-fast">
           Annuler
         </button>
       </div>
@@ -256,8 +498,19 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { StarIcon as StarIconSolid } from '@heroicons/vue/24/solid'
-import { CloudArrowUpIcon } from '@heroicons/vue/24/outline'
+import { 
+  WineIcon, CrestIcon, CalendarIcon, FlagIcon, LandscapeIcon,
+  InfoTagIcon, GrapeIcon, ThermometerIcon, RulerIcon, CurrencyIcon, QuantityIcon,
+  StarIcon, CommentIcon, CameraIcon, LabelIcon
+} from '../components/icons'
+import { 
+  MagnifyingGlassIcon, TagIcon, ChartBarIcon, MapPinIcon,
+  DocumentTextIcon, LinkIcon, XMarkIcon, ArrowPathIcon, PlusIcon,
+  ExclamationCircleIcon, ExclamationTriangleIcon, SwatchIcon
+} from '@heroicons/vue/24/solid'
+import BaseCard from '../components/ui/BaseCard.vue'
+import WineTypeSelector from '../components/WineTypeSelector.vue'
+import StarRating from '../components/StarRating.vue'
 import config from '../config.js'
 import { apiRequest } from '../services/api.js'
 
@@ -266,29 +519,40 @@ const router = useRouter()
 
 const API_URL = '/bottles'
 const API_UPLOAD_URL = `${config.API_BASE_URL}/upload`
+const CAVES_URL = '/caves'
 
 const countries = ['France', 'Italie', 'Espagne', 'Portugal', 'Allemagne', 'États-Unis', 'Argentine', 'Chili', 'Australie', 'Nouvelle-Zélande', 'Afrique du Sud', 'Autre']
 
+// État
 const isEditing = ref(false)
-const activeTab = ref('identity')
-const tagInput = ref('')
+const isSubmitting = ref(false)
+const errors = ref({})
+const caves = ref([])
+const availableColumns = ref([])
+const availableRows = ref([])
+const availablePositions = ref([])
+
+// Image
 const imagePreview = ref(null)
 const imageFile = ref(null)
 const showUrlInput = ref(false)
 const imageUrl = ref('')
 const dragOver = ref(false)
 const fileInput = ref(null)
-const showDuplicateModal = ref(false)
-const duplicateMatches = ref([])
+
+// Recherche
 const showSuggestions = ref(false)
 const searchResults = ref([])
 const searchTimeout = ref(null)
 
-const caves = ref([])
-const availableColumns = ref([])
-const availableRows = ref([])
-const availablePositions = ref([])
+// Doublons
+const showDuplicateModal = ref(false)
+const duplicateMatches = ref([])
 
+// Tags
+const tagInput = ref('')
+
+// Formulaire
 const defaultForm = {
   id: null,
   name: '', 
@@ -316,6 +580,7 @@ const defaultForm = {
   position_column_id: null,
   position_row_id: null
 }
+
 const form = ref({ ...defaultForm })
 
 const currentTags = computed({
@@ -323,16 +588,163 @@ const currentTags = computed({
   set: (val) => { form.value.tags = val.join(',') }
 })
 
+// Méthodes
+const processTags = (text) => {
+  if (!text) return
+  
+  const parts = text.split(',').map(t => t.trim()).filter(t => t)
+  if (parts.length === 0) return
+  
+  // Récupérer les tags existants
+  const existingTags = currentTags.value
+  const newTags = [...existingTags]
+  
+  // Ajouter chaque nouveau tag s'il n'existe pas déjà
+  parts.forEach(tag => {
+    if (!newTags.includes(tag)) {
+      newTags.push(tag)
+    }
+  })
+  
+  // Mettre à jour form.value.tags une seule fois avec tous les tags
+  form.value.tags = newTags.join(',')
+}
+
+const handleTagInput = () => {
+  // Détecter si une virgule a été tapée
+  if (tagInput.value.includes(',')) {
+    processTags(tagInput.value)
+    // Garder le texte après la dernière virgule (peut être vide)
+    const lastCommaIndex = tagInput.value.lastIndexOf(',')
+    const afterLastComma = tagInput.value.substring(lastCommaIndex + 1)
+    tagInput.value = afterLastComma
+  }
+}
+
 const addTag = () => {
-  const tag = tagInput.value.trim().replace(/,/g, '')
-  if (tag && !currentTags.value.includes(tag)) {
-    currentTags.value = [...currentTags.value, tag]
+  // Ne traiter que s'il y a du texte non vide
+  if (tagInput.value.trim()) {
+    processTags(tagInput.value)
   }
   tagInput.value = ''
 }
 
 const removeTag = (tag) => {
-  currentTags.value = currentTags.value.filter(t => t !== tag)
+  const newTags = currentTags.value.filter(t => t !== tag)
+  form.value.tags = newTags.join(',')
+}
+
+const validateForm = () => {
+  const newErrors = {}
+  if (!form.value.name?.trim()) newErrors.name = 'Le nom est obligatoire'
+  if (!form.value.year) newErrors.year = 'L\'année est obligatoire'
+  if (form.value.year && (form.value.year < 1900 || form.value.year > 2100)) {
+    newErrors.year = 'Année invalide'
+  }
+  errors.value = newErrors
+  return Object.keys(newErrors).length === 0
+}
+
+const saveBottle = async (force = false) => {
+  if (!validateForm()) return
+  
+  // Valider les tags restants dans l'input avant sauvegarde
+  processTags(tagInput.value)
+  tagInput.value = ''
+  
+  isSubmitting.value = true
+  
+  try {
+    if (!isEditing.value && !force) {
+      const matches = await checkDuplicate()
+      if (matches.length > 0) {
+        duplicateMatches.value = matches
+        showDuplicateModal.value = true
+        isSubmitting.value = false
+        return
+      }
+    }
+
+    let imagePath = form.value.image_path
+    if (imageFile.value) {
+      imagePath = await uploadImage()
+    }
+
+    const payload = {
+      name: form.value.name,
+      domaine: form.value.domaine || null,
+      country: form.value.country || null,
+      year: parseInt(form.value.year) || null,
+      type: form.value.type || "Rouge",
+      region: form.value.region || null,
+      cepage: form.value.cepage || null,
+      alcohol: parseFloat(form.value.alcohol) || null,
+      size: form.value.size || "75cl",
+      apogee_start: parseInt(form.value.apogee_start) || null,
+      apogee_end: parseInt(form.value.apogee_end) || null,
+      location: form.value.location || null,
+      quantity: parseInt(form.value.quantity) || 1,
+      price: parseFloat(form.value.price) || null,
+      description: form.value.description || null,
+      rating: parseInt(form.value.rating) || null,
+      tags: form.value.tags || null,
+      is_favorite: form.value.is_favorite || false,
+      buy_link: form.value.buy_link || null,
+      image_path: imagePath
+    }
+
+    const method = isEditing.value ? 'PUT' : 'POST'
+    const url = isEditing.value ? `${API_URL}/${form.value.id}` : API_URL
+    const savedBottle = await apiRequest(url, {
+      method,
+      body: JSON.stringify(payload)
+    })
+    
+    if (form.value.position_id) {
+      await apiRequest(`/positions/${form.value.position_id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ bottle_id: savedBottle.id })
+      })
+    }
+    
+    router.push(`/wine/${savedBottle.id}`)
+  } catch (e) {
+    alert("Erreur: " + e.message)
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
+const checkDuplicate = async () => {
+  if (!form.value.name || !form.value.year) return []
+  try {
+    const data = await apiRequest(`${API_URL}/check-duplicate/?name=${encodeURIComponent(form.value.name)}&year=${form.value.year}`)
+    return data.matches || []
+  } catch (e) { console.error(e) }
+  return []
+}
+
+const uploadImage = async () => {
+  if (!imageFile.value) return null
+  const formData = new FormData()
+  formData.append('file', imageFile.value)
+  
+  const headers = {}
+  const token = sessionStorage.getItem('auth_token')
+  if (token) headers['Authorization'] = `Bearer ${token}`
+  
+  try {
+    const res = await fetch(API_UPLOAD_URL, { 
+      method: 'POST', 
+      headers,
+      body: formData 
+    })
+    if (res.ok) {
+      const data = await res.json()
+      return data.path
+    }
+  } catch (e) { console.error(e) }
+  return null
 }
 
 const handleImageUpload = (e) => {
@@ -356,9 +768,7 @@ const handleDrop = (e) => {
   }
 }
 
-const triggerFileInput = () => {
-  fileInput.value?.click()
-}
+const triggerFileInput = () => fileInput.value?.click()
 
 const removeImage = () => {
   imageFile.value = null
@@ -376,41 +786,11 @@ const useImageUrl = () => {
   }
 }
 
-const uploadImage = async () => {
-  if (!imageFile.value) return null
-  const formData = new FormData()
-  formData.append('file', imageFile.value)
-  
-  // Construire les headers avec le token pour l'upload
-  const headers = {}
-  const token = sessionStorage.getItem('auth_token')
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`
-  }
-  
-  try {
-    const res = await fetch(API_UPLOAD_URL, { 
-      method: 'POST', 
-      headers,
-      body: formData 
-    })
-    if (res.ok) {
-      const data = await res.json()
-      return data.path
-    }
-  } catch (e) { console.error(e) }
-  return null
-}
-
 const fetchBottle = async (id) => {
   try {
     const bottle = await apiRequest(`${API_URL}/${id}`)
-    form.value = { 
-      ...defaultForm,
-      ...bottle 
-    }
+    form.value = { ...defaultForm, ...bottle }
     if (bottle.image_path) {
-      // Les uploads sont servis directement depuis /uploads/ (pas sous /api/v1)
       imagePreview.value = bottle.image_path.startsWith('http') 
         ? bottle.image_path 
         : bottle.image_path.startsWith('/uploads/') 
@@ -446,15 +826,12 @@ const fetchCaves = async () => {
   } catch (e) { console.error(e) }
 }
 
-const CAVES_URL = '/caves'
-
 const onCaveChange = () => {
   form.value.position_column_id = null
   form.value.position_row_id = null
   form.value.position_id = null
   availableRows.value = []
   availablePositions.value = []
-  
   const cave = caves.value.find(c => c.id === form.value.position_cave_id)
   availableColumns.value = cave?.columns || []
 }
@@ -463,7 +840,6 @@ const onColumnChange = () => {
   form.value.position_row_id = null
   form.value.position_id = null
   availablePositions.value = []
-  
   const cave = caves.value.find(c => c.id === form.value.position_cave_id)
   const col = cave?.columns?.find(c => c.id === form.value.position_column_id)
   availableRows.value = col?.rows || []
@@ -491,74 +867,41 @@ const loadPositions = async (rowId) => {
   } catch (e) { console.error(e) }
 }
 
-const checkDuplicate = async () => {
-  if (!form.value.name || !form.value.year) return []
+const searchSimilarWines = async (name) => {
+  if (!name || name.length < 2) return
   try {
-    const data = await apiRequest(`${API_URL}/check-duplicate/?name=${encodeURIComponent(form.value.name)}&year=${form.value.year}`)
-    return data.matches || []
-  } catch (e) { console.error(e) }
-  return []
+    const data = await apiRequest(`/bottles/search/?q=${encodeURIComponent(name)}`)
+    searchResults.value = data.results || []
+    showSuggestions.value = searchResults.value.length > 0
+  } catch (error) {
+    console.error('Erreur recherche:', error)
+    searchResults.value = []
+    showSuggestions.value = false
+  }
 }
 
-const saveBottle = async (force = false) => {
-  if (!form.value.name) return alert("Le nom est obligatoire")
-
-  if (!isEditing.value && !force) {
-    const matches = await checkDuplicate()
-    if (matches.length > 0) {
-      duplicateMatches.value = matches
-      showDuplicateModal.value = true
-      return
-    }
+const onNameInput = () => {
+  if (isEditing.value) return
+  if (searchTimeout.value) clearTimeout(searchTimeout.value)
+  if (!form.value.name || form.value.name.length < 2) {
+    searchResults.value = []
+    showSuggestions.value = false
+    return
   }
+  searchTimeout.value = setTimeout(() => searchSimilarWines(form.value.name), 300)
+}
 
-  let imagePath = form.value.image_path
-  if (imageFile.value) {
-    imagePath = await uploadImage()
-  }
+const hideSuggestions = () => {
+  setTimeout(() => { showSuggestions.value = false }, 200)
+}
 
-  const payload = {
-    name: form.value.name,
-    domaine: form.value.domaine || null,
-    country: form.value.country || null,
-    year: parseInt(form.value.year) || null,
-    type: form.value.type || "Rouge",
-    region: form.value.region || null,
-    cepage: form.value.cepage || null,
-    alcohol: parseFloat(form.value.alcohol) || null,
-    size: form.value.size || "75cl",
-    apogee_start: parseInt(form.value.apogee_start) || null,
-    apogee_end: parseInt(form.value.apogee_end) || null,
-    location: form.value.location || null,
-    quantity: parseInt(form.value.quantity) || 1,
-    price: parseFloat(form.value.price) || null,
-    description: form.value.description || null,
-    rating: parseInt(form.value.rating) || null,
-    tags: form.value.tags || null,
-    is_favorite: form.value.is_favorite || false,
-    buy_link: form.value.buy_link || null,
-    image_path: imagePath
-  }
+const showSuggestionsIfResults = () => {
+  if (isEditing.value) return
+  if (searchResults.value.length > 0) showSuggestions.value = true
+}
 
-  try {
-    const method = isEditing.value ? 'PUT' : 'POST'
-    const url = isEditing.value ? `${API_URL}/${form.value.id}` : API_URL
-    const savedBottle = await apiRequest(url, {
-      method,
-      body: JSON.stringify(payload)
-    })
-    
-    if (form.value.position_id) {
-      await apiRequest(`/positions/${form.value.position_id}`, {
-        method: 'PUT',
-        body: JSON.stringify({ bottle_id: savedBottle.id })
-      })
-    }
-    
-    router.push(`/wine/${savedBottle.id}`)
-  } catch (e) {
-    alert("Erreur: " + e.message)
-  }
+const selectWine = (wine) => {
+  router.push({ name: 'wine-detail', params: { id: wine.id } })
 }
 
 const editDuplicate = () => {
@@ -572,84 +915,18 @@ const forceCreate = () => {
   saveBottle(true)
 }
 
-onMounted(async () => {
-  await fetchCaves()
-  if (route.params.id) {
-    await fetchBottle(route.params.id)
-  }
-})
-
-// Watch avec debounce sur le nom pour afficher les suggestions
-watch(() => form.value.name, (newValue) => {
-  // Ne pas chercher en mode édition
-  if (isEditing.value) {
-    return
-  }
-  
-  if (searchTimeout.value) {
-    clearTimeout(searchTimeout.value)
-  }
-  
-  if (!newValue || newValue.length < 2) {
-    searchResults.value = []
-    showSuggestions.value = false
-    return
-  }
-  
-  // Debounce de 300ms
-  searchTimeout.value = setTimeout(() => {
-    searchSimilarWines(newValue)
-  }, 300)
-})
-
-// Méthode de recherche des vins similaires
-const searchSimilarWines = async (name) => {
-  if (!name || name.length < 2) return
-  
-  try {
-    const data = await apiRequest(`/bottles/search/?q=${encodeURIComponent(name)}`)
-    searchResults.value = data.results || []
-    showSuggestions.value = searchResults.value.length > 0
-  } catch (error) {
-    console.error('Erreur recherche:', error)
-    searchResults.value = []
-    showSuggestions.value = false
-  }
-}
-
-// Gestionnaires d'événements
-const onNameInput = () => {
-  // Le watch s'occupe de la recherche
-}
-
-const hideSuggestions = () => {
-  // Petit délai pour permettre le clic sur un résultat
-  setTimeout(() => {
-    showSuggestions.value = false
-  }, 200)
-}
-
-const showSuggestionsIfResults = () => {
-  // Ne pas afficher en mode édition
-  if (isEditing.value) {
-    return
-  }
-  if (searchResults.value.length > 0) {
-    showSuggestions.value = true
-  }
-}
-
-const selectWine = (wine) => {
-  // Rediriger vers la page de détail du vin existant
-  router.push({ name: 'wine-detail', params: { id: wine.id } })
-}
-
 const getImageUrl = (path) => {
   if (!path) return null
   if (path.startsWith('http')) return path
-  // Les uploads sont servis directement depuis /uploads/ (pas sous /api/v1)
   if (path.startsWith('/uploads/')) return path
   return `${config.API_BASE_URL}${path}`
 }
 
+// Watch
+watch(() => form.value.name, onNameInput)
+
+onMounted(async () => {
+  await fetchCaves()
+  if (route.params.id) await fetchBottle(route.params.id)
+})
 </script>

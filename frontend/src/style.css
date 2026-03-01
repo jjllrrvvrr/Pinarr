@@ -1,3 +1,6 @@
+/* Import variables CSS custom properties */
+@import './styles/variables.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

@@ -1,82 +1,72 @@
 <template>
-  <div class="bg-[#161b22] rounded-md border border-[#30363d] flex flex-col h-[600px] lg:h-auto lg:max-h-[calc(100vh-200px)]">
-    <!-- Drop zone for removing -->
-    <div 
-      v-if="isDragging"
-      class="p-3 m-3 border-2 border-dashed border-[#f85149] rounded text-center text-[#f85149] bg-[#f85149]/10"
-      @dragover.prevent
-      @drop="onDropToUnplace"
-    >
-      <TrashIcon class="w-5 h-5 mx-auto mb-1" />
-      <span class="text-xs">Déposer ici pour retirer de la cave</span>
-    </div>
+  <BaseCard variant="flat" class="h-[600px] lg:h-auto lg:max-h-[calc(100vh-200px)] flex flex-col">
     
-    <!-- Header -->
-    <div class="p-4 border-b border-[#30363d]">
-      <h3 class="text-sm font-medium text-white mb-3">Bouteilles</h3>
-      <div class="relative">
-        <input 
-          v-model="searchQuery" 
-          type="text" 
-          placeholder="Rechercher..."
-          class="w-full bg-[#0d1117] border border-[#30363d] rounded px-3 py-2 text-sm text-white placeholder-[#8b949e] focus:border-[#58a6ff] focus:outline-none"
-        />
-        <MagnifyingGlassIcon class="w-4 h-4 text-[#8b949e] absolute right-3 top-2.5" />
+    <!-- Header avec recherche -->
+    <template #header>
+      <div class="w-full">
+        <BaseInput
+          v-model="searchQuery"
+          type="text"
+          placeholder="Rechercher une bouteille..."
+          size="md"
+        >
+          <template #suffix>
+            <MagnifyingGlassIcon class="h-5 w-5 text-gh-text-muted" />
+          </template>
+        </BaseInput>
       </div>
-    </div>
+    </template>
     
-    <!-- List -->
-    <div class="flex-1 overflow-y-auto p-2 space-y-1">
-      <div 
-        v-for="bottle in sortedBottles" 
+    <!-- Liste des bouteilles -->
+    <div class="flex-1 overflow-y-auto space-y-3">
+      <div
+        v-for="bottle in sortedBottles"
         :key="bottle.id"
-        class="group flex items-center gap-3 p-2 rounded hover:bg-[#21262d] cursor-pointer transition border border-transparent"
-        :class="{'bg-[#21262d]/50': isPlaced(bottle), 'border-[#58a6ff]/30': isHovered(bottle)}"
+        class="bg-gh-bg border border-gh-border rounded-card p-3 transition-fast cursor-pointer hover:border-gh-border-hover"
         @mouseenter="onHover(bottle)"
         @mouseleave="onLeave"
-        draggable="true"
-        @dragstart="onDragStart($event, bottle)"
-        @dragend="onDragEnd"
+        @click="goToBottle(bottle.id)"
       >
-        <!-- Status indicator -->
-        <div class="flex-shrink-0 w-2 h-2 rounded-full" 
-             :class="isPlaced(bottle) ? 'bg-[#3fb950]' : 'bg-[#8b949e]'">
-        </div>
-        
-        <!-- Bottle info -->
-        <div class="flex-1 min-w-0">
-          <div class="text-sm text-white font-medium truncate">{{ bottle.name }}</div>
-          <div class="text-xs text-[#8b949e] flex items-center gap-2">
-            <span>{{ bottle.year }} • {{ bottle.type }}</span>
-            <span v-if="getPlacementCount(bottle) > 0" class="text-[#3fb950] bg-[#3fb950]/10 px-1.5 py-0.5 rounded">
-              x{{ getPlacementCount(bottle) }}
-            </span>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <WineTypeBadge :type="bottle.type" />
+            <span class="text-gh-text font-medium text-truncate">{{ bottle.name }}</span>
           </div>
+          <span class="text-gh-text-secondary text-sm flex-shrink-0">{{ bottle.year }}</span>
         </div>
         
-        <!-- Drag handle -->
-        <svg class="w-4 h-4 text-[#484f58] opacity-0 group-hover:opacity-100 transition" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M8 9h8M8 15h8M8 12h8" />
-        </svg>
+        <div class="text-sm text-gh-text-secondary mt-1 ml-5">
+          {{ bottle.quantity }} en stock
+          <span v-if="getPlacementCount(bottle) > 0" class="text-gh-accent-green-text">
+            • {{ getPlacementCount(bottle) }} placée(s)
+          </span>
+        </div>
       </div>
       
       <!-- Empty state -->
-      <div v-if="sortedBottles.length === 0" class="text-center py-8 text-[#8b949e]">
+      <div v-if="sortedBottles.length === 0" class="text-center py-8 text-gh-text-secondary">
         <p class="text-sm">Aucune bouteille trouvée</p>
       </div>
     </div>
     
     <!-- Footer stats -->
-    <div class="p-3 border-t border-[#30363d] text-xs text-[#8b949e] flex justify-between">
-      <span>{{ placedCount }} placées</span>
-      <span>{{ unplacedCount }} à placer</span>
-    </div>
-  </div>
+    <template #footer>
+      <div class="flex justify-between text-xs text-gh-text-secondary">
+        <span>{{ placedCount }} placées</span>
+        <span>{{ unplacedCount }} à placer</span>
+      </div>
+    </template>
+  </BaseCard>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
-import { MagnifyingGlassIcon, TrashIcon } from '@heroicons/vue/24/solid'
+import { useRouter } from 'vue-router'
+import { MagnifyingGlassIcon } from '@heroicons/vue/24/solid'
+import BaseCard from './ui/BaseCard.vue'
+import BaseInput from './ui/BaseInput.vue'
+import WineTypeBadge from './WineTypeBadge.vue'
+import { useWineColors } from '../composables/useWineColors.js'
 
 const props = defineProps({
   bottles: {
@@ -90,21 +80,14 @@ const props = defineProps({
   hoveredBottleId: {
     type: Number,
     default: null
-  },
-  isDragging: {
-    type: Boolean,
-    default: false
   }
 })
 
-const emit = defineEmits([
-  'hover-bottle',
-  'drag-start',
-  'drag-end',
-  'remove-bottle'
-])
+const emit = defineEmits(['hover-bottle'])
 
+const router = useRouter()
 const searchQuery = ref('')
+const { getTypeBadgeClasses } = useWineColors()
 
 // Computed
 const filteredBottles = computed(() => {
@@ -119,13 +102,12 @@ const filteredBottles = computed(() => {
 })
 
 const sortedBottles = computed(() => {
-  // Sort: unplaced first, then alphabetically
   return [...filteredBottles.value].sort((a, b) => {
-    const aPlaced = isPlaced(a)
-    const bPlaced = isPlaced(b)
+    const aPlaced = getPlacementCount(a) > 0
+    const bPlaced = getPlacementCount(b) > 0
     
     if (aPlaced !== bPlaced) {
-      return aPlaced ? 1 : -1 // Unplaced first
+      return aPlaced ? 1 : -1
     }
     
     return a.name.localeCompare(b.name)
@@ -141,10 +123,6 @@ const unplacedCount = computed(() => {
 })
 
 // Methods
-const isPlaced = (bottle) => getPlacementCount(bottle) > 0
-
-const isHovered = (bottle) => props.hoveredBottleId === bottle.id
-
 const getPlacementCount = (bottle) => {
   if (!props.cave) return 0
   
@@ -169,24 +147,7 @@ const onLeave = () => {
   emit('hover-bottle', null)
 }
 
-const onDragStart = (event, bottle) => {
-  event.dataTransfer.effectAllowed = 'move'
-  event.dataTransfer.setData('text/plain', JSON.stringify({
-    bottleId: bottle.id,
-    fromSidebar: true
-  }))
-  emit('drag-start', bottle, true)
-}
-
-const onDragEnd = () => {
-  emit('drag-end')
-}
-
-const onDropToUnplace = (event) => {
-  event.preventDefault()
-  const data = JSON.parse(event.dataTransfer.getData('text/plain'))
-  if (data && !data.fromSidebar && data.positionId) {
-    emit('remove-bottle', data.positionId)
-  }
+const goToBottle = (id) => {
+  router.push(`/wine/${id}`)
 }
 </script>

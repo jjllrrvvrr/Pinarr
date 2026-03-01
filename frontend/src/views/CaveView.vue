@@ -520,6 +520,95 @@ onMounted(() => {
   fetchCave()
   fetchBottles()
 })
+
+// Fonctions pour la sidebar
+const onHoverBottle = (bottleId) => {
+  hoveredBottleId.value = bottleId
+  if (bottleId) {
+    highlightedPositions.value = getPositionsForBottleInCave(bottleId)
+  } else {
+    highlightedPositions.value = []
+  }
+}
+
+const getPositionsForBottleInCave = (bottleId) => {
+  const positions = []
+  cave.value?.columns?.forEach(col => {
+    col.rows?.forEach(row => {
+      row.positions?.forEach(pos => {
+        if (pos.bottle_at_position?.id === bottleId) {
+          positions.push({
+            rowId: row.id,
+            line: pos.line,
+            position: pos.position,
+            positionId: pos.id
+          })
+        }
+      })
+    })
+  })
+  return positions
+}
+
+const isHighlighted = (rowId, line, pos) => {
+  return highlightedPositions.value.some(p => 
+    p.rowId === rowId && p.line === line && p.position === pos
+  )
+}
+
+const onDragStartFromSidebar = (bottle, isFromSidebar) => {
+  draggedFromSidebar.value = isFromSidebar
+  draggedBottle.value = bottle
+  dragSourcePosition.value = null
+  isDragging.value = true
+}
+
+const onDragEndFromSidebar = () => {
+  draggedFromSidebar.value = false
+  isDragging.value = false
+  hoveredDropZone.value = null
+}
+
+const removeBottleFromPosition = async (positionId) => {
+  try {
+    await apiRequest(`/positions/${positionId}/bottle`, {
+      method: 'DELETE'
+    })
+    await fetchCave()
+    emit('refresh-data')
+  } catch (e) {
+    console.error('Error removing bottle:', e)
+  }
+}
+
+const placeBottleFromSidebar = async (bottle, targetRow, targetLine, targetPos) => {
+  try {
+    // Créer la position si elle n'existe pas
+    let positionId = getPositionData(targetRow.id, targetLine, targetPos)?.id
+    
+    if (!positionId) {
+      const newPosition = await apiRequest(`/rows/${targetRow.id}/positions/`, {
+        method: 'POST',
+        body: JSON.stringify({
+          line: targetLine,
+          position: targetPos
+        })
+      })
+      positionId = newPosition.id
+    }
+    
+    // Assigner la bouteille
+    await apiRequest(`/positions/${positionId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ bottle_id: bottle.id })
+    })
+    
+    await fetchCave()
+    emit('refresh-data')
+  } catch (e) {
+    console.error('Error placing bottle:', e)
+  }
+}
 </script>
 
 <template>
@@ -535,64 +624,69 @@ onMounted(() => {
     <div v-else-if="!cave" class="text-center py-12 text-[#8b949e]">Cave non trouvée</div>
 
     <div v-else class="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6">
-      <div class="flex items-center justify-between">
-        <div>
-          <h1 class="text-xl font-bold text-white">{{ cave.name }}</h1>
-          <p class="text-sm text-[#8b949e]">{{ cave.columns?.length || 0 }} colonne(s)</p>
-        </div>
-        <router-link :to="`/caves/${cave.id}/edit`" class="flex items-center gap-2 px-3 py-2 text-[#8b949e] hover:text-white hover:bg-[#21262d] rounded-md transition text-sm">
-          <PencilIcon class="w-4 h-4" />
-          Modifier
-        </router-link>
-      </div>
-
-      <div v-if="cave.columns?.length > 1" class="flex gap-2 overflow-x-auto pb-2">
-        <button
-          v-for="col in cave.columns"
-          :key="col.id"
-          @click="selectedColumn = col"
-          :class="['px-4 py-2 rounded-md text-sm font-medium transition whitespace-nowrap', selectedColumn?.id === col.id ? 'bg-[#238636] text-white' : 'bg-[#21262d] text-[#8b949e] hover:bg-[#30363d]']"
-        >
-          {{ col.name }}
-        </button>
-      </div>
-
-      <div v-if="selectedColumn" class="space-y-6">
-        <div v-for="row in selectedColumn.rows" :key="row.id" class="bg-[#161b22] rounded-md border border-[#30363d] overflow-hidden">
-          <div class="px-4 py-2 border-b border-[#30363d] bg-[#0d1117]/50 flex items-center justify-between">
-            <span class="text-sm font-medium text-white">{{ row.name }}</span>
-            <span class="text-xs text-[#8b949e]">{{ row.width }}×{{ row.height }}</span>
+      <!-- GAUCHE: Grille de la cave -->
+      <div class="space-y-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <h1 class="text-xl font-bold text-white">{{ cave.name }}</h1>
+            <p class="text-sm text-[#8b949e]">{{ cave.columns?.length || 0 }} colonne(s)</p>
           </div>
-          
-          <div class="p-4 overflow-x-auto">
-            <div class="flex gap-1 mb-1">
-              <div class="w-8 flex-shrink-0"></div>
-              <div v-for="pos in row.width" :key="pos" class="w-16 text-center text-xs text-[#8b949e]">
-                {{ pos }}
-              </div>
+          <router-link :to="`/caves/${cave.id}/edit`" class="flex items-center gap-2 px-3 py-2 text-[#8b949e] hover:text-white hover:bg-[#21262d] rounded-md transition text-sm">
+            <PencilIcon class="w-4 h-4" />
+            Modifier
+          </router-link>
+        </div>
+
+        <div v-if="cave.columns?.length > 1" class="flex gap-2 overflow-x-auto pb-2">
+          <button
+            v-for="col in cave.columns"
+            :key="col.id"
+            @click="selectedColumn = col"
+            :class="['px-4 py-2 rounded-md text-sm font-medium transition whitespace-nowrap', selectedColumn?.id === col.id ? 'bg-[#238636] text-white' : 'bg-[#21262d] text-[#8b949e] hover:bg-[#30363d]']"
+          >
+            {{ col.name }}
+          </button>
+        </div>
+
+        <div v-if="selectedColumn" class="space-y-6">
+          <div v-for="row in selectedColumn.rows" :key="row.id" class="bg-[#161b22] rounded-md border border-[#30363d] overflow-hidden">
+            <div class="px-4 py-2 border-b border-[#30363d] bg-[#0d1117]/50 flex items-center justify-between">
+              <span class="text-sm font-medium text-white">{{ row.name }}</span>
+              <span class="text-xs text-[#8b949e]">{{ row.width }}×{{ row.height }}</span>
             </div>
             
-            <div v-for="line in row.height" :key="line" class="flex gap-1 items-center mb-1">
-              <div class="w-8 flex-shrink-0 text-xs text-[#8b949e] text-center">L{{ row.height - line + 1 }}</div>
-              <div
-                v-for="pos in row.width"
-                :key="pos"
-                @click="selectPosition(row, row.height - line + 1, pos)"
-                @dragover.prevent="(e) => handleDragOver(e, row, row.height - line + 1, pos)"
-                @dragleave="handleDragLeave"
-                @drop="(e) => handleDrop(e, row, row.height - line + 1, pos)"
-                :class="[
-                  'w-16 h-16 rounded border flex items-center justify-center cursor-pointer transition relative',
-                  getBottleAtPosition(row.id, row.height - line + 1, pos)
-                    ? 'bg-[#238636]/20 border-[#238636]'
-                    : 'bg-[#0d1117] border-[#30363d]',
-                  hoveredDropZone?.rowId === row.id && hoveredDropZone?.line === (row.height - line + 1) && hoveredDropZone?.position === pos
-                    ? hoveredDropZone.hasBottle
-                      ? 'ring-2 ring-[#f0883e] bg-[#f0883e]/20'
-                      : 'ring-2 ring-[#58a6ff] bg-[#58a6ff]/20'
-                    : ''
-                ]"
-              >
+            <div class="p-4 overflow-x-auto">
+              <div class="flex gap-1 mb-1">
+                <div class="w-8 flex-shrink-0"></div>
+                <div v-for="pos in row.width" :key="pos" class="w-16 text-center text-xs text-[#8b949e]">
+                  {{ pos }}
+                </div>
+              </div>
+              
+              <div v-for="line in row.height" :key="line" class="flex gap-1 items-center mb-1">
+                <div class="w-8 flex-shrink-0 text-xs text-[#8b949e] text-center">L{{ row.height - line + 1 }}</div>
+                <div
+                  v-for="pos in row.width"
+                  :key="pos"
+                  @click="selectPosition(row, row.height - line + 1, pos)"
+                  @dragover.prevent="(e) => handleDragOver(e, row, row.height - line + 1, pos)"
+                  @dragleave="handleDragLeave"
+                  @drop="(e) => handleDrop(e, row, row.height - line + 1, pos)"
+                  :class="[
+                    'w-16 h-16 rounded border flex items-center justify-center cursor-pointer transition relative',
+                    getBottleAtPosition(row.id, row.height - line + 1, pos)
+                      ? 'bg-[#238636]/20 border-[#238636]'
+                      : 'bg-[#0d1117] border-[#30363d]',
+                    isHighlighted(row.id, row.height - line + 1, pos)
+                      ? 'ring-2 ring-[#58a6ff] bg-[#58a6ff]/30 scale-105 z-10'
+                      : '',
+                    hoveredDropZone?.rowId === row.id && hoveredDropZone?.line === (row.height - line + 1) && hoveredDropZone?.position === pos
+                      ? hoveredDropZone.hasBottle
+                        ? 'ring-2 ring-[#f0883e] bg-[#f0883e]/20'
+                        : 'ring-2 ring-[#58a6ff] bg-[#58a6ff]/20'
+                      : ''
+                  ]"
+                >
                 <div
                   v-if="getBottleAtPosition(row.id, row.height - line + 1, pos)"
                   class="text-center w-full h-full flex items-center justify-center"
@@ -622,8 +716,10 @@ onMounted(() => {
         Cette cave n'a pas encore de colonnes.
         <router-link :to="`/caves/${cave.id}/edit`" class="text-[#58a6ff] hover:underline">Modifier la cave</router-link>
       </div>
+    </div>
 
-      <!-- RIGHT: Bottle Sidebar -->
+    <!-- DROITE: Sidebar des bouteilles -->
+    <div>
       <BottleSidebar
         :bottles="bottles"
         :cave="cave"
@@ -635,6 +731,7 @@ onMounted(() => {
         @remove-bottle="removeBottleFromPosition"
       />
     </div>
+  </div>
 
     <div v-if="selectedPosition" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="selectedPosition = null">
       <div class="bg-[#161b22] rounded-md w-full max-w-md border border-[#30363d]">
