@@ -637,7 +637,7 @@ const placeBottleFromSidebar = async (bottle, targetRow, targetLine, targetPos) 
         </router-link>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4 sm:gap-6">
+      <div class="grid grid-cols-1 lg:grid-cols-[1fr_minmax(280px,350px)] gap-4 sm:gap-6">
         <!-- GAUCHE: Grille de la cave -->
         <div class="space-y-4 sm:space-y-6">
           <div v-if="cave.columns?.length > 1" class="flex gap-2 overflow-x-auto pb-2">
