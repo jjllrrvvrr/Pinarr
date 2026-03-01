@@ -1,5 +1,5 @@
 <template>
-  <BaseCard variant="flat" class="h-[600px] lg:h-auto lg:max-h-[calc(100vh-200px)] flex flex-col">
+  <BaseCard variant="flat" class="h-[600px] flex flex-col">
     
     <!-- Header avec recherche -->
     <template #header>

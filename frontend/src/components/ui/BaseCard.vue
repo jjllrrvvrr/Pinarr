@@ -1,6 +1,6 @@
 <template>
-  <div :class="cardClasses">
-    <div v-if="$slots.header || title" class="px-4 py-3 border-b border-gh-border flex items-center justify-between">
+  <div :class="[cardClasses, 'flex flex-col']">
+    <div v-if="$slots.header || title" class="px-4 py-3 border-b border-gh-border flex items-center justify-between flex-shrink-0">
       <div class="flex items-center gap-2 flex-1">
         <slot name="icon" />
         <h3 v-if="title" class="font-semibold text-gh-text">{{ title }}</h3>
