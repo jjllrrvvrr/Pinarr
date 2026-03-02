@@ -17,7 +17,7 @@ Application de gestion de cave à vin self-hosted avec Docker.
 curl -O https://raw.githubusercontent.com/jjllrrvvrr/Pinarr/main/docker-compose.yml
 
 # Lancer l'application
-docker-compose up -d
+docker compose up -d
 ```
 
 Accès : `http://localhost:8908` | Login : `admin` / `admin123`
@@ -27,17 +27,17 @@ Accès : `http://localhost:8908` | Login : `admin` / `admin123`
 ```bash
 git clone https://github.com/jjllrrvvrr/Pinarr.git
 cd Pinarr
-docker-compose up -d
+docker compose up -d
 ```
 
 ## Mise à jour
 
 ```bash
 # Méthode rapide
-docker-compose pull && docker-compose up -d
+docker compose pull && docker compose up -d
 
 # Ou avec git
-git pull && docker-compose pull && docker-compose up -d
+git pull && docker compose pull && docker compose up -d
 ```
 
 ## Configuration
