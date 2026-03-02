@@ -34,7 +34,7 @@ docker compose up -d
 
 ```bash
 # Méthode rapide
-docker compose pull && docker-compose up -d
+docker compose pull && docker compose up -d
 
 # Ou avec git
 git pull && docker compose pull && docker compose up -d
