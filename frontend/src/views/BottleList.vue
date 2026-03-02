@@ -92,7 +92,7 @@
         </button>
         <button v-if="filters.year" @click="clearFilter('year')" 
                 class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-[#58a6ff]/20 text-[#58a6ff] border border-[#58a6ff]/30 hover:bg-[#58a6ff]/30 transition">
-          Année: {{ filters.year }} ×
+          Millésime: {{ filters.year }} ×
         </button>
         <button v-if="filters.domaine" @click="clearFilter('domaine')" 
                 class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-[#e3b341]/20 text-[#e3b341] border border-[#e3b341]/30 hover:bg-[#e3b341]/30 transition">

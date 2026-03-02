@@ -177,11 +177,11 @@
               <div class="text-[#3fb950] text-2xl font-bold">{{ bottle.price }} €</div>
             </div>
 
-            <!-- Année -->
+            <!-- Millésime -->
             <div v-if="bottle.year" class="bg-[#161b22] rounded-xl p-4 border border-[#30363d] text-center">
               <div class="flex items-center justify-center gap-2 text-[#8b949e] text-xs uppercase tracking-wide mb-2">
                 <CalendarIcon class="w-4 h-4" />
-                Année
+                Millésime
               </div>
               <div class="text-white text-2xl font-bold">{{ bottle.year }}</div>
             </div>

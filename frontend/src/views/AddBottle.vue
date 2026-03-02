@@ -65,7 +65,7 @@
                 <div class="flex-1 min-w-0">
                   <div class="text-sm text-gh-text font-medium truncate">{{ wine.name }}</div>
                   <div class="text-xs text-gh-text-secondary">
-                    {{ wine.year || 'Année inconnue' }}
+                    {{ wine.year || 'Millésime inconnu' }}
                     <span v-if="wine.domaine" class="text-gh-accent"> • {{ wine.domaine }}</span>
                   </div>
                 </div>
@@ -89,11 +89,11 @@
             </p>
           </div>
 
-          <!-- Année -->
+          <!-- Millésime -->
           <div>
             <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-2">
               <CalendarIcon class="w-4 h-4" />
-              Année <span class="text-gh-accent-red">*</span>
+              Millésime <span class="text-gh-accent-red">*</span>
             </label>
             <input 
               v-model="form.year" 
@@ -459,7 +459,7 @@
           Bouteille similaire trouvée
         </h2>
         <p class="text-gh-text-secondary text-sm mb-4">
-          Une ou plusieurs bouteilles avec le même nom et la même année existent déjà.
+          Une ou plusieurs bouteilles avec le même nom et la même millésime existent déjà.
         </p>
         <div class="space-y-2 mb-4 max-h-40 overflow-y-auto">
           <div v-for="dup in duplicateMatches" :key="dup.id" 
@@ -637,9 +637,9 @@ const removeTag = (tag) => {
 const validateForm = () => {
   const newErrors = {}
   if (!form.value.name?.trim()) newErrors.name = 'Le nom est obligatoire'
-  if (!form.value.year) newErrors.year = 'L\'année est obligatoire'
+  if (!form.value.year) newErrors.year = 'Le millésime est obligatoire'
   if (form.value.year && (form.value.year < 1900 || form.value.year > 2100)) {
-    newErrors.year = 'Année invalide'
+    newErrors.year = 'Millésime invalide'
   }
   errors.value = newErrors
   return Object.keys(newErrors).length === 0
