@@ -63,6 +63,11 @@ export default {
         'md': 'var(--shadow-md)',
         'lg': 'var(--shadow-lg)',
         'glow-blue': 'var(--shadow-glow-blue)',
+        'glow-red': 'var(--shadow-glow-red)',
+        'glow-yellow': 'var(--shadow-glow-yellow)',
+        'glow-pink': 'var(--shadow-glow-pink)',
+        'glow-purple': 'var(--shadow-glow-purple)',
+        'glow-gray': 'var(--shadow-glow-gray)',
       },
       zIndex: {
         'dropdown': 'var(--z-dropdown)',

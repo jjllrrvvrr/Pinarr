@@ -57,6 +57,16 @@ Les données sont stockées dans les volumes Docker :
 - `./data/` : Base de données SQLite
 - `./uploads/` : Images des bouteilles
 
+## 📸 Captures d'écran
+
+Gestion des caves :
+
+![Gestion des caves](docs/screenshots/screen_cave.png)
+
+Carte des régions viticoles :
+
+![Carte des régions](docs/screenshots/screen_map.png)
+
 ---
 
 **MIT License** - [GitHub](https://github.com/jjllrrvvrr/Pinarr)

@@ -84,6 +84,11 @@
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
   --shadow-glow-blue: 0 0 10px rgba(88, 166, 255, 0.3);
+  --shadow-glow-red: 0 0 10px rgba(248, 81, 73, 0.3);
+  --shadow-glow-yellow: 0 0 10px rgba(227, 179, 65, 0.3);
+  --shadow-glow-pink: 0 0 10px rgba(219, 97, 162, 0.3);
+  --shadow-glow-purple: 0 0 10px rgba(163, 113, 247, 0.3);
+  --shadow-glow-gray: 0 0 10px rgba(139, 148, 158, 0.3);
 }
 
 /* ==========================================

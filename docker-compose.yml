@@ -2,10 +2,10 @@ services:
   pinarr:
     image: ghcr.io/jjllrrvvrr/pinarr:latest
     container_name: pinarr
-    pull_policy: always
+#    pull_policy: always
     ports:
       - "${PORT:-8908}:80"      # Interface web
-      - "${BACKEND_PORT:-9994}:8000"  # API direct (compatibilité)
+      - "${BACKEND_PORT:-9994}:8000"  # API direct
     environment:
       - DATABASE_URL=sqlite:///./data/pinarr.db
       - SECRET_KEY=${SECRET_KEY:-}

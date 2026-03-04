@@ -5,9 +5,9 @@
       :key="type.value"
       type="button"
       :class="[
-        'flex flex-col items-center justify-center gap-1 p-3 rounded-card border-2 transition-fast',
+        'flex flex-col items-center justify-center p-3 rounded-card border-2 transition-fast',
         modelValue === type.value
-          ? `border-${type.color} bg-${type.color}/10 shadow-glow-blue`
+          ? `border-${type.color} bg-${type.color}/10 ${colorToShadow[type.color]}`
           : 'border-gh-border hover:border-gh-border-hover bg-gh-bg'
       ]"
       @click="selectType(type.value)"
@@ -32,6 +32,14 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:modelValue'])
+
+const colorToShadow = {
+  'wine-red': 'shadow-glow-red',
+  'wine-white': 'shadow-glow-yellow',
+  'wine-rose': 'shadow-glow-pink',
+  'wine-champagne': 'shadow-glow-purple',
+  'wine-default': 'shadow-glow-gray'
+}
 
 const wineTypes = [
   { value: 'Rouge', label: 'Rouge', color: 'wine-red' },
