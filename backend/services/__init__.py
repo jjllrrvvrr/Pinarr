@@ -30,7 +30,7 @@ from .cave_service import (
     remove_bottle_from_position,
 )
 
-from .upload_service import upload_image, delete_image
+from .upload_service import upload_image, delete_image, upload_image_from_url
 
 from .geo_service import get_geocoded_regions, create_geocoded_region
 
@@ -61,6 +61,7 @@ __all__ = [
     "remove_bottle_from_position",
     "upload_image",
     "delete_image",
+    "upload_image_from_url",
     "get_geocoded_regions",
     "create_geocoded_region",
 ]

@@ -408,8 +408,8 @@
                @click="triggerFileInput">
             <CameraIcon class="w-10 h-10 mx-auto text-gh-text-secondary mb-3" />
             <p class="text-sm text-gh-text-secondary mb-1">Glissez une photo ou cliquez</p>
-            <p class="text-xs text-gh-text-muted">JPG, PNG, WEBP jusqu'à 5MB</p>
-            <input type="file" ref="fileInput" @change="handleImageUpload" accept="image/*" class="hidden" />
+            <p class="text-xs text-gh-text-muted">JPG, PNG, WEBP, HEIC jusqu'à 10MB</p>
+            <input type="file" ref="fileInput" @change="handleImageUpload" accept="image/*" capture="environment" class="hidden" />
           </div>
           
           <div v-if="!imagePreview" class="mt-3">
@@ -419,10 +419,15 @@
             </button>
             <div v-if="showUrlInput" class="mt-2 flex gap-2">
               <input v-model="imageUrl" type="url" placeholder="https://..." 
+                     :disabled="isLoadingImage"
                      class="flex-1 bg-gh-bg border border-gh-border rounded-card p-2.5 text-gh-text text-sm" />
               <button type="button" @click="useImageUrl" 
-                      class="px-4 py-2 bg-gh-accent-green text-white rounded-card text-sm font-medium hover:bg-gh-accent-green-hover transition-fast">
-                OK
+                      :disabled="isLoadingImage || !imageUrl"
+                      class="px-4 py-2 bg-gh-accent-green text-white rounded-card text-sm font-medium hover:bg-gh-accent-green-hover disabled:opacity-50 disabled:cursor-not-allowed transition-fast flex items-center gap-2">
+                <span v-if="isLoadingImage" class="animate-spin">
+                  <ArrowPathIcon class="w-4 h-4" />
+                </span>
+                <span v-else>OK</span>
               </button>
             </div>
           </div>
@@ -537,6 +542,7 @@ const imagePreview = ref(null)
 const imageFile = ref(null)
 const showUrlInput = ref(false)
 const imageUrl = ref('')
+const isLoadingImage = ref(false)
 const dragOver = ref(false)
 const fileInput = ref(null)
 
@@ -747,24 +753,81 @@ const uploadImage = async () => {
   return null
 }
 
-const handleImageUpload = (e) => {
+const compressImage = (file) => {
+  return new Promise((resolve) => {
+    // Si c'est une image HEIC/HEIF ou si le fichier fait moins de 1MB, on ne compresse pas
+    if (file.type === 'image/heic' || file.type === 'image/heif' || file.size < 1024 * 1024) {
+      resolve(file)
+      return
+    }
+
+    const img = new Image()
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+    
+    img.onload = () => {
+      // Calculer les nouvelles dimensions (max 1920px)
+      let width = img.width
+      let height = img.height
+      const maxSize = 1920
+      
+      if (width > maxSize || height > maxSize) {
+        if (width > height) {
+          height = (height / width) * maxSize
+          width = maxSize
+        } else {
+          width = (width / height) * maxSize
+          height = maxSize
+        }
+      }
+      
+      canvas.width = width
+      canvas.height = height
+      ctx.drawImage(img, 0, 0, width, height)
+      
+      // Convertir en blob avec compression (qualité 0.8)
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const compressedFile = new File([blob], file.name.replace(/\.heic$/i, '.jpg').replace(/\.heif$/i, '.jpg'), {
+            type: 'image/jpeg',
+            lastModified: Date.now()
+          })
+          resolve(compressedFile)
+        } else {
+          resolve(file)
+        }
+      }, 'image/jpeg', 0.8)
+    }
+    
+    img.onerror = () => resolve(file)
+    
+    const reader = new FileReader()
+    reader.onload = (e) => { img.src = e.target.result }
+    reader.readAsDataURL(file)
+  })
+}
+
+const handleImageUpload = async (e) => {
   const file = e.target.files[0]
   if (file) {
-    imageFile.value = file
+    // Comprimer l'image avant de l'utiliser
+    const compressedFile = await compressImage(file)
+    imageFile.value = compressedFile
     const reader = new FileReader()
     reader.onload = (ev) => { imagePreview.value = ev.target.result }
-    reader.readAsDataURL(file)
+    reader.readAsDataURL(compressedFile)
   }
 }
 
-const handleDrop = (e) => {
+const handleDrop = async (e) => {
   dragOver.value = false
   const file = e.dataTransfer.files[0]
   if (file && file.type.startsWith('image/')) {
-    imageFile.value = file
+    const compressedFile = await compressImage(file)
+    imageFile.value = compressedFile
     const reader = new FileReader()
     reader.onload = (ev) => { imagePreview.value = ev.target.result }
-    reader.readAsDataURL(file)
+    reader.readAsDataURL(compressedFile)
   }
 }
 
@@ -776,13 +839,30 @@ const removeImage = () => {
   form.value.image_path = null
 }
 
-const useImageUrl = () => {
-  if (imageUrl.value) {
-    imagePreview.value = imageUrl.value
-    form.value.image_path = imageUrl.value
+const useImageUrl = async () => {
+  if (!imageUrl.value) return
+  
+  isLoadingImage.value = true
+  
+  try {
+    // Appeler l'API backend pour télécharger l'image depuis l'URL
+    const response = await apiRequest('/upload-from-url', {
+      method: 'POST',
+      body: JSON.stringify({ url: imageUrl.value })
+    })
+    
+    // Utiliser le chemin local retourné par le backend
+    imagePreview.value = response.path
+    form.value.image_path = response.path
     imageFile.value = null
     showUrlInput.value = false
     imageUrl.value = ''
+    
+  } catch (error) {
+    console.error('Erreur lors du téléchargement de l\'image:', error)
+    alert('Erreur lors du téléchargement: ' + error.message)
+  } finally {
+    isLoadingImage.value = false
   }
 }
 

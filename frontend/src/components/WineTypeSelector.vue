@@ -6,17 +6,16 @@
       type="button"
       :class="[
         'flex flex-col items-center justify-center p-3 rounded-card border-2 transition-fast',
-        modelValue === type.value
-          ? `border-${type.color} bg-${type.color}/10 ${colorToShadow[type.color]}`
-          : 'border-gh-border hover:border-gh-border-hover bg-gh-bg'
+        modelValue === type.value ? '' : 'border-gh-border hover:border-gh-border-hover bg-gh-bg'
       ]"
+      :style="modelValue === type.value ? getSelectedStyle(type.color) : {}"
       @click="selectType(type.value)"
     >
-      <span class="w-4 h-4 rounded-full" :class="`bg-${type.color}`"></span>
-      <span :class="[
-        'text-xs font-medium',
-        modelValue === type.value ? `text-${type.color}` : 'text-gh-text-secondary'
-      ]">
+      <span 
+        class="text-xs font-medium"
+        :style="modelValue === type.value ? { color: `var(--${type.color})` } : {}"
+        :class="modelValue === type.value ? '' : 'text-gh-text-secondary'"
+      >
         {{ type.label }}
       </span>
     </button>
@@ -34,11 +33,30 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue'])
 
 const colorToShadow = {
-  'wine-red': 'shadow-glow-red',
-  'wine-white': 'shadow-glow-yellow',
-  'wine-rose': 'shadow-glow-pink',
-  'wine-champagne': 'shadow-glow-purple',
-  'wine-default': 'shadow-glow-gray'
+  'wine-red': '0 0 10px rgba(248, 81, 73, 0.3)',
+  'wine-white': '0 0 10px rgba(227, 179, 65, 0.3)',
+  'wine-rose': '0 0 10px rgba(219, 97, 162, 0.3)',
+  'wine-champagne': '0 0 10px rgba(163, 113, 247, 0.3)',
+  'wine-default': '0 0 10px rgba(139, 148, 158, 0.3)'
+}
+
+const getSelectedStyle = (color) => {
+  return {
+    borderColor: `var(--${color})`,
+    backgroundColor: `rgba(${getRgbValues(color)}, 0.1)`,
+    boxShadow: colorToShadow[color]
+  }
+}
+
+const getRgbValues = (color) => {
+  const rgbMap = {
+    'wine-red': '248, 81, 73',
+    'wine-white': '227, 179, 65',
+    'wine-rose': '219, 97, 162',
+    'wine-champagne': '163, 113, 247',
+    'wine-default': '139, 148, 158'
+  }
+  return rgbMap[color] || '139, 148, 158'
 }
 
 const wineTypes = [

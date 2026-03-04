@@ -8,3 +8,5 @@ pyjwt
 python-jose
 passlib
 bcrypt
+requests
+pillow

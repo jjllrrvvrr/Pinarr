@@ -46,6 +46,7 @@ from services import (
     remove_bottle_from_position,
     # Upload service
     upload_image,
+    upload_image_from_url,
 )
 from services.geo_service import get_geocoded_regions, create_geocoded_region
 
@@ -393,6 +394,18 @@ async def upload_image_endpoint(file: UploadFile = File(...)):
     """Upload une image avec validation complète."""
     try:
         return upload_image(file)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@api_router.post("/upload-from-url")
+async def upload_image_from_url_endpoint(request: dict):
+    """Télécharge une image depuis une URL et la sauvegarde localement."""
+    try:
+        url = request.get("url")
+        if not url:
+            raise HTTPException(status_code=400, detail="URL manquante")
+        return upload_image_from_url(url)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
