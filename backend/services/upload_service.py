@@ -91,42 +91,38 @@ def _validate_image_content(content: bytes) -> None:
 
 def _convert_and_compress_image(content: bytes, ext: str) -> tuple[bytes, str]:
     """
-    Convertit HEIC/HEIF en JPG et compresse si nécessaire.
-    Retourne (contenu, extension_finale).
+    Convertit toutes les images en WebP avec compression optimale.
     """
     try:
-        # Essayer d'ouvrir avec PIL
         img = Image.open(BytesIO(content))
 
-        # Convertir en RGB si nécessaire (pour HEIC/HEIF)
-        if img.mode in ("RGBA", "P"):
-            img = img.convert("RGB")
-
-        # Si c'était un HEIC/HEIF, convertir en JPG
-        if ext in [".heic", ".heif"]:
-            output = BytesIO()
-            img.save(output, format="JPEG", quality=85, optimize=True)
-            return output.getvalue(), ".jpg"
-
-        # Pour les autres formats, compresser si nécessaire
         # Redimensionner si trop grand (max 1920px)
         max_size = 1920
         if img.width > max_size or img.height > max_size:
             img.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
 
-        # Sauvegarder avec compression
-        output = BytesIO()
-        if ext == ".png":
-            img.save(output, format="PNG", optimize=True)
-        else:
-            # JPG ou autre, convertir en JPG avec compression
-            img.save(output, format="JPEG", quality=85, optimize=True)
-            return output.getvalue(), ".jpg"
+        # Convertir en RGBA si nécessaire pour préserver la transparence
+        if img.mode not in ("RGB", "RGBA"):
+            if img.mode == "P":
+                # Palette → RGBA (préserve transparence)
+                img = img.convert("RGBA")
+            elif img.mode in ("L", "LA"):
+                # Grayscale → RGB/RGBA
+                img = img.convert("RGBA" if "A" in img.mode else "RGB")
+            else:
+                # Autres modes → RGB
+                img = img.convert("RGB")
 
-        return output.getvalue(), ext
+        # Sauvegarder en WebP avec compression
+        output = BytesIO()
+        # Qualité 85 (bon compromis taille/qualité)
+        # Method 6 (compression optimale mais plus lente)
+        img.save(output, format="WEBP", quality=85, method=6, optimize=True)
+
+        return output.getvalue(), ".webp"
 
     except Exception as e:
-        # Si PIL ne peut pas ouvrir, retourner le contenu original
+        # En cas d'erreur, retourner le contenu original
         return content, ext
 
 

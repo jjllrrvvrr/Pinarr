@@ -133,7 +133,7 @@ const getTypeDot = (type) => {
   if (type === 'Rouge') return 'bg-[#f85149]'
   if (type === 'Blanc') return 'bg-[#e3b341]'
   if (type === 'Rosé') return 'bg-[#db61a2]'
-  if (type === 'Champagne') return 'bg-[#a371f7]'
+  if (type === 'Effervescents') return 'bg-[#a371f7]'
   return 'bg-[#8b949e]'
 }
 

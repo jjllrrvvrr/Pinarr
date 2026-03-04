@@ -73,7 +73,7 @@ const getTypeColor = (type) => {
   if (type === 'Rouge') return 'bg-[#f85149]/30 text-[#f85149] border-[#f85149]/50'
   if (type === 'Blanc') return 'bg-[#e3b341]/30 text-[#e3b341] border-[#e3b341]/50'
   if (type === 'Rosé') return 'bg-[#db61a2]/30 text-[#db61a2] border-[#db61a2]/50'
-  if (type === 'Champagne') return 'bg-[#a371f7]/30 text-[#a371f7] border-[#a371f7]/50'
+  if (type === 'Effervescents') return 'bg-[#a371f7]/30 text-[#a371f7] border-[#a371f7]/50'
   return 'bg-[#30363d] text-[#8b949e] border-[#30363d]'
 }
 

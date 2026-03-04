@@ -7,7 +7,7 @@ export const WINE_COLORS = {
   'Rouge': '#f85149',
   'Blanc': '#e3b341', 
   'Rosé': '#db61a2',
-  'Champagne': '#a371f7',
+  'Effervescents': '#a371f7',
   'default': '#8b949e'
 }
 
@@ -15,7 +15,7 @@ export const WINE_BG_COLORS = {
   'Rouge': 'bg-[#f85149]',
   'Blanc': 'bg-[#e3b341]',
   'Rosé': 'bg-[#db61a2]', 
-  'Champagne': 'bg-[#a371f7]',
+  'Effervescents': 'bg-[#a371f7]',
   'default': 'bg-[#8b949e]'
 }
 
@@ -23,7 +23,7 @@ export const WINE_TEXT_COLORS = {
   'Rouge': 'text-[#f85149]',
   'Blanc': 'text-[#e3b341]',
   'Rosé': 'text-[#db61a2]',
-  'Champagne': 'text-[#a371f7]',
+  'Effervescents': 'text-[#a371f7]',
   'default': 'text-[#8b949e]'
 }
 

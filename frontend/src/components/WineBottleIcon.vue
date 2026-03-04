@@ -11,7 +11,7 @@ const wineColor = computed(() => {
     'Rouge': '#722f37',
     'Blanc': '#c9a227',
     'Rosé': '#e8a0a0',
-    'Champagne': '#d4af37',
+    'Effervescents': '#d4af37',
     'Spiritueux': '#6b7280'
   }
   return colors[props.type] || '#6b7280'

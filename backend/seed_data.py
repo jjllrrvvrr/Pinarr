@@ -83,7 +83,7 @@ def seed_database():
                 name="Champagne Bollinger",
                 domaine="Bollinger",
                 year=2018,
-                type="Champagne",
+                type="Effervescents",
                 region="Champagne",
                 cepage="Pinot Noir, Chardonnay",
                 alcohol=12.0,

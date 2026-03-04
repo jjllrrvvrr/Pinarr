@@ -93,7 +93,7 @@
           <div>
             <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-2">
               <CalendarIcon class="w-4 h-4" />
-              Millésime <span class="text-gh-accent-red">*</span>
+              Millésime
             </label>
             <input 
               v-model="form.year" 
@@ -408,7 +408,7 @@
                @click="triggerFileInput">
             <CameraIcon class="w-10 h-10 mx-auto text-gh-text-secondary mb-3" />
             <p class="text-sm text-gh-text-secondary mb-1">Glissez une photo ou cliquez</p>
-            <p class="text-xs text-gh-text-muted">JPG, PNG, WEBP, HEIC jusqu'à 10MB</p>
+            <p class="text-xs text-gh-text-muted">Toutes les images sont converties en WebP (optimisé)</p>
             <input type="file" ref="fileInput" @change="handleImageUpload" accept="image/*" capture="environment" class="hidden" />
           </div>
           
@@ -643,7 +643,6 @@ const removeTag = (tag) => {
 const validateForm = () => {
   const newErrors = {}
   if (!form.value.name?.trim()) newErrors.name = 'Le nom est obligatoire'
-  if (!form.value.year) newErrors.year = 'Le millésime est obligatoire'
   if (form.value.year && (form.value.year < 1900 || form.value.year > 2100)) {
     newErrors.year = 'Millésime invalide'
   }
@@ -672,6 +671,28 @@ const saveBottle = async (force = false) => {
     }
 
     let imagePath = form.value.image_path
+    
+    // Si une URL est entrée mais pas encore traitée, télécharger automatiquement
+    if (imageUrl.value && !imagePath) {
+      try {
+        isLoadingImage.value = true
+        const response = await apiRequest('/upload-from-url', {
+          method: 'POST',
+          body: JSON.stringify({ url: imageUrl.value })
+        })
+        imagePath = response.path
+        form.value.image_path = response.path
+        imageUrl.value = ''
+      } catch (error) {
+        alert('Erreur lors du téléchargement de l\'image: ' + error.message)
+        isSubmitting.value = false
+        isLoadingImage.value = false
+        return
+      } finally {
+        isLoadingImage.value = false
+      }
+    }
+    
     if (imageFile.value) {
       imagePath = await uploadImage()
     }

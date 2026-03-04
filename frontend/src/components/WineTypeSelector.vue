@@ -63,7 +63,7 @@ const wineTypes = [
   { value: 'Rouge', label: 'Rouge', color: 'wine-red' },
   { value: 'Blanc', label: 'Blanc', color: 'wine-white' },
   { value: 'Rosé', label: 'Rosé', color: 'wine-rose' },
-  { value: 'Champagne', label: 'Champagne', color: 'wine-champagne' },
+  { value: 'Effervescents', label: 'Effervescents', color: 'wine-champagne' },
   { value: 'Spiritueux', label: 'Spirit', color: 'wine-default' }
 ]
 
