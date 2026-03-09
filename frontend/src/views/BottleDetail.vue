@@ -96,7 +96,7 @@
                 <!-- Alcool -->
                 <div v-if="bottle.alcohol" class="bg-[#0d1117] rounded-lg p-3 sm:p-4 border border-[#30363d]">
                   <div class="flex items-center gap-1.5 sm:gap-2 text-[#8b949e] text-xs uppercase tracking-wide mb-2">
-                    <ThermometerIcon class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <BeakerIcon class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     Alcool
                   </div>
                   <div class="text-white font-medium text-base sm:text-lg">{{ bottle.alcohol }}%</div>
@@ -271,6 +271,20 @@
         <button @click="showQRModal = false" class="mt-3 sm:mt-4 text-xs sm:text-sm text-[#58a6ff] hover:underline">Fermer</button>
       </div>
     </div>
+    
+    <!-- Modal de retrait des positions -->
+    <RemovePositionModal
+      :show="showRemoveModal"
+      :total="positionsToRemove"
+      :removed="positionsRemoved"
+      :selected="selectedPositionId"
+      :positions="bottle?.positions || []"
+      :processing="isProcessing"
+      :bottle="bottle"
+      @select="selectPosition"
+      @confirm="confirmRemove"
+      @cancel="cancelRemove"
+    />
   </main>
 </template>
 
@@ -279,17 +293,18 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import QrcodeVue from 'qrcode.vue'
 import { 
-  QrCodeIcon, PencilSquareIcon, StarIcon as StarIconSolid, 
-  ArrowTopRightOnSquareIcon, TrashIcon, LinkIcon,
-  ArchiveBoxIcon, ArrowPathIcon, MapPinIcon, ChartBarIcon, DocumentTextIcon, TagIcon
+  PencilIcon, TrashIcon, MapPinIcon, TagIcon, StarIcon, 
+  HeartIcon, ShoppingCartIcon, ArrowLeftIcon, QrCodeIcon, PlusIcon, MinusIcon,
+  ChevronDownIcon, ChevronUpIcon
 } from '@heroicons/vue/24/solid'
 import WineBottleIcon from '@/components/WineBottleIcon.vue'
+import RemovePositionModal from '@/components/RemovePositionModal.vue'
 import {
-  FlagIcon, LandscapeIcon, ThermometerIcon, RulerIcon,
-  CalendarIcon, GrapeIcon, CurrencyIcon, QuantityIcon, InfoTagIcon
-} from '../components/icons'
+  CalendarIcon, MapIcon, BeakerIcon
+} from '@heroicons/vue/24/outline'
 import { apiRequest } from '../services/api.js'
 import config from '../config.js'
+import { useQuantityManager } from '../composables/useQuantityManager.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -297,6 +312,19 @@ const emit = defineEmits(['refresh-data'])
 
 const bottle = ref(null)
 const showQRModal = ref(false)
+
+// Gestion du retrait des positions
+const { 
+  showRemoveModal,
+  positionsToRemove,
+  positionsRemoved,
+  selectedPositionId,
+  isProcessing,
+  checkQuantityDecrease,
+  confirmRemove: confirmRemovePosition,
+  cancelRemove: cancelRemovePosition,
+  selectPosition
+} = useQuantityManager()
 
 const API_URL = '/bottles'
 
@@ -318,16 +346,55 @@ watch(() => route.params.id, () => {
 
 const updateQty = async (qty) => {
   if (qty < 0) return
-  try {
-    await apiRequest(`${API_URL}/${route.params.id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ quantity: qty })
-    })
-    bottle.value.quantity = qty
-    emit('refresh-data')
-  } catch (e) {
-    console.error(e)
+  
+  const oldQty = bottle.value.quantity
+  
+  // Vérifier si on doit gérer le retrait de positions
+  const needsModal = checkQuantityDecrease(
+    bottle.value,
+    qty,
+    oldQty,
+    async (newQuantity) => {
+      // Callback quand toutes les positions sont retirées
+      try {
+        await apiRequest(`${API_URL}/${route.params.id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ quantity: newQuantity })
+        })
+        bottle.value.quantity = newQuantity
+        emit('refresh-data')
+      } catch (e) {
+        console.error('Erreur:', e)
+      }
+    },
+    (originalQuantity) => {
+      // Callback si annulation - restaurer la quantité
+      bottle.value.quantity = originalQuantity
+    }
+  )
+  
+  // Si pas besoin de modal, mettre à jour directement
+  if (!needsModal) {
+    try {
+      await apiRequest(`${API_URL}/${route.params.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ quantity: qty })
+      })
+      bottle.value.quantity = qty
+      emit('refresh-data')
+    } catch (e) {
+      console.error('Erreur:', e)
+    }
   }
+}
+
+// Wrapper pour les fonctions du composable
+const confirmRemove = async () => {
+  await confirmRemovePosition()
+}
+
+const cancelRemove = () => {
+  cancelRemovePosition()
 }
 
 const archiveBottle = async () => {
@@ -371,7 +438,7 @@ const getTypeBgColor = (type) => {
 const getImageUrl = (path) => {
   if (!path) return null
   if (path.startsWith('http')) return path
-  if (path.startsWith('/uploads/')) return path
+  if (path.includes('uploads')) return path
   return `${config.API_BASE_URL}${path}`
 }
 

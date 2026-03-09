@@ -19,14 +19,14 @@
       <!-- Carte 1: Informations essentielles -->
       <BaseCard title="Informations essentielles">
         <template #icon>
-          <WineIcon class="w-5 h-5 text-gh-accent" />
+          <ArchiveBoxIcon class="w-5 h-5 text-gh-accent" />
         </template>
         
         <div class="space-y-4">
           <!-- Nom du vin -->
           <div class="relative">
             <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-2">
-              <LabelIcon class="w-4 h-4" />
+              <TagIcon class="w-4 h-4" />
               Nom du vin <span class="text-gh-accent-red">*</span>
             </label>
             <div class="relative">
@@ -60,7 +60,7 @@
                    class="flex items-center gap-3 px-3 py-2 hover:bg-gh-elevated cursor-pointer border-b border-gh-border last:border-0 transition-fast">
                 <div class="w-10 h-10 rounded bg-gh-bg border border-gh-border flex items-center justify-center overflow-hidden">
                   <img v-if="wine.image_path" :src="getImageUrl(wine.image_path)" class="w-full h-full object-cover" @error="$event.target.style.display='none'">
-                  <WineIcon v-else class="w-5 h-5 text-gh-text-muted" />
+                  <ArchiveBoxIcon v-else class="w-5 h-5 text-gh-text-muted" />
                 </div>
                 <div class="flex-1 min-w-0">
                   <div class="text-sm text-gh-text font-medium truncate">{{ wine.name }}</div>
@@ -498,26 +498,42 @@
       </div>
     </div>
   </main>
+
+  <!-- Modal de retrait des positions -->
+  <RemovePositionModal
+    :show="showRemoveModal"
+    :total="positionsToRemove"
+    :removed="positionsRemoved"
+    :selected="selectedPositionId"
+    :positions="form?.positions || []"
+    :processing="isProcessing"
+    :bottle="form"
+    @select="selectPosition"
+    @confirm="confirmRemovePosition"
+    @cancel="cancelRemovePosition"
+  />
 </template>
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import QrcodeVue from 'qrcode.vue'
 import { 
-  WineIcon, CrestIcon, CalendarIcon, FlagIcon, LandscapeIcon,
-  InfoTagIcon, GrapeIcon, ThermometerIcon, RulerIcon, CurrencyIcon, QuantityIcon,
-  StarIcon, CommentIcon, CameraIcon, LabelIcon
-} from '../components/icons'
-import { 
-  MagnifyingGlassIcon, TagIcon, ChartBarIcon, MapPinIcon,
-  DocumentTextIcon, LinkIcon, XMarkIcon, ArrowPathIcon, PlusIcon,
-  ExclamationCircleIcon, ExclamationTriangleIcon, SwatchIcon
+  ArchiveBoxIcon, CalendarIcon, BeakerIcon, 
+  MapPinIcon, TagIcon, PhotoIcon, StarIcon, 
+  HeartIcon, ShoppingCartIcon, FlagIcon,
+  MagnifyingGlassIcon, DocumentDuplicateIcon,
+  ExclamationCircleIcon, PlusIcon, MinusIcon,
+  GlobeAltIcon, CurrencyDollarIcon, ChevronLeftIcon, CheckCircleIcon,
+  ArrowPathIcon, TrashIcon
 } from '@heroicons/vue/24/solid'
 import BaseCard from '../components/ui/BaseCard.vue'
 import WineTypeSelector from '../components/WineTypeSelector.vue'
 import StarRating from '../components/StarRating.vue'
 import config from '../config.js'
 import { apiRequest } from '../services/api.js'
+import RemovePositionModal from '../components/RemovePositionModal.vue'
+import { useQuantityManager } from '../composables/useQuantityManager.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -588,6 +604,45 @@ const defaultForm = {
 }
 
 const form = ref({ ...defaultForm })
+
+// Gestion du retrait des positions
+const { 
+  showRemoveModal,
+  positionsToRemove,
+  positionsRemoved,
+  selectedPositionId,
+  isProcessing,
+  checkQuantityDecrease,
+  confirmRemove: confirmRemovePosition,
+  cancelRemove: cancelRemovePosition,
+  selectPosition
+} = useQuantityManager()
+
+// Watch sur la quantité pour détecter les diminutions en mode édition
+watch(() => form.value.quantity, (newVal, oldVal) => {
+  if (isEditing.value && newVal < oldVal) {
+    // Récupérer les positions actuelles de la bouteille
+    const bottleData = {
+      id: form.value.id,
+      quantity: oldVal,
+      positions: form.value.positions || []
+    }
+    
+    checkQuantityDecrease(
+      bottleData,
+      newVal,
+      oldVal,
+      async (finalQuantity) => {
+        // Callback de succès - la quantité sera mise à jour par le watch
+        console.log('Positions retirées, quantité finale:', finalQuantity)
+      },
+      (originalQuantity) => {
+        // Callback d'annulation - restaurer la quantité
+        form.value.quantity = originalQuantity
+      }
+    )
+  }
+})
 
 const currentTags = computed({
   get: () => form.value.tags ? form.value.tags.split(',').map(t => t.trim()).filter(t => t) : [],
@@ -891,10 +946,16 @@ const fetchBottle = async (id) => {
   try {
     const bottle = await apiRequest(`${API_URL}/${id}`)
     form.value = { ...defaultForm, ...bottle }
+    
+    // Stocker les positions pour la gestion du retrait
+    if (bottle.positions) {
+      form.value.positions = bottle.positions
+    }
+    
     if (bottle.image_path) {
       imagePreview.value = bottle.image_path.startsWith('http') 
         ? bottle.image_path 
-        : bottle.image_path.startsWith('/uploads/') 
+        : bottle.image_path.includes('uploads') 
           ? bottle.image_path 
           : `${config.API_BASE_URL}${bottle.image_path}`
     }
@@ -1019,7 +1080,7 @@ const forceCreate = () => {
 const getImageUrl = (path) => {
   if (!path) return null
   if (path.startsWith('http')) return path
-  if (path.startsWith('/uploads/')) return path
+  if (path.includes('uploads')) return path
   return `${config.API_BASE_URL}${path}`
 }
 

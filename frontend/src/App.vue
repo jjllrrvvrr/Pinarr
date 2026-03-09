@@ -7,6 +7,8 @@ import { useRouter } from 'vue-router'
 import QrcodeVue from 'qrcode.vue'
 import config from './config.js'
 import AuthService from './services/AuthService.js'
+import RemovePositionModal from './components/RemovePositionModal.vue'
+import { useQuantityManager } from './composables/useQuantityManager.js'
 
 const router = useRouter()
 
@@ -171,6 +173,28 @@ const deleteBottle = async (id) => {
 
 const updateQuantity = async (id, newQuantity) => {
   if (newQuantity < 0) return
+  
+  // Trouver la bouteille concernée
+  const bottle = bottles.value.find(b => b.id === id)
+  if (!bottle) return
+  
+  const oldQuantity = bottle.quantity
+  
+  // Si diminution ET positions existent, utiliser le modal
+  if (newQuantity < oldQuantity && bottle.positions?.length > 0) {
+    const diff = oldQuantity - newQuantity
+    const positionsToRemoveCount = Math.min(diff, bottle.positions.length)
+    
+    // Ouvrir le modal et attendre la réponse
+    const result = await openRemovePositionModal(bottle, positionsToRemoveCount)
+    
+    if (!result) {
+      // Annulation - ne rien faire
+      return
+    }
+  }
+  
+  // Mettre à jour la quantité
   try {
     const res = await fetch(`${API_URL}/${id}`, {
       method: 'PATCH',
@@ -182,6 +206,73 @@ const updateQuantity = async (id, newQuantity) => {
     })
     if (res.ok) fetchBottles()
   } catch (e) { console.error(e) }
+}
+
+// État pour le modal de retrait
+const showRemoveModal = ref(false)
+const currentBottleForModal = ref(null)
+const positionsToRemove = ref(0)
+const positionsRemoved = ref(0)
+const selectedPositionId = ref(null)
+const isProcessing = ref(false)
+let resolveModalPromise = null
+
+const openRemovePositionModal = (bottle, count) => {
+  return new Promise((resolve) => {
+    currentBottleForModal.value = bottle
+    positionsToRemove.value = count
+    positionsRemoved.value = 0
+    selectedPositionId.value = null
+    showRemoveModal.value = true
+    resolveModalPromise = resolve
+  })
+}
+
+const confirmRemovePosition = async () => {
+  if (!selectedPositionId.value || !currentBottleForModal.value) return
+  
+  isProcessing.value = true
+  try {
+    await fetch(`${config.API_BASE_URL}/positions/${selectedPositionId.value}/bottle`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${sessionStorage.getItem('auth_token') || ''}`
+      }
+    })
+    
+    // Retirer la position localement
+    currentBottleForModal.value.positions = currentBottleForModal.value.positions.filter(
+      p => p.id !== selectedPositionId.value
+    )
+    
+    positionsRemoved.value++
+    selectedPositionId.value = null
+    
+    if (positionsRemoved.value >= positionsToRemove.value) {
+      showRemoveModal.value = false
+      if (resolveModalPromise) {
+        resolveModalPromise(true)
+        resolveModalPromise = null
+      }
+    }
+  } catch (e) {
+    console.error('Erreur:', e)
+    alert('Erreur lors du retrait')
+  } finally {
+    isProcessing.value = false
+  }
+}
+
+const cancelRemove = () => {
+  showRemoveModal.value = false
+  if (resolveModalPromise) {
+    resolveModalPromise(false)
+    resolveModalPromise = null
+  }
+}
+
+const selectPosition = (positionId) => {
+  selectedPositionId.value = positionId
 }
 
 const openLocationModal = (location = null) => {
@@ -487,6 +578,20 @@ onUnmounted(() => {
     </div>
 
   </div>
+
+  <!-- Modal de retrait des positions -->
+  <RemovePositionModal
+    :show="showRemoveModal"
+    :total="positionsToRemove"
+    :removed="positionsRemoved"
+    :selected="selectedPositionId"
+    :positions="currentBottleForModal?.positions || []"
+    :processing="isProcessing"
+    :bottle="currentBottleForModal"
+    @select="selectPosition"
+    @confirm="confirmRemovePosition"
+    @cancel="cancelRemove"
+  />
 </template>
 
 <style>

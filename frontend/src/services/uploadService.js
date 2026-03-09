@@ -66,7 +66,7 @@ const UploadService = {
     if (!path) return null
     if (path.startsWith('http')) return path
     // Les uploads sont servis directement depuis /uploads/ (pas sous /api/v1)
-    if (path.startsWith('/uploads/')) return path
+    if (path.includes('uploads')) return path
     return `${API_BASE_URL}${path}`
   },
 }
