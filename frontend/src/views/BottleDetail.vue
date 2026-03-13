@@ -39,6 +39,14 @@
                       class="hover:text-[#58a6ff] cursor-pointer transition font-mono">
                   {{ bottle.year }}
                 </span>
+                <!-- Badge phase -->
+              <WinePhaseBadge
+                v-if="bottle.year"
+                :vintage-year="bottle.year"
+                :jeunesse-end="bottle.jeunesse_end"
+                :maturite-end="bottle.maturite_end"
+                :apogee-end="bottle.apogee_end"
+              />
                 <span v-if="bottle.cepage" class="text-[#8b949e]">•</span>
                 <span v-if="bottle.cepage" @click="goToFilter('cepage', bottle.cepage)" 
                       class="hover:text-[#f85149] cursor-pointer transition">
@@ -66,7 +74,7 @@
             <!-- Section ORIGINE & CARACTÉRISTIQUES -->
             <div class="p-3 sm:p-6">
               <h2 class="text-xs uppercase tracking-wider text-[#8b949e] mb-3 sm:mb-4 font-medium flex items-center gap-2">
-                <InfoTagIcon class="w-4 h-4" />
+                <InfoTagIconSVG class="w-4 h-4" />
                 Origine & Caractéristiques
               </h2>
               
@@ -74,7 +82,7 @@
                 <!-- Origine -->
                 <div v-if="bottle.country || bottle.region" class="bg-[#0d1117] rounded-lg p-3 sm:p-4 border border-[#30363d]">
                   <div class="flex items-center gap-1.5 sm:gap-2 text-[#8b949e] text-xs uppercase tracking-wide mb-2">
-                    <FlagIcon class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <FlagIconSVG class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     Origine
                   </div>
                   <div class="text-white font-medium text-sm">
@@ -87,7 +95,7 @@
                 <!-- Cépage -->
                 <div v-if="bottle.cepage" class="bg-[#0d1117] rounded-lg p-3 sm:p-4 border border-[#30363d]">
                   <div class="flex items-center gap-1.5 sm:gap-2 text-[#8b949e] text-xs uppercase tracking-wide mb-2">
-                    <GrapeIcon class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <GrapeIconSVG class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     Cépage
                   </div>
                   <div @click="goToFilter('cepage', bottle.cepage)" class="text-white font-medium text-sm hover:text-[#f85149] cursor-pointer transition">{{ bottle.cepage }}</div>
@@ -105,7 +113,7 @@
                 <!-- Contenance -->
                 <div v-if="bottle.size" class="bg-[#0d1117] rounded-lg p-3 sm:p-4 border border-[#30363d]">
                   <div class="flex items-center gap-1.5 sm:gap-2 text-[#8b949e] text-xs uppercase tracking-wide mb-2">
-                    <RulerIcon class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <RulerIconSVG class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     Contenance
                   </div>
                   <div class="text-white font-medium text-base sm:text-lg">{{ bottle.size }}</div>
@@ -158,7 +166,7 @@
             <!-- Quantité -->
             <div class="bg-[#161b22] rounded-xl p-4 border border-[#30363d] text-center">
               <div class="flex items-center justify-center gap-2 text-[#8b949e] text-xs uppercase tracking-wide mb-2">
-                <QuantityIcon class="w-4 h-4" />
+                <QuantityIconSVG class="w-4 h-4" />
                 Quantité
               </div>
               <div class="flex items-center justify-center gap-3">
@@ -171,7 +179,7 @@
             <!-- Prix -->
             <div v-if="bottle.price" class="bg-[#161b22] rounded-xl p-4 border border-[#30363d] text-center">
               <div class="flex items-center justify-center gap-2 text-[#8b949e] text-xs uppercase tracking-wide mb-2">
-                <CurrencyIcon class="w-4 h-4" />
+                <CurrencyDollarIcon class="w-4 h-4" />
                 Prix
               </div>
               <div class="text-[#3fb950] text-2xl font-bold">{{ bottle.price }} €</div>
@@ -186,16 +194,22 @@
               <div class="text-white text-2xl font-bold">{{ bottle.year }}</div>
             </div>
 
-            <!-- Apogée -->
-            <div v-if="bottle.apogee_start || bottle.apogee_end" class="bg-[#161b22] rounded-xl p-4 border border-[#30363d] text-center">
-              <div class="flex items-center justify-center gap-2 text-[#8b949e] text-xs uppercase tracking-wide mb-2">
-                <CalendarIcon class="w-4 h-4" />
-                Apogée
-              </div>
-              <div class="text-white text-xl font-bold">
-                {{ bottle.apogee_start || '?' }}{{ bottle.apogee_end && bottle.apogee_end !== bottle.apogee_start ? ` - ${bottle.apogee_end}` : '' }}
-              </div>
+          </div>
+
+          <!-- Timeline des phases - sur sa propre ligne -->
+          <div v-if="bottle.year" class="mt-6 bg-[#161b22] rounded-xl p-4 border border-[#30363d]">
+            <div class="flex items-center gap-2 text-[#8b949e] text-xs uppercase tracking-wide mb-3">
+              <ClockIcon class="w-4 h-4" />
+              Évolution
             </div>
+            <WinePhaseTimeline
+              :vintage-year="bottle.year"
+              :jeunesse-end="bottle.jeunesse_end"
+              :maturite-end="bottle.maturite_end"
+              :apogee-end="bottle.apogee_end"
+              :editable="false"
+              :compact="true"
+            />
           </div>
         </div>
 
@@ -293,12 +307,29 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import QrcodeVue from 'qrcode.vue'
 import { 
-  PencilIcon, TrashIcon, MapPinIcon, TagIcon, StarIcon, 
+  PencilIcon, TrashIcon, MapPinIcon, TagIcon, StarIcon as StarIconSolid, 
   HeartIcon, ShoppingCartIcon, ArrowLeftIcon, QrCodeIcon, PlusIcon, MinusIcon,
-  ChevronDownIcon, ChevronUpIcon
+  ChevronDownIcon, ChevronUpIcon, ClockIcon, CurrencyDollarIcon,
+  ArrowTopRightOnSquareIcon, ChartBarIcon, DocumentTextIcon, LinkIcon,
+  PencilSquareIcon, ArchiveBoxIcon, ArrowPathIcon
 } from '@heroicons/vue/24/solid'
 import WineBottleIcon from '@/components/WineBottleIcon.vue'
 import RemovePositionModal from '@/components/RemovePositionModal.vue'
+import WinePhaseBadge from '@/components/WinePhaseBadge.vue'
+import WinePhaseTimeline from '@/components/WinePhaseTimeline.vue'
+import {
+  FlagIcon as FlagIconSVG,
+  GrapeIcon as GrapeIconSVG,
+  RulerIcon as RulerIconSVG,
+  QuantityIcon as QuantityIconSVG,
+  CameraIcon as CameraIconSVG,
+  CommentIcon as CommentIconSVG,
+  WineIcon as WineIconSVG,
+  LandscapeIcon as LandscapeIconSVG,
+  CrestIcon as CrestIconSVG,
+  InfoTagIcon as InfoTagIconSVG,
+  LabelIcon as LabelIconSVG
+} from '@/components/icons'
 import {
   CalendarIcon, MapIcon, BeakerIcon
 } from '@heroicons/vue/24/outline'

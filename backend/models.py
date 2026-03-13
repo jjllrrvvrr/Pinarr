@@ -33,6 +33,10 @@ class Bottle(Base):
     size = Column(String, nullable=True, default="75cl")
     apogee_start = Column(Integer, nullable=True)
     apogee_end = Column(Integer, nullable=True)
+    # Phases de développement du vin
+    jeunesse_end = Column(Integer, nullable=True)  # Fin phase Jeunesse
+    maturite_end = Column(Integer, nullable=True)  # Fin phase Maturité
+    apogee_end = Column(Integer, nullable=True)  # Fin phase Apogée
     buy_link = Column(String, nullable=True)
     quantity = Column(Integer, nullable=True, default=1)
     price = Column(Float, nullable=True)

@@ -25,6 +25,13 @@
               <span v-if="bottle.cepage" @click.stop="$emit('filter', 'cepage', bottle.cepage)" 
                     class="truncate max-w-[50px] sm:max-w-[70px] hover:text-[#f85149] cursor-pointer transition">{{ bottle.cepage }}</span>
               <span class="font-mono text-white hover:text-[#58a6ff] cursor-pointer transition" @click.stop="$emit('filter', 'year', bottle.year)">{{ bottle.year }}</span>
+              <WinePhaseBadge
+                v-if="bottle.year"
+                :vintage-year="bottle.year"
+                :jeunesse-end="bottle.jeunesse_end"
+                :maturite-end="bottle.maturite_end"
+                :apogee-end="bottle.apogee_end"
+              />
             </div>
           </div>
           <h3 class="text-white font-semibold truncate group-hover:text-[#58a6ff] transition text-xs sm:text-sm leading-tight">{{ bottle.name }}</h3>
@@ -108,6 +115,7 @@
 import { useRouter } from 'vue-router'
 import { MapPinIcon, StarIcon as StarSolid, TrashIcon } from '@heroicons/vue/24/solid'
 import WineBottleIcon from '@/components/WineBottleIcon.vue'
+import WinePhaseBadge from '@/components/WinePhaseBadge.vue'
 import config from '../config.js'
 
 const props = defineProps({

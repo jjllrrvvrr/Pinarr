@@ -79,7 +79,7 @@
           <!-- Type de vin -->
           <div>
             <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-2">
-              <SwatchIcon class="w-4 h-4" />
+              <TypeIconSVG class="w-4 h-4" />
               Type <span class="text-gh-accent-red">*</span>
             </label>
             <WineTypeSelector v-model="form.type" />
@@ -120,7 +120,7 @@
           <!-- Pays -->
           <div>
             <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-2">
-              <FlagIcon class="w-4 h-4" />
+              <FlagIconSVG class="w-4 h-4" />
               Pays
             </label>
             <select v-model="form.country" 
@@ -133,7 +133,7 @@
           <!-- Région -->
           <div>
             <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-2">
-              <LandscapeIcon class="w-4 h-4" />
+              <LandscapeIconSVG class="w-4 h-4" />
               Région
             </label>
             <input 
@@ -147,7 +147,7 @@
           <!-- Domaine -->
           <div class="md:col-span-2">
             <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-2">
-              <CrestIcon class="w-4 h-4" />
+              <CrestIconSVG class="w-4 h-4" />
               Domaine viticole
             </label>
             <input 
@@ -163,14 +163,14 @@
       <!-- Carte 3: Caractéristiques -->
       <BaseCard title="Caractéristiques">
         <template #icon>
-          <InfoTagIcon class="w-5 h-5 text-gh-accent" />
+          <InfoTagIconSVG class="w-5 h-5 text-gh-accent" />
         </template>
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <!-- Cépages -->
           <div class="md:col-span-2">
             <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-2">
-              <GrapeIcon class="w-4 h-4" />
+              <GrapeIconSVG class="w-4 h-4" />
               Cépages
             </label>
             <input 
@@ -184,7 +184,7 @@
           <!-- Degré d'alcool -->
           <div>
             <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-2">
-              <ThermometerIcon class="w-4 h-4" />
+              <ThermometerIconSVG class="w-4 h-4" />
               Degré (%)
             </label>
             <input 
@@ -201,7 +201,7 @@
           <!-- Contenance -->
           <div>
             <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-2">
-              <RulerIcon class="w-4 h-4" />
+              <RulerIconSVG class="w-4 h-4" />
               Contenance
             </label>
             <input 
@@ -215,7 +215,7 @@
           <!-- Description -->
           <div class="md:col-span-2">
             <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-2">
-              <DocumentTextIcon class="w-4 h-4" />
+              <DescriptionIconSVG class="w-4 h-4" />
               Description
             </label>
             <textarea 
@@ -231,7 +231,7 @@
       <!-- Carte 4: Gestion & Évaluation -->
       <BaseCard title="Gestion & Évaluation">
         <template #icon>
-          <ChartBarIcon class="w-5 h-5 text-gh-accent" />
+          <ClockIconSVG class="w-5 h-5 text-gh-accent" />
         </template>
         
         <div class="space-y-6">
@@ -267,11 +267,12 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <!-- Ligne 1: Quantité | Prix | Note -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <!-- Quantité -->
             <div>
               <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-2">
-                <QuantityIcon class="w-4 h-4" />
+                <QuantityIconSVG class="w-4 h-4" />
                 Quantité
               </label>
               <input 
@@ -285,7 +286,7 @@
             <!-- Prix -->
             <div>
               <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-2">
-                <CurrencyIcon class="w-4 h-4" />
+                <CurrencyDollarIcon class="w-4 h-4" />
                 Prix (€)
               </label>
               <input 
@@ -298,86 +299,73 @@
               />
             </div>
 
-            <!-- Apogée début -->
+            <!-- Note -->
             <div>
               <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-2">
-                <CalendarIcon class="w-4 h-4" />
-                Apogée début
+                <StarIcon class="w-4 h-4" />
+                Note
               </label>
-              <input 
-                v-model="form.apogee_start" 
-                type="number"
-                min="1900"
-                max="2100"
-                class="w-full bg-gh-bg border border-gh-border rounded-card p-3 text-gh-text focus:border-gh-accent focus:ring-1 focus:ring-gh-accent outline-none transition-fast"
-                placeholder="2025"
-              />
-            </div>
-
-            <!-- Apogée fin -->
-            <div>
-              <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-2">
-                <CalendarIcon class="w-4 h-4" />
-                Apogée fin
-              </label>
-              <input 
-                v-model="form.apogee_end" 
-                type="number"
-                min="1900"
-                max="2100"
-                class="w-full bg-gh-bg border border-gh-border rounded-card p-3 text-gh-text focus:border-gh-accent focus:ring-1 focus:ring-gh-accent outline-none transition-fast"
-                placeholder="2035"
-              />
+              <StarRating v-model="form.rating" />
             </div>
           </div>
 
-          <!-- Note -->
-          <div>
-            <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-2">
-              <StarIcon class="w-4 h-4" />
-              Note
+          <!-- Ligne 2: Phases de développement (ligne complète) -->
+          <div v-if="form.year" class="mt-6">
+            <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-3">
+              <ClockIconSVG class="w-4 h-4" />
+              Phases de développement
             </label>
-            <StarRating v-model="form.rating" />
-          </div>
-
-          <!-- Tags -->
-          <div>
-            <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-2">
-              <TagIcon class="w-4 h-4" />
-              Tags
-            </label>
-            <div class="relative">
-              <input
-                v-model="tagInput"
-                @keydown.enter.prevent="addTag"
-                @input="handleTagInput"
-                class="w-full bg-gh-bg border border-gh-border rounded-card p-3 text-gh-text placeholder-gh-text-muted focus:border-gh-accent focus:ring-1 focus:ring-gh-accent outline-none transition-fast"
-                placeholder="Ajouter des tags séparés par virgule"
-              />
-            </div>
-            <div class="flex flex-wrap gap-2 mt-2">
-              <span v-for="tag in currentTags" :key="tag" 
-                    class="inline-flex items-center gap-1 bg-gh-elevated px-3 py-1 rounded-tag text-sm text-gh-text border border-gh-border">
-                {{ tag }}
-                <button @click="removeTag(tag)" class="text-gh-text-secondary hover:text-gh-accent-red transition-fast">
-                  <XMarkIcon class="w-4 h-4" />
-                </button>
-              </span>
-            </div>
-          </div>
-
-          <!-- Lien externe -->
-          <div>
-            <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-2">
-              <LinkIcon class="w-4 h-4" />
-              Lien externe
-            </label>
-            <input 
-              v-model="form.buy_link" 
-              type="url"
-              class="w-full bg-gh-bg border border-gh-border rounded-card p-3 text-gh-text placeholder-gh-text-muted focus:border-gh-accent focus:ring-1 focus:ring-gh-accent outline-none transition-fast"
-              placeholder="https://..."
+            <WinePhaseTimeline
+              :vintage-year="form.year"
+              v-model:jeunesse-end="form.jeunesse_end"
+              v-model:maturite-end="form.maturite_end"
+              v-model:apogee-end="form.apogee_end"
+              :editable="true"
+              :show-inputs="true"
             />
+          </div>
+
+          <!-- Ligne 3: Tags | Lien externe -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+            <!-- Tags -->
+            <div>
+              <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-2">
+                <TagIcon class="w-4 h-4" />
+                Tags
+              </label>
+              <div class="relative">
+                <input
+                  v-model="tagInput"
+                  @keydown.enter.prevent="addTag"
+                  @input="handleTagInput"
+                  class="w-full bg-gh-bg border border-gh-border rounded-card p-3 text-gh-text placeholder-gh-text-muted focus:border-gh-accent focus:ring-1 focus:ring-gh-accent outline-none transition-fast"
+                  placeholder="Ajouter des tags séparés par virgule"
+                />
+              </div>
+              <div class="flex flex-wrap gap-2 mt-2">
+                <span v-for="tag in currentTags" :key="tag" 
+                      class="inline-flex items-center gap-1 bg-gh-elevated px-3 py-1 rounded-tag text-sm text-gh-text border border-gh-border">
+                  {{ tag }}
+                  <button @click="removeTag(tag)" class="text-gh-text-secondary hover:text-gh-accent-red transition-fast">
+                    <XMarkIcon class="w-4 h-4" />
+                  </button>
+                </span>
+              </div>
+            </div>
+
+            <!-- Lien externe -->
+            <div>
+              <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-2">
+                <ExternalLinkIconSVG class="w-4 h-4" />
+                Lien externe
+              </label>
+              <input 
+                v-model="form.buy_link" 
+                type="url"
+                class="w-full bg-gh-bg border border-gh-border rounded-card p-3 text-gh-text placeholder-gh-text-muted focus:border-gh-accent focus:ring-1 focus:ring-gh-accent outline-none transition-fast"
+                placeholder="https://..."
+              />
+            </div>
           </div>
         </div>
       </BaseCard>
@@ -385,7 +373,7 @@
       <!-- Carte 5: Photo -->
       <BaseCard title="Photo">
         <template #icon>
-          <CameraIcon class="w-5 h-5 text-gh-accent" />
+          <CameraIconSVG class="w-5 h-5 text-gh-accent" />
         </template>
         
         <div>
@@ -406,7 +394,7 @@
                  dragOver ? 'border-gh-accent bg-gh-accent/10' : 'border-gh-border hover:border-gh-accent'
                ]"
                @click="triggerFileInput">
-            <CameraIcon class="w-10 h-10 mx-auto text-gh-text-secondary mb-3" />
+            <CameraIconSVG class="w-10 h-10 mx-auto text-gh-text-secondary mb-3" />
             <p class="text-sm text-gh-text-secondary mb-1">Glissez une photo ou cliquez</p>
             <p class="text-xs text-gh-text-muted">Toutes les images sont converties en WebP (optimisé)</p>
             <input type="file" ref="fileInput" @change="handleImageUpload" accept="image/*" capture="environment" class="hidden" />
@@ -521,18 +509,36 @@ import QrcodeVue from 'qrcode.vue'
 import { 
   ArchiveBoxIcon, CalendarIcon, BeakerIcon, 
   MapPinIcon, TagIcon, PhotoIcon, StarIcon, 
-  HeartIcon, ShoppingCartIcon, FlagIcon,
+  HeartIcon, ShoppingCartIcon, FlagIcon as FlagIconHero,
   MagnifyingGlassIcon, DocumentDuplicateIcon,
   ExclamationCircleIcon, PlusIcon, MinusIcon,
   GlobeAltIcon, CurrencyDollarIcon, ChevronLeftIcon, CheckCircleIcon,
   ArrowPathIcon, TrashIcon
 } from '@heroicons/vue/24/solid'
+import {
+  FlagIcon as FlagIconSVG,
+  GrapeIcon as GrapeIconSVG,
+  LandscapeIcon as LandscapeIconSVG,
+  CrestIcon as CrestIconSVG,
+  InfoTagIcon as InfoTagIconSVG,
+  ThermometerIcon as ThermometerIconSVG,
+  RulerIcon as RulerIconSVG,
+  QuantityIcon as QuantityIconSVG,
+  WineIcon as WineIconSVG,
+  CameraIcon as CameraIconSVG,
+  LabelIcon as LabelIconSVG,
+  TypeIcon as TypeIconSVG,
+  DescriptionIcon as DescriptionIconSVG,
+  ClockIcon as ClockIconSVG,
+  ExternalLinkIcon as ExternalLinkIconSVG
+} from '@/components/icons'
 import BaseCard from '../components/ui/BaseCard.vue'
 import WineTypeSelector from '../components/WineTypeSelector.vue'
 import StarRating from '../components/StarRating.vue'
 import config from '../config.js'
 import { apiRequest } from '../services/api.js'
 import RemovePositionModal from '../components/RemovePositionModal.vue'
+import WinePhaseTimeline from '../components/WinePhaseTimeline.vue'
 import { useQuantityManager } from '../composables/useQuantityManager.js'
 
 const route = useRoute()
@@ -588,6 +594,9 @@ const defaultForm = {
   size: '75cl',
   apogee_start: null,
   apogee_end: null,
+  // Phases de développement
+  jeunesse_end: null,
+  maturite_end: null,
   location: '',
   quantity: 1, 
   price: null, 
@@ -764,6 +773,8 @@ const saveBottle = async (force = false) => {
       size: form.value.size || "75cl",
       apogee_start: parseInt(form.value.apogee_start) || null,
       apogee_end: parseInt(form.value.apogee_end) || null,
+      jeunesse_end: parseInt(form.value.jeunesse_end) || null,
+      maturite_end: parseInt(form.value.maturite_end) || null,
       location: form.value.location || null,
       quantity: parseInt(form.value.quantity) || 1,
       price: parseFloat(form.value.price) || null,

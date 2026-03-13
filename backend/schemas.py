@@ -15,6 +15,10 @@ class BottleBase(BaseModel):
     size: Optional[str] = "75cl"
     apogee_start: Optional[int] = None
     apogee_end: Optional[int] = None
+    # Phases de développement
+    jeunesse_end: Optional[int] = None
+    maturite_end: Optional[int] = None
+    apogee_end: Optional[int] = None
     buy_link: Optional[str] = None
     quantity: Optional[int] = 1
     price: Optional[float] = None
@@ -40,6 +44,10 @@ class BottlePatch(BaseModel):
     alcohol: Optional[float] = None
     size: Optional[str] = None
     apogee_start: Optional[int] = None
+    apogee_end: Optional[int] = None
+    # Phases de développement
+    jeunesse_end: Optional[int] = None
+    maturite_end: Optional[int] = None
     apogee_end: Optional[int] = None
     buy_link: Optional[str] = None
     quantity: Optional[int] = None
