@@ -7,7 +7,7 @@ services:
       - "${PORT:-8908}:80"      # Interface web
       - "${BACKEND_PORT:-9994}:8000"  # API direct
     environment:
-      - DATABASE_URL=sqlite:///./data/pinarr.db
+      - DATABASE_URL=sqlite:///./pinarr.db
       - SECRET_KEY=${SECRET_KEY:-}
       - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}

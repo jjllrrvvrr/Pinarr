@@ -37,10 +37,13 @@ const props = defineProps({
 const currentPhase = computed(() => {
   if (!props.vintageYear) return null
   
+  // Ne pas afficher le badge si aucune phase n'est encodée dans la timeline
+  if (!props.jeunesseEnd && !props.maturiteEnd && !props.apogeeEnd) return null
+  
   const year = props.currentYear
-  const jeunesseEnd = props.jeunesseEnd || props.vintageYear + 10
-  const maturiteEnd = props.maturiteEnd || props.vintageYear + 20
-  const apogeeEnd = props.apogeeEnd || props.vintageYear + 30
+  const jeunesseEnd = props.jeunesseEnd
+  const maturiteEnd = props.maturiteEnd
+  const apogeeEnd = props.apogeeEnd
   
   if (year <= jeunesseEnd) return 'jeunesse'
   if (year <= maturiteEnd) return 'maturite'

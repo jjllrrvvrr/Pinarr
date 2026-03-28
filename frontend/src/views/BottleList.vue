@@ -69,18 +69,59 @@
 
     <!-- MODE NORMAL (sans recherche) -->
     <template v-else>
-      <div class="flex items-center gap-2 mb-4">
-        <button @click="showHistory = false" 
-                :class="['px-3 py-1 rounded-md text-xs font-medium transition', !showHistory ? 'bg-[#238636] text-white' : 'bg-[#21262d] text-[#8b949e] hover:text-white']">
-          En cave ({{ inStockCount }})
-        </button>
-        <button @click="showHistory = true" 
-                :class="['px-3 py-1 rounded-md text-xs font-medium transition', showHistory ? 'bg-[#f85149] text-white' : 'bg-[#21262d] text-[#8b949e] hover:text-white']">
-          Historique ({{ archivedCount }})
-        </button>
+      <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+        <div class="flex items-center gap-2">
+          <button @click="showHistory = false" 
+                  :class="['px-3 py-1 rounded-md text-xs font-medium transition', !showHistory ? 'bg-[#238636] text-white' : 'bg-[#21262d] text-[#8b949e] hover:text-white']">
+            En cave ({{ inStockCount }})
+          </button>
+          <button @click="showHistory = true" 
+                  :class="['px-3 py-1 rounded-md text-xs font-medium transition', showHistory ? 'bg-[#f85149] text-white' : 'bg-[#21262d] text-[#8b949e] hover:text-white']">
+            Historique ({{ archivedCount }})
+          </button>
+        </div>
+        
+        <!-- Boutons de filtres Couleur et Évolution -->
+        <div class="flex items-center gap-2">
+          <!-- Filtre Couleur -->
+          <div class="flex items-center gap-1">
+            <button
+              v-for="color in colorOptions"
+              :key="color.value"
+              @click="setFilter('color', color.value)"
+              :class="[
+                'px-2 py-1 rounded-md text-xs font-medium transition border',
+                filters.color === color.value
+                  ? `${color.color} text-white border-transparent`
+                  : 'bg-[#21262d] text-[#8b949e] border-[#30363d] hover:text-white'
+              ]"
+            >
+              {{ color.label }}
+            </button>
+          </div>
+          
+          <span class="text-[#30363d] mx-2">|</span>
+          
+          <!-- Filtre Évolution -->
+          <div class="flex items-center gap-1">
+            <button
+              v-for="phase in phaseOptions"
+              :key="phase.value"
+              @click="setFilter('phase', phase.value)"
+              :class="[
+                'px-2 py-1 rounded-md text-xs font-medium transition border',
+                filters.phase === phase.value
+                  ? `${phase.color} text-white border-transparent`
+                  : 'bg-[#21262d] text-[#8b949e] border-[#30363d] hover:text-white'
+              ]"
+            >
+              {{ phase.label }}
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div v-if="hasActiveFilters" class="mb-4 flex flex-wrap items-center gap-2">
+      <div v-if="hasTextFilters" class="mb-4 flex flex-wrap items-center gap-2">
         <span class="text-[#8b949e] text-xs">Filtres:</span>
         <button v-if="filters.cepage" @click="clearFilter('cepage')" 
                 class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-[#f85149]/20 text-[#f85149] border border-[#f85149]/30 hover:bg-[#f85149]/30 transition">
@@ -161,12 +202,61 @@ const filters = ref({
   year: null,
   domaine: null,
   country: null,
-  tag: null
+  tag: null,
+  color: null,
+  phase: null
 })
 
 const hasActiveFilters = computed(() => {
   return Object.values(filters.value).some(v => v !== null)
 })
+
+const hasTextFilters = computed(() => {
+  return filters.value.cepage || filters.value.region || filters.value.year || 
+         filters.value.domaine || filters.value.country || filters.value.tag
+})
+
+// Constantes pour les filtres couleur et évolution
+const colorOptions = [
+  { value: 'RED', label: 'Rouge', color: 'bg-[var(--wine-red)]', text: 'text-[var(--wine-red)]' },
+  { value: 'WHITE', label: 'Blanc', color: 'bg-[var(--wine-white)]', text: 'text-[var(--wine-white)]' },
+  { value: 'ROSE', label: 'Rosé', color: 'bg-[var(--wine-rose)]', text: 'text-[var(--wine-rose)]' },
+  { value: 'EFFERVESCENT', label: 'Efferv.', color: 'bg-[var(--wine-champagne)]', text: 'text-[var(--wine-champagne)]' },
+  { value: 'OTHER', label: 'Autre', color: 'bg-[var(--wine-default)]', text: 'text-[var(--wine-default)]' }
+]
+
+const phaseOptions = [
+  { value: 'JEUNESSE', label: 'Jeunesse', color: 'bg-[var(--accent-blue)]', text: 'text-[var(--accent-blue)]' },
+  { value: 'MATURITE', label: 'Maturité', color: 'bg-[var(--accent-green-text)]', text: 'text-[var(--accent-green-text)]' },
+  { value: 'APOGEE', label: 'Apogée', color: 'bg-[var(--accent-purple)]', text: 'text-[var(--accent-purple)]' },
+  { value: 'DECLIN', label: 'Déclin', color: 'bg-[var(--accent-red)]', text: 'text-[var(--accent-red)]' }
+]
+
+const getColorLabel = (value) => colorOptions.find(c => c.value === value)?.label || value
+const getPhaseLabel = (value) => phaseOptions.find(p => p.value === value)?.label || value
+
+const getBottlePhase = (bottle) => {
+  if (!bottle.jeunesse_end && !bottle.maturite_end && !bottle.apogee_end) return null
+  
+  const currentYear = new Date().getFullYear()
+  const jeunesseEnd = bottle.jeunesse_end || bottle.year + 1
+  const maturiteEnd = bottle.maturite_end || bottle.year + 4
+  const apogeeEnd = bottle.apogee_end || bottle.year + 9
+  
+  if (currentYear <= jeunesseEnd) return 'JEUNESSE'
+  if (currentYear <= maturiteEnd) return 'MATURITE'
+  if (currentYear <= apogeeEnd) return 'APOGEE'
+  return 'DECLIN'
+}
+
+const getBottleColor = (bottle) => {
+  const type = (bottle.type || '').toLowerCase()
+  if (type.includes('rouge')) return 'RED'
+  if (type.includes('blanc')) return 'WHITE'
+  if (type.includes('rosé') || type.includes('rose')) return 'ROSE'
+  if (type.includes('champagne') || type.includes('crémant') || type.includes('effervescent')) return 'EFFERVESCENT'
+  return 'OTHER'
+}
 
 const setFilter = (key, value) => {
   if (filters.value[key] === value) {
@@ -245,6 +335,16 @@ const filteredBottles = computed(() => {
     )
   }
   
+  // Filtre par couleur
+  if (filters.value.color) {
+    result = result.filter(b => getBottleColor(b) === filters.value.color)
+  }
+  
+  // Filtre par phase d'évolution
+  if (filters.value.phase) {
+    result = result.filter(b => getBottlePhase(b) === filters.value.phase)
+  }
+  
   const s = normalize(searchQuery.value)
   if (s) {
     result = result.filter(b => 
@@ -289,7 +389,9 @@ const loadFiltersFromUrl = () => {
     year: query.year || null,
     domaine: query.domaine || null,
     country: query.country || null,
-    tag: query.tag || null
+    tag: query.tag || null,
+    color: query.color || null,
+    phase: query.phase || null
   }
 }
 
