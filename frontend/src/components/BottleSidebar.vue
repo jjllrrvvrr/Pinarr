@@ -20,8 +20,8 @@
     
     <!-- Liste des bouteilles -->
     <div class="flex-1 overflow-y-auto space-y-2 sm:space-y-3 min-h-0">
-      <div
-        v-for="bottle in sortedBottles"
+       <div
+        v-for="bottle in visibleBottles"
         :key="bottle.id"
         class="bg-gh-bg border border-gh-border rounded-card p-2 sm:p-3 transition-fast cursor-pointer hover:border-gh-border-hover"
         @mouseenter="onHover(bottle)"
@@ -37,11 +37,11 @@
         </div>
         
         <div class="text-xs sm:text-sm text-gh-text-secondary mt-1 ml-4 sm:ml-5">
-          {{ bottle.quantity }} en stock
-          <span v-if="getPlacementCount(bottle) > 0" class="text-gh-accent-green-text">
-            • {{ getPlacementCount(bottle) }} placée(s)
-          </span>
-        </div>
+           {{ bottle.quantity }} en stock
+            <span v-if="getRemainingToPlace(bottle) > 0" class="text-gh-accent-green-text">
+              • {{ getRemainingToPlace(bottle) }} à placer
+            </span>
+         </div>
       </div>
       
       <!-- Empty state -->
@@ -102,8 +102,12 @@ const filteredBottles = computed(() => {
   )
 })
 
+const visibleBottles = computed(() => {
+  return filteredBottles.value.filter(b => b.quantity > 0)
+})
+
 const sortedBottles = computed(() => {
-  return [...filteredBottles.value].sort((a, b) => {
+  return visibleBottles.value.sort((a, b) => {
     const aPlaced = getPlacementCount(a) > 0
     const bPlaced = getPlacementCount(b) > 0
     
@@ -138,6 +142,11 @@ const getPlacementCount = (bottle) => {
     })
   })
   return count
+}
+
+const getRemainingToPlace = (bottle) => {
+  const placed = getPlacementCount(bottle)
+  return Math.max(0, bottle.quantity - placed)
 }
 
 const onHover = (bottle) => {
