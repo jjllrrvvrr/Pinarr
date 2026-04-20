@@ -27,7 +27,6 @@ from services import (
     update_bottle,
     patch_bottle,
     delete_bottle,
-    validate_bottle_placement,
     # Cave services
     get_caves,
     get_cave,
@@ -44,6 +43,14 @@ from services import (
     create_position,
     get_or_create_position,
     remove_bottle_from_position,
+    # Physical bottle services
+    get_physical_bottle_by_qr,
+    get_physical_bottle_with_details,
+    get_bottle_physical_bottles,
+    generate_qr_codes_for_bottle,
+    remove_physical_bottle,
+    move_physical_bottle,
+    get_physical_bottle_count_in_cellar,
     # Upload service
     upload_image,
     upload_image_from_url,
@@ -407,6 +414,87 @@ async def upload_image_from_url_endpoint(request: dict):
             raise HTTPException(status_code=400, detail="URL manquante")
         return upload_image_from_url(url)
     except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+# === PHYSICAL BOTTLES (QR CODES) ===
+
+
+@api_router.post("/bottles/{bottle_id}/generate-qr-codes")
+def generate_qr_codes_endpoint(
+    bottle_id: int,
+    request: schemas.GenerateQrCodesRequest,
+    db: Session = Depends(get_db),
+):
+    """Génère N codes QR pour une bouteille et crée les bouteilles physiques."""
+    try:
+        qr_codes = generate_qr_codes_for_bottle(db, bottle_id, request.count)
+        return {"qr_codes": qr_codes, "count": len(qr_codes)}
+    except Exception as e:
+        if "not found" in str(e).lower():
+            raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@api_router.get("/bottles/{bottle_id}/physical-bottles")
+def get_bottle_physical_bottles_endpoint(bottle_id: int, db: Session = Depends(get_db)):
+    """Récupère toutes les bouteilles physiques d'un vin."""
+    try:
+        physical_bottles = get_bottle_physical_bottles(db, bottle_id)
+        cellar_count = get_physical_bottle_count_in_cellar(db, bottle_id)
+        return {"physical_bottles": physical_bottles, "cellar_count": cellar_count}
+    except Exception as e:
+        if "not found" in str(e).lower():
+            raise HTTPException(status_code=404, detail=str(e))
+        raise
+
+
+# Route publique pour scanner un QR code (pas de /api/v1)
+@app.get("/bottle/{qr_code}")
+def scan_qr_code_endpoint(qr_code: str, db: Session = Depends(get_db)):
+    """Récupère les informations d'une bouteille physique par son code QR (public)."""
+    try:
+        physical_bottle = get_physical_bottle_by_qr(db, qr_code)
+        if not physical_bottle:
+            raise HTTPException(status_code=404, detail="Code QR non trouvé")
+
+        # Récupérer les détails complets
+        details = get_physical_bottle_with_details(db, physical_bottle.id)
+        return details
+    except Exception as e:
+        if "not found" in str(e).lower():
+            raise HTTPException(status_code=404, detail=str(e))
+        raise
+
+
+@api_router.post("/physical-bottles/{physical_bottle_id}/remove")
+def remove_physical_bottle_endpoint(
+    physical_bottle_id: int,
+    db: Session = Depends(get_db),
+):
+    """Retire une bouteille de la cave (marque comme consommée)."""
+    try:
+        remove_physical_bottle(db, physical_bottle_id)
+        return {"message": "Bouteille retirée de la cave", "redirect": "/"}
+    except Exception as e:
+        if "not found" in str(e).lower():
+            raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@api_router.put("/physical-bottles/{physical_bottle_id}/move")
+def move_physical_bottle_endpoint(
+    physical_bottle_id: int,
+    request: schemas.PhysicalBottleMoveRequest,
+    db: Session = Depends(get_db),
+):
+    """Déplace une bouteille physique vers une nouvelle position."""
+    try:
+        move_physical_bottle(db, physical_bottle_id, request.position_id)
+        return {"message": "Bouteille déplacée avec succès"}
+    except Exception as e:
+        if "not found" in str(e).lower():
+            raise HTTPException(status_code=404, detail=str(e))
         raise HTTPException(status_code=400, detail=str(e))
 
 

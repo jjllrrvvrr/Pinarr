@@ -46,7 +46,7 @@ class Bottle(Base):
     is_favorite = Column(Boolean, nullable=True, default=False)
     image_path = Column(String, nullable=True)
 
-    positions = relationship("Position", back_populates="bottle_at_position")
+    physical_bottles = relationship("PhysicalBottle", back_populates="bottle")
 
 
 class Cave(Base):
@@ -94,6 +94,22 @@ class CaveRow(Base):
         return self.width * self.height
 
 
+class PhysicalBottle(Base):
+    __tablename__ = "physical_bottles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    bottle_id = Column(Integer, ForeignKey("bottles.id"), nullable=False)
+    position_id = Column(Integer, ForeignKey("positions.id"), nullable=True)
+    qr_code = Column(String(8), unique=True, index=True, nullable=False)
+    status = Column(String(20), default="in_cellar")  # in_cellar, consumed
+    acquisition_date = Column(DateTime, default=datetime.utcnow)
+    removal_date = Column(DateTime, nullable=True)
+    notes = Column(String(500), nullable=True)
+
+    bottle = relationship("Bottle", back_populates="physical_bottles")
+    position = relationship("Position", back_populates="physical_bottle")
+
+
 class Position(Base):
     __tablename__ = "positions"
 
@@ -101,10 +117,12 @@ class Position(Base):
     row_id = Column(Integer, ForeignKey("cave_rows.id"), nullable=False)
     line = Column(Integer, nullable=False)
     position = Column(Integer, nullable=False)
-    bottle_id = Column(Integer, ForeignKey("bottles.id"), nullable=True)
+    physical_bottle_id = Column(
+        Integer, ForeignKey("physical_bottles.id"), nullable=True
+    )
 
     row = relationship("CaveRow", back_populates="positions")
-    bottle_at_position = relationship("Bottle")
+    physical_bottle = relationship("PhysicalBottle", back_populates="position")
 
     @property
     def code(self):

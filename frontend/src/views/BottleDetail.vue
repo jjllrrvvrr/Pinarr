@@ -163,17 +163,14 @@
           </h2>
           
           <div class="grid gap-2 sm:gap-4" style="grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));">
-            <!-- Quantité -->
+            <!-- Quantité en cave -->
             <div class="bg-[#161b22] rounded-xl p-4 border border-[#30363d] text-center">
               <div class="flex items-center justify-center gap-2 text-[#8b949e] text-xs uppercase tracking-wide mb-2">
                 <QuantityIconSVG class="w-4 h-4" />
-                Quantité
+                En cave
               </div>
-              <div class="flex items-center justify-center gap-3">
-                <button @click="updateQty(bottle.quantity - 1)" class="w-8 h-8 flex items-center justify-center text-[#8b949e] hover:text-white hover:bg-[#21262d] rounded-lg transition border border-[#30363d]">−</button>
-                <span class="text-white text-2xl font-bold">{{ bottle.quantity }}</span>
-                <button @click="updateQty(bottle.quantity + 1)" class="w-8 h-8 flex items-center justify-center text-[#8b949e] hover:text-white hover:bg-[#21262d] rounded-lg transition border border-[#30363d]">+</button>
-              </div>
+              <div class="text-white text-2xl font-bold">{{ cellarCount }}</div>
+              <div class="text-[#8b949e] text-xs mt-1">bouteilles</div>
             </div>
 
             <!-- Prix -->
@@ -251,19 +248,11 @@
             <PencilSquareIcon class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             Modifier
           </router-link>
-          <button v-if="bottle.quantity > 0" @click="archiveBottle" class="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-[#f85149] bg-[#21262d] hover:bg-[#30363d] rounded-lg transition border border-[#30363d]">
-            <ArchiveBoxIcon class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            Archiver
-          </button>
-          <button v-else @click="restoreBottle" class="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-[#3fb950] bg-[#21262d] hover:bg-[#30363d] rounded-lg transition border border-[#30363d]">
-            <ArrowPathIcon class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            Restaurer
-          </button>
           <div class="flex-1 hidden sm:block"></div>
-          <button @click="showQRModal = true" class="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-[#8b949e] hover:text-white bg-[#21262d] hover:bg-[#30363d] rounded-lg transition border border-[#30363d]" title="QR Code">
-            <QrCodeIcon class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <button @click="openLabelPrinter" class="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-[#8b949e] hover:text-white bg-[#21262d] hover:bg-[#30363d] rounded-lg transition border border-[#30363d]" title="Imprimer étiquettes QR">
+            <PrinterIcon class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             <span class="sm:hidden">QR</span>
-            <span class="hidden sm:inline">QR Code</span>
+            <span class="hidden sm:inline">Étiquettes QR</span>
           </button>
           <button @click="deleteBottle" class="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-[#8b949e] hover:text-[#f85149] hover:bg-[#30363d] rounded-lg transition border border-[#30363d]" title="Supprimer">
             <TrashIcon class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -277,27 +266,12 @@
       <p>Chargement...</p>
     </div>
 
-    <div v-if="showQRModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click="showQRModal = false">
-      <div class="bg-white p-4 sm:p-8 rounded-md text-center shadow-2xl max-w-[90vw] sm:max-w-none" @click.stop>
-        <QrcodeVue :value="qrValue" :size="160" class="sm:w-[200px]" level="H" />
-        <p class="font-bold text-base sm:text-lg text-gray-900 mt-3 sm:mt-4">{{ bottle?.name }}</p>
-        <p class="text-gray-500 text-xs sm:text-sm">{{ bottle?.year }} - {{ bottle?.type }}</p>
-        <button @click="showQRModal = false" class="mt-3 sm:mt-4 text-xs sm:text-sm text-[#58a6ff] hover:underline">Fermer</button>
-      </div>
-    </div>
-    
-    <!-- Modal de retrait des positions -->
-    <RemovePositionModal
-      :show="showRemoveModal"
-      :total="positionsToRemove"
-      :removed="positionsRemoved"
-      :selected="selectedPositionId"
-      :positions="bottle?.positions || []"
-      :processing="isProcessing"
-      :bottle="bottle"
-      @select="selectPosition"
-      @confirm="confirmRemove"
-      @cancel="cancelRemove"
+    <!-- Imprimeur d'étiquettes QR -->
+    <QrLabelPrinter
+      :show="showLabelPrinter"
+      :physical-bottles="physicalBottles"
+      :bottle-info="bottle || {}"
+      @close="showLabelPrinter = false"
     />
   </main>
 </template>
@@ -311,7 +285,7 @@ import {
   HeartIcon, ShoppingCartIcon, ArrowLeftIcon, QrCodeIcon, PlusIcon, MinusIcon,
   ChevronDownIcon, ChevronUpIcon, ClockIcon, CurrencyDollarIcon,
   ArrowTopRightOnSquareIcon, ChartBarIcon, DocumentTextIcon, LinkIcon,
-  PencilSquareIcon, ArchiveBoxIcon, ArrowPathIcon
+  PencilSquareIcon, ArchiveBoxIcon, ArrowPathIcon, PrinterIcon
 } from '@heroicons/vue/24/solid'
 import WineBottleIcon from '@/components/WineBottleIcon.vue'
 import RemovePositionModal from '@/components/RemovePositionModal.vue'
@@ -335,39 +309,45 @@ import {
 } from '@heroicons/vue/24/outline'
 import { apiRequest } from '../services/api.js'
 import config from '../config.js'
-import { useQuantityManager } from '../composables/useQuantityManager.js'
+import { QrService } from '../services/qrService.js'
+import QrLabelPrinter from '../components/QrLabelPrinter.vue'
 
 const route = useRoute()
 const router = useRouter()
 const emit = defineEmits(['refresh-data'])
 
 const bottle = ref(null)
-const showQRModal = ref(false)
-
-// Gestion du retrait des positions
-const { 
-  showRemoveModal,
-  positionsToRemove,
-  positionsRemoved,
-  selectedPositionId,
-  isProcessing,
-  checkQuantityDecrease,
-  confirmRemove: confirmRemovePosition,
-  cancelRemove: cancelRemovePosition,
-  selectPosition
-} = useQuantityManager()
+const physicalBottles = ref([])
+const showLabelPrinter = ref(false)
+const isLoading = ref(false)
 
 const API_URL = '/bottles'
 
-const qrValue = computed(() => bottle.value ? `${window.location.origin}/wine/${bottle.value.id}` : '')
+const cellarCount = computed(() => {
+  return physicalBottles.value.filter(pb => pb.status === 'in_cellar').length
+})
+
+const qrValue = computed(() => bottle.value ? `${window.location.origin}/bottle/${bottle.value.id}` : '')
 
 const fetchBottle = async () => {
   const id = route.params.id
   if (!id) return
   try {
     bottle.value = await apiRequest(`${API_URL}/${id}`)
+    // Récupérer les bouteilles physiques
+    await fetchPhysicalBottles()
   } catch (e) {
     console.error('Erreur:', e)
+  }
+}
+
+const fetchPhysicalBottles = async () => {
+  if (!bottle.value) return
+  try {
+    const data = await QrService.getPhysicalBottles(bottle.value.id)
+    physicalBottles.value = data.physical_bottles || []
+  } catch (e) {
+    console.error('Erreur chargement bouteilles physiques:', e)
   }
 }
 
@@ -375,65 +355,10 @@ watch(() => route.params.id, () => {
   fetchBottle()
 }, { immediate: true })
 
-const updateQty = async (qty) => {
-  if (qty < 0) return
-  
-  const oldQty = bottle.value.quantity
-  
-  // Vérifier si on doit gérer le retrait de positions
-  const needsModal = checkQuantityDecrease(
-    bottle.value,
-    qty,
-    oldQty,
-    async (newQuantity) => {
-      // Callback quand toutes les positions sont retirées
-      try {
-        await apiRequest(`${API_URL}/${route.params.id}`, {
-          method: 'PATCH',
-          body: JSON.stringify({ quantity: newQuantity })
-        })
-        bottle.value.quantity = newQuantity
-        emit('refresh-data')
-      } catch (e) {
-        console.error('Erreur:', e)
-      }
-    },
-    (originalQuantity) => {
-      // Callback si annulation - restaurer la quantité
-      bottle.value.quantity = originalQuantity
-    }
-  )
-  
-  // Si pas besoin de modal, mettre à jour directement
-  if (!needsModal) {
-    try {
-      await apiRequest(`${API_URL}/${route.params.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ quantity: qty })
-      })
-      bottle.value.quantity = qty
-      emit('refresh-data')
-    } catch (e) {
-      console.error('Erreur:', e)
-    }
-  }
-}
-
-// Wrapper pour les fonctions du composable
-const confirmRemove = async () => {
-  await confirmRemovePosition()
-}
-
-const cancelRemove = () => {
-  cancelRemovePosition()
-}
-
-const archiveBottle = async () => {
-  await updateQty(0)
-}
-
-const restoreBottle = async () => {
-  await updateQty(1)
+const openLabelPrinter = async () => {
+  // Rafraîchir les bouteilles physiques avant d'ouvrir
+  await fetchPhysicalBottles()
+  showLabelPrinter.value = true
 }
 
 const deleteBottle = async () => {

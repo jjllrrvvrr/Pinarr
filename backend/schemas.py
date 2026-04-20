@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional, List
 from pydantic import ConfigDict
+from datetime import datetime
 
 
 class BottleBase(BaseModel):
@@ -20,7 +21,6 @@ class BottleBase(BaseModel):
     maturite_end: Optional[int] = None
     apogee_end: Optional[int] = None
     buy_link: Optional[str] = None
-    quantity: Optional[int] = 1
     price: Optional[float] = None
     description: Optional[str] = None
     rating: Optional[int] = None
@@ -85,8 +85,65 @@ class BottleSummary(BaseModel):
 
 class BottleWithPosition(Bottle):
     positions: List[dict] = []
+    physical_bottles: List["PhysicalBottleSummary"] = []
+    cellar_quantity: int = 0
 
     model_config = ConfigDict(from_attributes=True)
+
+
+# === Physical Bottles (QR Codes) ===
+
+
+class PhysicalBottleBase(BaseModel):
+    qr_code: str
+    status: str = "in_cellar"
+    notes: Optional[str] = None
+
+
+class PhysicalBottleCreate(PhysicalBottleBase):
+    bottle_id: int
+
+
+class PhysicalBottle(PhysicalBottleBase):
+    id: int
+    bottle_id: int
+    position_id: Optional[int] = None
+    acquisition_date: datetime
+    removal_date: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PhysicalBottleSummary(BaseModel):
+    id: int
+    qr_code: str
+    status: str
+    acquisition_date: datetime
+    position_code: Optional[str] = None
+    cave_name: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PhysicalBottleWithDetails(BaseModel):
+    id: int
+    qr_code: str
+    status: str
+    acquisition_date: datetime
+    removal_date: Optional[datetime] = None
+    notes: Optional[str] = None
+    bottle: Optional[dict] = None
+    position: Optional[dict] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PhysicalBottleMoveRequest(BaseModel):
+    position_id: Optional[int] = None
+
+
+class GenerateQrCodesRequest(BaseModel):
+    count: int = 1
 
 
 class CaveBase(BaseModel):
