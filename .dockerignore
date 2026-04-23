@@ -1,11 +1,17 @@
-# Global
+# Git
 .git/
 .gitignore
+.gitattributes
+
+# CI/CD
+.github/
+.travis.yml
+.gitlab-ci.yml
 
 # Documentation
-README.md
-ARCHITECTURE.md
 *.md
+ROADMAP.md
+LICENSE
 
 # IDE
 .idea/
@@ -13,7 +19,64 @@ ARCHITECTURE.md
 *.swp
 *.swo
 *~
+.eslintignore
+.prettierrc
+.prettierignore
 
 # OS
 .DS_Store
 Thumbs.db
+
+# Environment (secrets)
+.env
+.env.*
+backend/.env
+
+# Database (local data)
+/data/
+data-dev/
+data-local/
+*.db
+*.sqlite
+*.sqlite3
+
+# Uploads (local data)
+/uploads/
+uploads-dev/
+
+# Frontend build artifacts
+frontend/node_modules/
+frontend/dist/
+frontend/.cache/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.venv/
+.venv*/
+env/
+ENV/
+
+# Test cache
+.pytest_cache/
+.coverage
+htmlcov/
+tests/
+test_*.py
+*_test.py
+smoke_test.py
+
+# Logs
+*.log
+logs/
+
+# One-shot dev scripts
+replace_colors.py

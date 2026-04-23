@@ -1,24 +1,26 @@
 # Dependencies
 frontend/node_modules/
-backend/__pycache__/
-backend/*.pyc
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
 
 # Environment
 .env
+.env.*
 backend/.env
 
 # Database
 /data/
+/data-dev/
+data-local/
 *.db
 *.sqlite
 *.sqlite3
 
 # Uploads
 /uploads/
-
-# Python
-backend/alembic/versions/*.py
-!backend/alembic/versions/.gitkeep
+/uploads-dev/
 
 # Logs
 *.log
@@ -37,7 +39,6 @@ Thumbs.db
 
 # Docker overrides (local dev)
 docker-compose.override.yml
-docker-compose.dev.yml
 
 # Temp
 tmp/
@@ -47,3 +48,19 @@ ROADMAP.md
 # One-shot dev scripts
 /replace_colors.py
 /smoke_test.py
+
+# Python virtual environments
+.venv/
+.venv*/
+env/
+ENV/
+
+# Test cache
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
