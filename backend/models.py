@@ -18,6 +18,7 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
+
 class Bottle(Base):
     __tablename__ = "bottles"
 
@@ -36,7 +37,7 @@ class Bottle(Base):
     # Phases de développement du vin
     jeunesse_end = Column(Integer, nullable=True)  # Fin phase Jeunesse
     maturite_end = Column(Integer, nullable=True)  # Fin phase Maturité
-    apogee_end = Column(Integer, nullable=True)  # Fin phase Apogée
+    # NOTE: apogee_end est déjà défini plus haut (période de consommation idéale)
     buy_link = Column(String, nullable=True)
     quantity = Column(Integer, nullable=True, default=1)
     price = Column(Float, nullable=True)
@@ -46,7 +47,11 @@ class Bottle(Base):
     is_favorite = Column(Boolean, nullable=True, default=False)
     image_path = Column(String, nullable=True)
 
-    physical_bottles = relationship("PhysicalBottle", back_populates="bottle")
+    physical_bottles = relationship(
+        "PhysicalBottle", back_populates="bottle", cascade="all, delete-orphan"
+    )
+    # Compatibilité : positions dans la cave via les physical_bottles
+    # Positions accessibles via les physical_bottles
 
 
 class Cave(Base):
@@ -107,7 +112,11 @@ class PhysicalBottle(Base):
     notes = Column(String(500), nullable=True)
 
     bottle = relationship("Bottle", back_populates="physical_bottles")
-    position = relationship("Position", back_populates="physical_bottle")
+    position = relationship(
+        "Position",
+        back_populates="physical_bottle",
+        foreign_keys=[position_id]
+    )
 
 
 class Position(Base):
@@ -117,12 +126,23 @@ class Position(Base):
     row_id = Column(Integer, ForeignKey("cave_rows.id"), nullable=False)
     line = Column(Integer, nullable=False)
     position = Column(Integer, nullable=False)
-    physical_bottle_id = Column(
-        Integer, ForeignKey("physical_bottles.id"), nullable=True
-    )
 
     row = relationship("CaveRow", back_populates="positions")
-    physical_bottle = relationship("PhysicalBottle", back_populates="position")
+    physical_bottle = relationship(
+        "PhysicalBottle",
+        back_populates="position",
+        uselist=False
+    )
+
+    @property
+    def bottle_at_position(self):
+        """Compatibilité: retourne la bouteille (Bottle) à cette position via physical_bottle."""
+        return self.physical_bottle.bottle if self.physical_bottle else None
+
+    @property
+    def bottle_id(self):
+        """Compatibilité: retourne directement l'ID de la bouteille assignée, via physical_bottle."""
+        return self.physical_bottle.bottle_id if self.physical_bottle else None
 
     @property
     def code(self):

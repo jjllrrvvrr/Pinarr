@@ -59,17 +59,24 @@ const fetchBottles = async () => {
   }
 }
 
+const bottleAtPositionMap = computed(() => {
+  const map = new Map()
+  if (!cave.value) return map
+  cave.value.columns?.forEach(col => {
+    col.rows?.forEach(row => {
+      row.positions?.forEach(pos => {
+        if (pos.bottle_at_position) {
+          const bottle = bottles.value.find(b => b.id === pos.bottle_at_position.id)
+          if (bottle) map.set(`${row.id}-${pos.line}-${pos.position}`, bottle)
+        }
+      })
+    })
+  })
+  return map
+})
+
 const getBottleAtPosition = (rowId, line, pos) => {
-  const row = cave.value?.columns
-    ?.flatMap(c => c.rows || [])
-    ?.find(r => r.id === rowId)
-  
-  if (!row) return null
-  
-  const position = row.positions?.find(p => p.line === line && p.position === pos)
-  if (!position || !position.bottle_at_position) return null
-  
-  return bottles.value.find(b => b.id === position.bottle_at_position.id)
+  return bottleAtPositionMap.value.get(`${rowId}-${line}-${pos}`) || null
 }
 
 const getPositionData = (rowId, line, pos) => {
@@ -122,10 +129,11 @@ const availableBottles = computed(() => {
     })
   })
   
-  // Filtrer : ne montrer que les bouteilles avec places disponibles
+  // Filtrer : ne montrer que les bouteilles avec des physical_bottles encore non placées
   return bottles.value.filter(b => {
     const placedCount = placementCount[b.id] || 0
-    return placedCount < b.quantity
+    const totalPhysical = b.cellar_quantity || 0
+    return placedCount < totalPhysical
   })
 })
 
@@ -232,7 +240,13 @@ const handleDrop = async (event, targetRow, targetLine, targetPos) => {
   event.preventDefault()
   hoveredDropZone.value = null
   
-  const data = JSON.parse(event.dataTransfer.getData('text/plain'))
+  let data
+  try {
+    data = JSON.parse(event.dataTransfer.getData('text/plain'))
+  } catch (e) {
+    console.error('Invalid drag data:', e)
+    return
+  }
   
   // Drop depuis la sidebar
   if (data.fromSidebar) {
@@ -401,9 +415,10 @@ const executeMove = async (source, target) => {
     
   } catch (e) {
     console.error('=== MOVE FAILED - ROLLING BACK ===', e)
-    // ROLLBACK: Restaurer l'état précédent
-    cave.value = backupCave
-    alert('Erreur lors du déplacement: ' + e.message)
+    // ROLLBACK complet: recharger toutes les données
+    await fetchCave()
+    await fetchBottles()
+    alert('Erreur lors du déplacement: ' + (e.message || e))
   }
 }
 
@@ -613,24 +628,24 @@ const placeBottleFromSidebar = async (bottle, targetRow, targetLine, targetPos) 
 
 <template>
   <main class="max-w-7xl mx-auto px-4 py-8 pb-20">
-    <div class="flex items-center gap-2 mb-6 text-[#8b949e] text-sm">
-      <router-link to="/caves" class="hover:text-[#58a6ff]">Caves</router-link>
+    <div class="flex items-center gap-2 mb-6 text-gh-text-secondary text-sm">
+      <router-link to="/caves" class="hover:text-gh-accent">Caves</router-link>
       <span>/</span>
-      <span class="text-white">{{ cave?.name || 'Chargement...' }}</span>
+      <span class="text-gh-text">{{ cave?.name || 'Chargement...' }}</span>
     </div>
 
-    <div v-if="loading" class="text-center py-12 text-[#8b949e]">Chargement...</div>
+    <div v-if="loading" class="text-center py-12 text-gh-text-secondary">Chargement...</div>
 
-    <div v-else-if="!cave" class="text-center py-12 text-[#8b949e]">Cave non trouvée</div>
+    <div v-else-if="!cave" class="text-center py-12 text-gh-text-secondary">Cave non trouvée</div>
 
     <!-- HEADER: Hors de la grille, pleine largeur -->
     <div v-else>
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 sm:mb-6">
         <div>
-          <h1 class="text-lg sm:text-xl font-bold text-white">{{ cave.name }}</h1>
-          <p class="text-sm text-[#8b949e]">{{ cave.columns?.length || 0 }} colonne(s)</p>
+          <h1 class="text-lg sm:text-xl font-bold text-gh-text">{{ cave.name }}</h1>
+          <p class="text-sm text-gh-text-secondary">{{ cave.columns?.length || 0 }} colonne(s)</p>
         </div>
-        <router-link :to="`/caves/${cave.id}/edit`" class="flex items-center justify-center gap-2 px-3 py-2 text-[#8b949e] hover:text-white hover:bg-[#21262d] rounded-md transition text-sm">
+        <router-link :to="`/caves/${cave.id}/edit`" class="flex items-center justify-center gap-2 px-3 py-2 text-gh-text-secondary hover:text-gh-text hover:bg-gh-elevated rounded-md transition text-sm">
           <PencilIcon class="w-4 h-4" />
           <span class="sm:hidden">Éditer</span>
           <span class="hidden sm:inline">Modifier</span>
@@ -645,29 +660,29 @@ const placeBottleFromSidebar = async (bottle, targetRow, targetLine, targetPos) 
             v-for="col in cave.columns"
             :key="col.id"
             @click="selectedColumn = col"
-            :class="['px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition whitespace-nowrap', selectedColumn?.id === col.id ? 'bg-[#238636] text-white' : 'bg-[#21262d] text-[#8b949e] hover:bg-[#30363d]']"
+            :class="['px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition whitespace-nowrap', selectedColumn?.id === col.id ? 'bg-gh-accent-green text-gh-text' : 'bg-gh-elevated text-gh-text-secondary hover:bg-gh-border']"
           >
             {{ col.name }}
           </button>
         </div>
 
         <div v-if="selectedColumn" class="space-y-6">
-          <div v-for="row in selectedColumn.rows" :key="row.id" class="bg-[#161b22] rounded-md border border-[#30363d] overflow-hidden">
-            <div class="px-4 py-2 border-b border-[#30363d] bg-[#0d1117]/50 flex items-center justify-between">
-              <span class="text-sm font-medium text-white">{{ row.name }}</span>
-              <span class="text-xs text-[#8b949e]">{{ row.width }}×{{ row.height }}</span>
+          <div v-for="row in selectedColumn.rows" :key="row.id" class="bg-gh-surface rounded-md border border-gh-border overflow-hidden">
+            <div class="px-4 py-2 border-b border-gh-border bg-gh-bg/50 flex items-center justify-between">
+              <span class="text-sm font-medium text-gh-text">{{ row.name }}</span>
+              <span class="text-xs text-gh-text-secondary">{{ row.width }}×{{ row.height }}</span>
             </div>
             
             <div class="p-2 sm:p-4 overflow-x-auto">
               <div class="flex gap-0.5 sm:gap-1 mb-1">
                 <div class="w-6 sm:w-8 flex-shrink-0"></div>
-                <div v-for="pos in row.width" :key="pos" class="w-10 sm:w-12 md:w-14 lg:w-16 text-center text-[10px] sm:text-xs text-[#8b949e]">
+                <div v-for="pos in row.width" :key="pos" class="w-10 sm:w-12 md:w-14 lg:w-16 text-center text-[10px] sm:text-xs text-gh-text-secondary">
                   {{ pos }}
                 </div>
               </div>
               
               <div v-for="line in row.height" :key="line" class="flex gap-0.5 sm:gap-1 items-center mb-0.5 sm:mb-1">
-                <div class="w-6 sm:w-8 flex-shrink-0 text-[10px] sm:text-xs text-[#8b949e] text-center">L{{ row.height - line + 1 }}</div>
+                <div class="w-6 sm:w-8 flex-shrink-0 text-[10px] sm:text-xs text-gh-text-secondary text-center">L{{ row.height - line + 1 }}</div>
                 <div
                   v-for="pos in row.width"
                   :key="pos"
@@ -678,15 +693,15 @@ const placeBottleFromSidebar = async (bottle, targetRow, targetLine, targetPos) 
                   :class="[
                     'w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 rounded border flex items-center justify-center cursor-pointer transition relative',
                     getBottleAtPosition(row.id, row.height - line + 1, pos)
-                      ? 'bg-[#238636]/20 border-[#238636]'
-                      : 'bg-[#0d1117] border-[#30363d]',
+                      ? 'bg-gh-accent-green/20 border-gh-accent-green'
+                      : 'bg-gh-bg border-gh-border',
                     isHighlighted(row.id, row.height - line + 1, pos)
-                      ? 'ring-2 ring-[#58a6ff] bg-[#58a6ff]/30 scale-105 z-10'
+                      ? 'ring-2 ring-gh-accent bg-gh-accent/30 scale-105 z-10'
                       : '',
                     hoveredDropZone?.rowId === row.id && hoveredDropZone?.line === (row.height - line + 1) && hoveredDropZone?.position === pos
                       ? hoveredDropZone.hasBottle
-                        ? 'ring-2 ring-[#f0883e] bg-[#f0883e]/20'
-                        : 'ring-2 ring-[#58a6ff] bg-[#58a6ff]/20'
+                        ? 'ring-2 ring-gh-accent-orange bg-gh-accent-orange/20'
+                        : 'ring-2 ring-gh-accent bg-gh-accent/20'
                       : ''
                   ]"
                 >
@@ -703,21 +718,21 @@ const placeBottleFromSidebar = async (bottle, targetRow, targetLine, targetPos) 
                 >
                   <div class="flex flex-col items-center">
                     <WineBottleIcon :type="getBottleAtPosition(row.id, row.height - line + 1, pos).type" class="w-4 h-6 sm:w-5 sm:h-8 md:w-6 md:h-10" />
-                    <div class="text-[8px] sm:text-[10px] text-white truncate px-0.5 sm:px-1 max-w-full hidden sm:block">
+                    <div class="text-[8px] sm:text-[10px] text-gh-text truncate px-0.5 sm:px-1 max-w-full hidden sm:block">
                       {{ getBottleAtPosition(row.id, row.height - line + 1, pos).name?.substring(0, 6) }}
                     </div>
                   </div>
                 </div>
-                <div v-else class="text-[#30363d] text-[10px] sm:text-xs">+</div>
+                <div v-else class="text-gh-border text-[10px] sm:text-xs">+</div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div v-else-if="cave.columns?.length === 0" class="text-center py-12 text-[#8b949e] bg-[#161b22] rounded-md border border-[#30363d]">
+      <div v-else-if="cave.columns?.length === 0" class="text-center py-12 text-gh-text-secondary bg-gh-surface rounded-md border border-gh-border">
         Cette cave n'a pas encore de colonnes.
-        <router-link :to="`/caves/${cave.id}/edit`" class="text-[#58a6ff] hover:underline">Modifier la cave</router-link>
+        <router-link :to="`/caves/${cave.id}/edit`" class="text-gh-accent hover:underline">Modifier la cave</router-link>
       </div>
     </div>
 
@@ -738,54 +753,54 @@ const placeBottleFromSidebar = async (bottle, targetRow, targetLine, targetPos) 
   </div>
 
     <div v-if="selectedPosition" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="selectedPosition = null">
-      <div class="bg-[#161b22] rounded-md w-full max-w-md border border-[#30363d]">
-        <div class="p-4 border-b border-[#30363d] flex items-center justify-between">
+      <div class="bg-gh-surface rounded-md w-full max-w-md border border-gh-border">
+        <div class="p-4 border-b border-gh-border flex items-center justify-between">
           <div>
-            <h3 class="font-medium text-white">Position {{ selectedPosition.row?.name }} - L{{ selectedPosition.line }}/{{ selectedPosition.position }}</h3>
+            <h3 class="font-medium text-gh-text">Position {{ selectedPosition.row?.name }} - L{{ selectedPosition.line }}/{{ selectedPosition.position }}</h3>
           </div>
-          <button @click="selectedPosition = null" class="text-[#8b949e] hover:text-white">
+          <button @click="selectedPosition = null" class="text-gh-text-secondary hover:text-gh-text">
             <XMarkIcon class="w-5 h-5" />
           </button>
         </div>
 
         <div class="p-4">
           <div v-if="selectedPosition.bottle" class="mb-4">
-            <div class="text-sm text-[#8b949e] mb-2">Bouteille assignée:</div>
+            <div class="text-sm text-gh-text-secondary mb-2">Bouteille assignée:</div>
             <router-link
               :to="`/wine/${selectedPosition.bottle.id}`"
-              class="flex items-center gap-3 p-3 bg-[#0d1117] rounded-md border border-[#30363d] hover:border-[#58a6ff] transition"
+              class="flex items-center gap-3 p-3 bg-gh-bg rounded-md border border-gh-border hover:border-gh-border-active transition"
             >
               <WineBottleIcon :type="selectedPosition.bottle.type" class="w-8 h-12" />
               <div>
-                <div class="font-medium text-white">{{ selectedPosition.bottle.name }}</div>
-                <div class="text-xs text-[#8b949e]">{{ selectedPosition.bottle.year }} · {{ selectedPosition.bottle.type }}</div>
+                <div class="font-medium text-gh-text">{{ selectedPosition.bottle.name }}</div>
+                <div class="text-xs text-gh-text-secondary">{{ selectedPosition.bottle.year }} · {{ selectedPosition.bottle.type }}</div>
               </div>
             </router-link>
             <button
               @click="clearPosition"
-              class="w-full mt-3 px-4 py-2 bg-[#f85149]/20 text-[#f85149] rounded-md text-sm hover:bg-[#f85149]/30 transition"
+              class="w-full mt-3 px-4 py-2 bg-gh-accent-red/20 text-gh-accent-red rounded-md text-sm hover:bg-gh-accent-red/30 transition"
             >
               Retirer la bouteille
             </button>
           </div>
 
           <div v-else>
-            <div class="text-sm text-[#8b949e] mb-2">Assigner une bouteille:</div>
+            <div class="text-sm text-gh-text-secondary mb-2">Assigner une bouteille:</div>
             <div class="max-h-64 overflow-y-auto space-y-1">
               <button
                 v-for="bottle in availableBottles"
                 :key="bottle.id"
                 @click="assignBottle(bottle.id)"
-                class="w-full flex items-center gap-3 p-2 bg-[#0d1117] rounded border border-[#30363d] hover:border-[#58a6ff] transition text-left"
+                class="w-full flex items-center gap-3 p-2 bg-gh-bg rounded border border-gh-border hover:border-gh-border-active transition text-left"
               >
                 <WineBottleIcon :type="bottle.type" class="w-6 h-8" />
                 <div class="flex-1 min-w-0">
-                  <div class="text-sm text-white truncate">{{ bottle.name }}</div>
-                  <div class="text-xs text-[#8b949e]">{{ bottle.year }}</div>
+                  <div class="text-sm text-gh-text truncate">{{ bottle.name }}</div>
+                  <div class="text-xs text-gh-text-secondary">{{ bottle.year }}</div>
                 </div>
-                <div class="text-xs text-[#8b949e]">×{{ bottle.quantity }}</div>
+                <div class="text-xs text-gh-text-secondary">×{{ bottle.quantity }}</div>
               </button>
-              <div v-if="availableBottles.length === 0" class="text-center py-4 text-[#8b949e]">
+              <div v-if="availableBottles.length === 0" class="text-center py-4 text-gh-text-secondary">
                 Aucune bouteille disponible
               </div>
             </div>
@@ -806,13 +821,13 @@ const placeBottleFromSidebar = async (bottle, targetRow, targetLine, targetPos) 
         :class="[
           'w-20 h-20 rounded-full border-2 flex items-center justify-center transition-all duration-200',
           hoveredDropZone?.isTrash
-            ? 'bg-[#f85149]/30 border-[#f85149] scale-110'
-            : 'bg-[#161b22]/90 border-[#30363d] hover:border-[#f85149]/50'
+            ? 'bg-gh-accent-red/30 border-gh-accent-red scale-110'
+            : 'bg-gh-surface/90 border-gh-border hover:border-gh-accent-red/50'
         ]"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          :class="['w-8 h-8 transition-colors', hoveredDropZone?.isTrash ? 'text-[#f85149]' : 'text-[#8b949e]']"
+          :class="['w-8 h-8 transition-colors', hoveredDropZone?.isTrash ? 'text-gh-accent-red' : 'text-gh-text-secondary']"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -821,7 +836,7 @@ const placeBottleFromSidebar = async (bottle, targetRow, targetLine, targetPos) 
           <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
         </svg>
       </div>
-      <div class="text-center text-xs text-[#8b949e] mt-2" v-if="hoveredDropZone?.isTrash">
+      <div class="text-center text-xs text-gh-text-secondary mt-2" v-if="hoveredDropZone?.isTrash">
         Déposer pour retirer
       </div>
     </div>
@@ -832,10 +847,10 @@ const placeBottleFromSidebar = async (bottle, targetRow, targetLine, targetPos) 
       class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
       @click.self="resolveConflict('cancel')"
     >
-      <div class="bg-[#161b22] rounded-md w-full max-w-md border border-[#30363d]">
-        <div class="p-4 border-b border-[#30363d]">
-          <h3 class="font-medium text-white">Position occupée</h3>
-          <p class="text-sm text-[#8b949e] mt-1">
+      <div class="bg-gh-surface rounded-md w-full max-w-md border border-gh-border">
+        <div class="p-4 border-b border-gh-border">
+          <h3 class="font-medium text-gh-text">Position occupée</h3>
+          <p class="text-sm text-gh-text-secondary mt-1">
             Une bouteille est déjà présente à cet emplacement. Que souhaitez-vous faire ?
           </p>
         </div>
@@ -843,24 +858,24 @@ const placeBottleFromSidebar = async (bottle, targetRow, targetLine, targetPos) 
         <div class="p-4 space-y-4">
           <!-- Informations sur les bouteilles -->
           <div class="grid grid-cols-2 gap-4">
-            <div class="bg-[#0d1117] rounded border border-[#30363d] p-3">
-              <div class="text-xs text-[#8b949e] mb-2">À déplacer :</div>
+            <div class="bg-gh-bg rounded border border-gh-border p-3">
+              <div class="text-xs text-gh-text-secondary mb-2">À déplacer :</div>
               <div class="flex items-center gap-2">
                 <WineBottleIcon :type="dropConflict.draggedBottle.type" class="w-6 h-8" />
                 <div class="min-w-0">
-                  <div class="text-sm text-white truncate">{{ dropConflict.draggedBottle.name }}</div>
-                  <div class="text-xs text-[#8b949e]">{{ dropConflict.draggedBottle.year }}</div>
+                  <div class="text-sm text-gh-text truncate">{{ dropConflict.draggedBottle.name }}</div>
+                  <div class="text-xs text-gh-text-secondary">{{ dropConflict.draggedBottle.year }}</div>
                 </div>
               </div>
             </div>
 
-            <div class="bg-[#0d1117] rounded border border-[#30363d] p-3">
-              <div class="text-xs text-[#8b949e] mb-2">Actuellement :</div>
+            <div class="bg-gh-bg rounded border border-gh-border p-3">
+              <div class="text-xs text-gh-text-secondary mb-2">Actuellement :</div>
               <div class="flex items-center gap-2">
                 <WineBottleIcon :type="dropConflict.target.bottle.type" class="w-6 h-8" />
                 <div class="min-w-0">
-                  <div class="text-sm text-white truncate">{{ dropConflict.target.bottle.name }}</div>
-                  <div class="text-xs text-[#8b949e]">{{ dropConflict.target.bottle.year }}</div>
+                  <div class="text-sm text-gh-text truncate">{{ dropConflict.target.bottle.name }}</div>
+                  <div class="text-xs text-gh-text-secondary">{{ dropConflict.target.bottle.year }}</div>
                 </div>
               </div>
             </div>
@@ -870,7 +885,7 @@ const placeBottleFromSidebar = async (bottle, targetRow, targetLine, targetPos) 
           <div class="space-y-2">
             <button
               @click="resolveConflict('swap')"
-              class="w-full px-4 py-2 bg-[#58a6ff]/20 text-[#58a6ff] rounded-md text-sm hover:bg-[#58a6ff]/30 transition flex items-center justify-center gap-2"
+              class="w-full px-4 py-2 bg-gh-accent/20 text-gh-accent rounded-md text-sm hover:bg-gh-accent/30 transition flex items-center justify-center gap-2"
             >
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
@@ -880,7 +895,7 @@ const placeBottleFromSidebar = async (bottle, targetRow, targetLine, targetPos) 
 
             <button
               @click="resolveConflict('replace')"
-              class="w-full px-4 py-2 bg-[#f0883e]/20 text-[#f0883e] rounded-md text-sm hover:bg-[#f0883e]/30 transition flex items-center justify-center gap-2"
+              class="w-full px-4 py-2 bg-gh-accent-orange/20 text-gh-accent-orange rounded-md text-sm hover:bg-gh-accent-orange/30 transition flex items-center justify-center gap-2"
             >
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -890,7 +905,7 @@ const placeBottleFromSidebar = async (bottle, targetRow, targetLine, targetPos) 
 
             <button
               @click="resolveConflict('cancel')"
-              class="w-full px-4 py-2 text-[#8b949e] hover:text-white hover:bg-[#21262d] rounded-md text-sm transition"
+              class="w-full px-4 py-2 text-gh-text-secondary hover:text-gh-text hover:bg-gh-elevated rounded-md text-sm transition"
             >
               Annuler
             </button>

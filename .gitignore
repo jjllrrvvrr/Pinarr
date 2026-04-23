@@ -35,9 +35,9 @@ logs/
 .DS_Store
 Thumbs.db
 
-# Build
-dist/
-build/
+# Docker overrides (local dev)
+docker-compose.override.yml
+docker-compose.dev.yml
 
 # Temp
 tmp/

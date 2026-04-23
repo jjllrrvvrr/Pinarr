@@ -19,8 +19,8 @@ class BottleBase(BaseModel):
     # Phases de développement
     jeunesse_end: Optional[int] = None
     maturite_end: Optional[int] = None
-    apogee_end: Optional[int] = None
     buy_link: Optional[str] = None
+    quantity: Optional[int] = None
     price: Optional[float] = None
     description: Optional[str] = None
     rating: Optional[int] = None
@@ -48,7 +48,6 @@ class BottlePatch(BaseModel):
     # Phases de développement
     jeunesse_end: Optional[int] = None
     maturite_end: Optional[int] = None
-    apogee_end: Optional[int] = None
     buy_link: Optional[str] = None
     quantity: Optional[int] = None
     price: Optional[float] = None

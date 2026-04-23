@@ -2,15 +2,15 @@
   <main class="max-w-7xl mx-auto px-4 pt-4 pb-20">
     <div class="flex items-center gap-3 mb-4">
       <div class="relative flex-1">
-        <MagnifyingGlassIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8b949e]" />
+        <MagnifyingGlassIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gh-text-secondary" />
         <input v-model="searchQuery" type="text" placeholder="Rechercher un vin..." 
-               class="w-full bg-[#0d1117] border border-[#30363d] rounded-md py-1.5 pl-9 pr-4 text-white placeholder-[#8b949e] focus:outline-none focus:border-[#58a6ff] focus:ring-1 focus:ring-[#58a6ff] text-sm">
+               class="w-full bg-gh-bg border border-gh-border rounded-md py-1.5 pl-9 pr-4 text-gh-text placeholder-gh-text-secondary focus:outline-none focus:border-gh-accent focus:ring-1 focus:ring-gh-accent text-sm">
       </div>
-      <div class="flex items-center gap-1 border border-[#30363d] rounded-md p-0.5">
-        <button @click="viewMode = 'grid'" :class="['p-1.5 rounded transition', viewMode === 'grid' ? 'bg-[#21262d] text-white' : 'text-[#8b949e] hover:text-white']">
+      <div class="flex items-center gap-1 border border-gh-border rounded-md p-0.5">
+        <button @click="viewMode = 'grid'" :class="['p-1.5 rounded transition', viewMode === 'grid' ? 'bg-gh-elevated text-gh-text' : 'text-gh-text-secondary hover:text-gh-text']">
           <Squares2X2Icon class="w-4 h-4" />
         </button>
-        <button @click="viewMode = 'list'" :class="['p-1.5 rounded transition', viewMode === 'list' ? 'bg-[#21262d] text-white' : 'text-[#8b949e] hover:text-white']">
+        <button @click="viewMode = 'list'" :class="['p-1.5 rounded transition', viewMode === 'list' ? 'bg-gh-elevated text-gh-text' : 'text-gh-text-secondary hover:text-gh-text']">
           <ListBulletIcon class="w-4 h-4" />
         </button>
       </div>
@@ -20,8 +20,8 @@
     <template v-if="searchQuery.trim()">
       <!-- Section: En cave -->
       <div v-if="inStockSearchResults.length > 0" class="mb-8">
-        <h2 class="text-sm font-semibold text-[#3fb950] mb-4 flex items-center gap-2 px-1">
-          <span class="w-2 h-2 rounded-full bg-[#3fb950]"></span>
+        <h2 class="text-sm font-semibold text-gh-accent-green-text mb-4 flex items-center gap-2 px-1">
+          <span class="w-2 h-2 rounded-full bg-gh-accent-green"></span>
           En cave ({{ inStockSearchResults.length }} résultat{{ inStockSearchResults.length > 1 ? 's' : '' }})
         </h2>
         <div :class="viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4' : 'space-y-2'">
@@ -41,7 +41,7 @@
 
       <!-- Section: Dans l'historique -->
       <div v-if="archivedSearchResults.length > 0" class="mb-8">
-        <h2 class="text-sm font-semibold text-[#8b949e] mb-4 flex items-center gap-2 px-1">
+        <h2 class="text-sm font-semibold text-gh-text-secondary mb-4 flex items-center gap-2 px-1">
           <ArchiveBoxIcon class="w-4 h-4" />
           Dans l'historique ({{ archivedSearchResults.length }} résultat{{ archivedSearchResults.length > 1 ? 's' : '' }})
         </h2>
@@ -62,8 +62,8 @@
 
       <!-- Aucun résultat -->
       <div v-if="inStockSearchResults.length === 0 && archivedSearchResults.length === 0" class="text-center py-20">
-        <div class="text-[#8b949e] text-sm mb-2">Aucune bouteille trouvée pour "{{ searchQuery }}"</div>
-        <div class="text-[#8b949e] text-xs">Essayez avec un autre terme de recherche</div>
+        <div class="text-gh-text-secondary text-sm mb-2">Aucune bouteille trouvée pour "{{ searchQuery }}"</div>
+        <div class="text-gh-text-secondary text-xs">Essayez avec un autre terme de recherche</div>
       </div>
     </template>
 
@@ -72,11 +72,11 @@
       <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
         <div class="flex items-center gap-2">
           <button @click="showHistory = false" 
-                  :class="['px-3 py-1 rounded-md text-xs font-medium transition', !showHistory ? 'bg-[#238636] text-white' : 'bg-[#21262d] text-[#8b949e] hover:text-white']">
+                  :class="['px-3 py-1 rounded-md text-xs font-medium transition', !showHistory ? 'bg-gh-accent-green text-white' : 'bg-gh-elevated text-gh-text-secondary hover:text-gh-text']">
             En cave ({{ inStockCount }})
           </button>
           <button @click="showHistory = true" 
-                  :class="['px-3 py-1 rounded-md text-xs font-medium transition', showHistory ? 'bg-[#f85149] text-white' : 'bg-[#21262d] text-[#8b949e] hover:text-white']">
+                  :class="['px-3 py-1 rounded-md text-xs font-medium transition', showHistory ? 'bg-gh-accent-red text-white' : 'bg-gh-elevated text-gh-text-secondary hover:text-gh-text']">
             Historique ({{ archivedCount }})
           </button>
         </div>
@@ -93,14 +93,14 @@
                 'px-2 py-1 rounded-md text-xs font-medium transition border',
                 filters.color === color.value
                   ? `${color.color} text-white border-transparent`
-                  : 'bg-[#21262d] text-[#8b949e] border-[#30363d] hover:text-white'
+                  : 'bg-gh-elevated text-gh-text-secondary border-gh-border hover:text-gh-text'
               ]"
             >
               {{ color.label }}
             </button>
           </div>
           
-          <span class="text-[#30363d] mx-2">|</span>
+          <span class="text-gh-border mx-2">|</span>
           
           <!-- Filtre Évolution -->
           <div class="flex items-center gap-1">
@@ -112,7 +112,7 @@
                 'px-2 py-1 rounded-md text-xs font-medium transition border',
                 filters.phase === phase.value
                   ? `${phase.color} text-white border-transparent`
-                  : 'bg-[#21262d] text-[#8b949e] border-[#30363d] hover:text-white'
+                  : 'bg-gh-elevated text-gh-text-secondary border-gh-border hover:text-gh-text'
               ]"
             >
               {{ phase.label }}
@@ -122,38 +122,38 @@
       </div>
 
       <div v-if="hasTextFilters" class="mb-4 flex flex-wrap items-center gap-2">
-        <span class="text-[#8b949e] text-xs">Filtres:</span>
+        <span class="text-gh-text-secondary text-xs">Filtres:</span>
         <button v-if="filters.cepage" @click="clearFilter('cepage')" 
-                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-[#f85149]/20 text-[#f85149] border border-[#f85149]/30 hover:bg-[#f85149]/30 transition">
+                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-gh-accent-red/20 text-gh-accent-red border border-gh-accent-red/30 hover:bg-gh-accent-red/30 transition">
           Cépage: {{ filters.cepage }} ×
         </button>
         <button v-if="filters.region" @click="clearFilter('region')" 
-                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-[#a371f7]/20 text-[#a371f7] border border-[#a371f7]/30 hover:bg-[#a371f7]/30 transition">
+                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-gh-accent-purple/20 text-gh-accent-purple border border-gh-accent-purple/30 hover:bg-gh-accent-purple/30 transition">
           Région: {{ filters.region }} ×
         </button>
         <button v-if="filters.year" @click="clearFilter('year')" 
-                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-[#58a6ff]/20 text-[#58a6ff] border border-[#58a6ff]/30 hover:bg-[#58a6ff]/30 transition">
+                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-gh-accent/20 text-gh-accent border border-gh-accent/30 hover:bg-gh-accent/30 transition">
           Millésime: {{ filters.year }} ×
         </button>
         <button v-if="filters.domaine" @click="clearFilter('domaine')" 
-                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-[#e3b341]/20 text-[#e3b341] border border-[#e3b341]/30 hover:bg-[#e3b341]/30 transition">
+                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-gh-accent-gold/20 text-gh-accent-gold border border-gh-accent-gold/30 hover:bg-gh-accent-gold/30 transition">
           Domaine: {{ filters.domaine }} ×
         </button>
         <button v-if="filters.country" @click="clearFilter('country')" 
-                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-[#3fb950]/20 text-[#3fb950] border border-[#3fb950]/30 hover:bg-[#3fb950]/30 transition">
+                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-gh-accent-green/20 text-gh-accent-green-text border border-gh-accent-green/30 hover:bg-gh-accent-green/30 transition">
           Pays: {{ filters.country }} ×
         </button>
         <button v-if="filters.tag" @click="clearFilter('tag')" 
-                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-[#db61a2]/20 text-[#db61a2] border border-[#db61a2]/30 hover:bg-[#db61a2]/30 transition">
+                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-gh-accent-pink/20 text-gh-accent-pink border border-gh-accent-pink/30 hover:bg-gh-accent-pink/30 transition">
           Tag: {{ filters.tag }} ×
         </button>
-        <button @click="clearAllFilters" class="text-xs text-[#8b949e] hover:text-white underline ml-2">
+        <button @click="clearAllFilters" class="text-xs text-gh-text-secondary hover:text-gh-text underline ml-2">
           Effacer tout
         </button>
       </div>
 
-      <div v-if="visibleBottles.length === 0" class="text-center py-20 border border-[#30363d] rounded-md bg-[#0d1117]">
-        <div class="text-[#8b949e] text-sm">{{ showHistory ? 'Aucune bouteille dans l\'historique' : 'Aucune bouteille en cave' }}</div>
+      <div v-if="visibleBottles.length === 0" class="text-center py-20 border border-gh-border rounded-md bg-gh-bg">
+        <div class="text-gh-text-secondary text-sm">{{ showHistory ? 'Aucune bouteille dans l\'historique' : 'Aucune bouteille en cave' }}</div>
       </div>
 
       <div v-else :class="viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4' : 'space-y-2'">
@@ -162,7 +162,7 @@
           :key="bottle.id"
           :bottle="bottle"
           :view-mode="viewMode"
-          :archived="bottle.quantity === 0"
+          :archived="(bottle.physical_bottles?.length || 0) === 0"
           @navigate="goToBottle"
           @filter="setFilter"
           @update-quantity="updateQty"
@@ -190,7 +190,7 @@ const props = defineProps({
   storageLocations: Array,
   shelves: Array
 })
-const emit = defineEmits(['edit-bottle', 'delete-bottle', 'show-qr', 'update-quantity'])
+const emit = defineEmits(['edit-bottle', 'delete-bottle', 'show-qr', 'update-quantity', 'refresh-data'])
 
 const searchQuery = ref('')
 const viewMode = ref('grid')
@@ -237,6 +237,7 @@ const getPhaseLabel = (value) => phaseOptions.find(p => p.value === value)?.labe
 
 const getBottlePhase = (bottle) => {
   if (!bottle.jeunesse_end && !bottle.maturite_end && !bottle.apogee_end) return null
+  if (!bottle.year) return null
   
   const currentYear = new Date().getFullYear()
   const jeunesseEnd = bottle.jeunesse_end || bottle.year + 1
@@ -294,6 +295,8 @@ const goToBottle = (id) => {
 const updateQty = (id, qty) => {
   if (qty < 0) return
   emit('update-quantity', id, qty)
+  // Rafraîchir les données parent (App.vue fetchBottles)
+  emit('refresh-data')
 }
 
 const deleteBottle = (id) => {
@@ -351,7 +354,6 @@ const filteredBottles = computed(() => {
       normalize(b.name).includes(s) || 
       normalize(b.domaine).includes(s) ||
       normalize(b.region).includes(s) ||
-      normalize(b.location).includes(s) ||
       normalize(b.country).includes(s) ||
       normalize(b.cepage).includes(s)
     )
@@ -362,24 +364,24 @@ const filteredBottles = computed(() => {
 
 const visibleBottles = computed(() => {
   if (showHistory.value) {
-    return filteredBottles.value.filter(b => b.quantity === 0)
+    return filteredBottles.value.filter(b => (b.cellar_quantity || 0) === 0 && (b.physical_bottles?.length || 0) > 0)
   }
-  return filteredBottles.value.filter(b => b.quantity > 0)
+  return filteredBottles.value.filter(b => (b.cellar_quantity || 0) > 0)
 })
 
 // Nouvelles computed properties pour la recherche séparée
 const inStockSearchResults = computed(() => {
   if (!searchQuery.value.trim()) return []
-  return filteredBottles.value.filter(b => b.quantity > 0)
+  return filteredBottles.value.filter(b => (b.cellar_quantity || 0) > 0)
 })
 
 const archivedSearchResults = computed(() => {
   if (!searchQuery.value.trim()) return []
-  return filteredBottles.value.filter(b => b.quantity === 0)
+  return filteredBottles.value.filter(b => (b.cellar_quantity || 0) === 0 && (b.physical_bottles?.length || 0) > 0)
 })
 
-const inStockCount = computed(() => filteredBottles.value.filter(b => b.quantity > 0).length)
-const archivedCount = computed(() => filteredBottles.value.filter(b => b.quantity === 0).length)
+const inStockCount = computed(() => filteredBottles.value.filter(b => (b.cellar_quantity || 0) > 0).length)
+const archivedCount = computed(() => filteredBottles.value.filter(b => (b.cellar_quantity || 0) === 0 && (b.physical_bottles?.length || 0) > 0).length)
 
 const loadFiltersFromUrl = () => {
   const query = route.query

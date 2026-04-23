@@ -1,23 +1,23 @@
 <template>
   <div v-if="show" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-[#161b22] rounded-xl border border-[#30363d] max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+    <div class="bg-gh-surface rounded-xl border border-gh-border max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
       <!-- Header -->
-      <div class="p-4 border-b border-[#30363d] flex items-center justify-between">
+      <div class="p-4 border-b border-gh-border flex items-center justify-between">
         <div>
-          <h2 class="text-lg font-bold text-white">Étiquettes QR</h2>
-          <p class="text-sm text-[#8b949e]">{{ physicalBottles.length }} étiquette(s) à imprimer (3cm x 5cm)</p>
+          <h2 class="text-lg font-bold text-gh-text">Étiquettes QR</h2>
+          <p class="text-sm text-gh-text-secondary">{{ physicalBottles.length }} étiquette(s) à imprimer (3cm x 5cm)</p>
         </div>
         <div class="flex items-center gap-2">
           <button 
             @click="printLabels"
-            class="flex items-center gap-2 px-4 py-2 bg-[#238636] hover:bg-[#2ea043] text-white rounded-lg transition text-sm font-medium"
+            class="flex items-center gap-2 px-4 py-2 bg-gh-accent-green hover:bg-gh-accent-green-hover text-white rounded-lg transition text-sm font-medium"
           >
             <PrinterIcon class="w-4 h-4" />
             Imprimer
           </button>
           <button 
             @click="$emit('close')"
-            class="p-2 text-[#8b949e] hover:text-white transition"
+            class="p-2 text-gh-text-secondary hover:text-gh-text transition"
           >
             <XMarkIcon class="w-5 h-5" />
           </button>
@@ -25,7 +25,7 @@
       </div>
 
       <!-- Preview -->
-      <div class="flex-1 overflow-auto p-8 bg-[#0d1117]">
+      <div class="flex-1 overflow-auto p-8 bg-gh-bg">
         <div class="print-container">
           <div 
             v-for="(bottle, index) in physicalBottles" 
@@ -41,16 +41,16 @@
               />
             </div>
             
-            <div class="label-info">
+              <div class="label-info">
               <div class="label-name">{{ bottleInfo.name }}</div>
               <div class="label-year">{{ bottleInfo.year || 'Sans millésime' }}</div>
               
               <div v-if="hasPhases" class="label-phases">
-                <div v-if="bottleInfo.jeunesse_end">
-                  Maturité: {{ bottleInfo.jeunesse_end }}
+                <div v-if="bottleInfo.apogee_end">
+                  Apogée: {{ bottleInfo.maturite_end || '?' }} – {{ bottleInfo.apogee_end }}
                 </div>
-                <div v-if="bottleInfo.apogee_start || bottleInfo.apogee_end">
-                  Apogée: {{ bottleInfo.apogee_start || '?' }}-{{ bottleInfo.apogee_end || '?' }}
+                <div v-else-if="bottleInfo.maturite_end">
+                  Maturité: {{ bottleInfo.jeunesse_end || '?' }} – {{ bottleInfo.maturite_end }}
                 </div>
               </div>
               
@@ -63,11 +63,11 @@
       </div>
 
       <!-- Instructions -->
-      <div class="p-4 border-t border-[#30363d] bg-[#161b22]">
-        <div class="flex items-start gap-3 text-sm text-[#8b949e]">
+      <div class="p-4 border-t border-gh-border bg-gh-surface">
+        <div class="flex items-start gap-3 text-sm text-gh-text-secondary">
           <InformationCircleIcon class="w-5 h-5 flex-shrink-0 mt-0.5" />
           <div>
-            <p><strong class="text-white">Instructions d'impression :</strong></p>
+            <p><strong class="text-gh-text">Instructions d'impression :</strong></p>
             <ul class="mt-1 space-y-1 list-disc list-inside">
               <li>Utilisez des étiquettes de 3cm x 5cm</li>
               <li>Désactivez les en-têtes et pieds de page dans les options d'impression</li>
@@ -78,101 +78,6 @@
       </div>
     </div>
   </div>
-
-  <!-- Print-only styles -->
-  <style>
-    @media print {
-      /* Cacher tout sauf les étiquettes */
-      body * {
-        visibility: hidden !important;
-      }
-      
-      .print-container,
-      .print-container * {
-        visibility: visible !important;
-      }
-      
-      .print-container {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-      }
-      
-      /* Taille exacte des étiquettes */
-      .label-3x5 {
-        width: 3cm !important;
-        height: 5cm !important;
-        page-break-after: always !important;
-        page-break-inside: avoid !important;
-        border: 1px solid #000 !important;
-        background: white !important;
-        color: black !important;
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        justify-content: center !important;
-        padding: 0.3cm !important;
-        box-sizing: border-box !important;
-        margin: 0 !important;
-      }
-      
-      /* Masquer le dernier page-break */
-      .label-3x5:last-child {
-        page-break-after: auto !important;
-      }
-      
-      /* Styles des éléments internes */
-      .label-qr {
-        margin-bottom: 0.2cm !important;
-      }
-      
-      .label-qr svg {
-        width: 1.8cm !important;
-        height: 1.8cm !important;
-      }
-      
-      .label-info {
-        text-align: center !important;
-        width: 100% !important;
-      }
-      
-      .label-name {
-        font-weight: bold !important;
-        font-size: 8pt !important;
-        line-height: 1.2 !important;
-        margin-bottom: 0.1cm !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-        white-space: nowrap !important;
-        max-width: 2.4cm !important;
-      }
-      
-      .label-year {
-        font-size: 8pt !important;
-        margin-bottom: 0.1cm !important;
-      }
-      
-      .label-phases {
-        font-size: 6pt !important;
-        color: #666 !important;
-        line-height: 1.2 !important;
-      }
-      
-      .label-code {
-        font-size: 6pt !important;
-        color: #999 !important;
-        margin-top: 0.1cm !important;
-        font-family: monospace !important;
-      }
-      
-      /* Marges de page */
-      @page {
-        margin: 0;
-        size: auto;
-      }
-    }
-  </style>
 </template>
 
 <script setup>
@@ -183,7 +88,6 @@ import {
   PrinterIcon,
   InformationCircleIcon 
 } from '@heroicons/vue/24/solid'
-import config from '../config.js'
 
 const props = defineProps({
   show: {
@@ -204,16 +108,133 @@ const emit = defineEmits(['close'])
 
 const hasPhases = computed(() => {
   return props.bottleInfo.jeunesse_end || 
-         props.bottleInfo.apogee_start || 
+         props.bottleInfo.maturite_end || 
          props.bottleInfo.apogee_end
 })
 
 const getQrUrl = (qrCode) => {
-  return `${config.API_BASE_URL}/bottle/${qrCode}`
+  return `${window.location.origin}/bottle/${qrCode}`
 }
 
 const printLabels = () => {
-  window.print()
+  const printWindow = window.open('', '_blank')
+  if (!printWindow) {
+    alert('Veuillez autoriser les popups pour l\'impression')
+    return
+  }
+
+  const labelsHtml = props.physicalBottles.map(bottle => `
+    <div class="label-3x5">
+      <div class="label-qr">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(getQrUrl(bottle.qr_code))}" />
+      </div>
+      <div class="label-info">
+        <div class="label-name">${props.bottleInfo.name || ''}</div>
+        <div class="label-year">${props.bottleInfo.year || 'Sans millésime'}</div>
+        ${hasPhases.value ? `
+        <div class="label-phases">
+          ${props.bottleInfo.apogee_end
+            ? `Apogée: ${props.bottleInfo.maturite_end || '?'} – ${props.bottleInfo.apogee_end}`
+            : props.bottleInfo.maturite_end
+              ? `Maturité: ${props.bottleInfo.jeunesse_end || '?'} – ${props.bottleInfo.maturite_end}`
+              : ''}
+        </div>` : ''}
+        <div class="label-code">${bottle.qr_code}</div>
+      </div>
+    </div>
+  `).join('')
+
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Étiquettes QR - ${props.bottleInfo.name || ''}</title>
+      <style>
+        body {
+          margin: 0;
+          padding: 0;
+          background: white;
+          font-family: system-ui, -apple-system, sans-serif;
+        }
+        .print-container {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.5cm;
+          padding: 0.5cm;
+          justify-content: center;
+        }
+        .label-3x5 {
+          width: 3cm;
+          height: 5cm;
+          page-break-after: always;
+          page-break-inside: avoid;
+          border: 1px solid #000;
+          background: white;
+          color: black;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 0.3cm;
+          box-sizing: border-box;
+          margin: 0;
+        }
+        .label-3x5:last-child {
+          page-break-after: auto;
+        }
+        .label-qr {
+          margin-bottom: 0.2cm;
+        }
+        .label-qr img {
+          width: 1.8cm;
+          height: 1.8cm;
+        }
+        .label-info {
+          text-align: center;
+          width: 100%;
+        }
+        .label-name {
+          font-weight: bold;
+          font-size: 8pt;
+          line-height: 1.2;
+          margin-bottom: 0.1cm;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          max-width: 2.4cm;
+        }
+        .label-year {
+          font-size: 8pt;
+          margin-bottom: 0.1cm;
+        }
+        .label-phases {
+          font-size: 6pt;
+          color: #666;
+          line-height: 1.2;
+        }
+        .label-code {
+          font-size: 6pt;
+          color: #999;
+          margin-top: 0.1cm;
+          font-family: monospace;
+        }
+        @page {
+          margin: 0;
+          size: auto;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="print-container">
+        ${labelsHtml}
+      </div>
+    </body>
+    </html>
+  `)
+  printWindow.document.close()
+  setTimeout(() => {
+    printWindow.print()
+  }, 250)
 }
 </script>
 
@@ -228,8 +249,8 @@ const printLabels = () => {
 .label-3x5 {
   width: 3cm;
   height: 5cm;
-  border: 1px dashed #30363d;
-  background: #0d1117;
+  border: 1px dashed var(--border-default);
+  background: var(--bg-primary);
   border-radius: 4px;
   display: flex;
   flex-direction: column;
@@ -251,7 +272,7 @@ const printLabels = () => {
 .label-name {
   font-weight: bold;
   font-size: 8pt;
-  color: white;
+  color: var(--text-primary);
   line-height: 1.2;
   margin-bottom: 0.1cm;
   overflow: hidden;
@@ -262,19 +283,19 @@ const printLabels = () => {
 
 .label-year {
   font-size: 8pt;
-  color: #8b949e;
+  color: var(--text-secondary);
   margin-bottom: 0.1cm;
 }
 
 .label-phases {
   font-size: 6pt;
-  color: #6e7681;
+  color: var(--text-muted);
   line-height: 1.2;
 }
 
 .label-code {
   font-size: 6pt;
-  color: #484f58;
+  color: var(--text-muted);
   margin-top: 0.1cm;
   font-family: monospace;
 }

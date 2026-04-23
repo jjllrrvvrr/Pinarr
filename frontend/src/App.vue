@@ -8,9 +8,12 @@ import QrcodeVue from 'qrcode.vue'
 import config from './config.js'
 import AuthService from './services/AuthService.js'
 import RemovePositionModal from './components/RemovePositionModal.vue'
-import { useQuantityManager } from './composables/useQuantityManager.js'
+
+import { useTheme } from './composables/useTheme.js'
 
 const router = useRouter()
+
+const { theme, setTheme } = useTheme()
 
 const API_URL = `${config.API_BASE_URL}/bottles`
 const API_LOCATIONS_URL = `${config.API_BASE_URL}/caves`
@@ -111,9 +114,6 @@ const changeUsername = async () => {
   
   const usernameValue = newUsername.value
   
-  console.log('DEBUG: newUsername.value =', JSON.stringify(usernameValue))
-  console.log('DEBUG: typeof newUsername.value =', typeof usernameValue)
-  
   if (!usernameValue || usernameValue.trim() === '') {
     usernameError.value = 'Le nom d\'utilisateur ne peut pas être vide'
     return
@@ -173,32 +173,33 @@ const deleteBottle = async (id) => {
 
 const updateQuantity = async (id, newQuantity) => {
   if (newQuantity < 0) return
-  
+
   // Trouver la bouteille concernée
   const bottle = bottles.value.find(b => b.id === id)
   if (!bottle) return
-  
-  const oldQuantity = bottle.quantity
-  
+
+  // Quantité réelle = cellar_quantity (physical_bottles en cave)
+  const oldQuantity = bottle.cellar_quantity || 0
+
   // Si diminution ET positions existent, utiliser le modal
   if (newQuantity < oldQuantity && bottle.positions?.length > 0) {
     const diff = oldQuantity - newQuantity
     const positionsToRemoveCount = Math.min(diff, bottle.positions.length)
-    
+
     // Ouvrir le modal et attendre la réponse
     const result = await openRemovePositionModal(bottle, positionsToRemoveCount)
-    
+
     if (!result) {
       // Annulation - ne rien faire
       return
     }
   }
-  
+
   // Mettre à jour la quantité
   try {
     const res = await fetch(`${API_URL}/${id}`, {
       method: 'PATCH',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${sessionStorage.getItem('auth_token') || ''}`
       },
@@ -303,10 +304,14 @@ const deleteLocation = async (id) => {
   alert("Cette fonctionnalité est désactivée. Utilisez le système de caves.")
 }
 
-const qrValue = computed(() => currentBottleQR.value ? `${window.location.origin}/wine/${currentBottleQR.value.id}` : '')
+const qrValue = computed(() => {
+    if (!currentBottleQR.value) return ''
+    const pb = currentBottleQR.value.physical_bottles?.find(pb => pb.status === 'in_cellar')
+    return pb ? `${window.location.origin}/bottle/${pb.qr_code}` : `${window.location.origin}/wine/${currentBottleQR.value.id}`
+})
 
-const totalBottles = computed(() => bottles.value.reduce((acc, b) => acc + (b.quantity || 0), 0))
-const totalValue = computed(() => bottles.value.reduce((acc, b) => acc + ((b.price || 0) * (b.quantity || 0)), 0).toFixed(2))
+const totalBottles = computed(() => bottles.value.reduce((acc, b) => acc + (b.cellar_quantity || 0), 0))
+const totalValue = computed(() => bottles.value.reduce((acc, b) => acc + ((b.price || 0) * (b.cellar_quantity || 0)), 0).toFixed(2))
 
 // Close user menu when clicking outside
 const handleClickOutside = (event) => {
@@ -328,16 +333,16 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#0d1117] text-gray-300 font-sans selection:bg-[#58a6ff]/30">
+  <div class="min-h-screen bg-gh-bg text-gh-text-secondary font-sans selection:bg-gh-accent/30">
     
-    <header class="sticky top-0 z-40 bg-[#020408] backdrop-blur-md border-b border-[#30363d]">
+    <header class="sticky top-0 z-40 bg-gh-header backdrop-blur-md border-b border-gh-border">
       <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
         <div class="flex items-center gap-3">
           <!-- User Menu -->
           <div class="relative user-menu-container">
             <button 
               @click="toggleUserMenu" 
-              class="flex items-center text-gray-400 hover:text-white transition p-1 rounded hover:bg-[#21262d]"
+              class="flex items-center text-gh-text-secondary hover:text-gh-text transition p-1 rounded hover:bg-gh-elevated"
             >
               <Bars3Icon class="w-5 h-5" />
             </button>
@@ -345,28 +350,47 @@ onUnmounted(() => {
             <!-- Dropdown Menu -->
             <div 
               v-if="isUserMenuOpen" 
-              class="absolute left-0 top-full mt-2 w-56 bg-[#161b22] border border-[#30363d] rounded-md shadow-2xl py-1 z-50"
+              class="absolute left-0 top-full mt-2 w-56 bg-gh-surface border border-gh-border rounded-md shadow-2xl py-1 z-50"
             >
-              <div class="px-4 py-3 border-b border-[#30363d]">
-                <p class="text-sm font-medium text-white">{{ username }}</p>
-                <p class="text-xs text-[#8b949e]">Connecté</p>
+              <div class="px-4 py-3 border-b border-gh-border">
+                <p class="text-sm font-medium text-gh-text">{{ username }}</p>
+                <p class="text-xs text-gh-text-secondary">Connecté</p>
               </div>
               <button 
                 @click="openChangePasswordModal"
-                class="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-[#21262d] hover:text-white transition"
+                class="w-full text-left px-4 py-2 text-sm text-gh-text-secondary hover:bg-gh-elevated hover:text-gh-text transition"
               >
                 Changer mot de passe
               </button>
               <button 
                 @click="openChangeUsernameModal"
-                class="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-[#21262d] hover:text-white transition"
+                class="w-full text-left px-4 py-2 text-sm text-gh-text-secondary hover:bg-gh-elevated hover:text-gh-text transition"
               >
                 Changer nom d'utilisateur
               </button>
-              <div class="border-t border-[#30363d]"></div>
+              <div class="border-t border-gh-border my-1"></div>
+              <div class="px-4 py-2 text-xs font-semibold text-gh-text-secondary uppercase tracking-wider">
+                Thème
+              </div>
+              <button
+                v-for="t in [
+                  { key: 'dark', label: 'Sombre (GitHub Dark)' },
+                  { key: 'light', label: 'Clair (GitHub Light)' },
+                  { key: 'red-wine', label: 'Rouge Vin' },
+                  { key: 'green-nature', label: 'Nature' }
+                ]"
+                :key="t.key"
+                @click="setTheme(t.key)"
+                class="w-full text-left px-4 py-2 text-sm text-gh-text-secondary hover:bg-gh-elevated hover:text-gh-text transition flex items-center justify-between"
+                :class="{ 'bg-gh-elevated text-gh-text': theme === t.key }"
+              >
+                <span>{{ t.label }}</span>
+                <span v-if="theme === t.key" class="text-gh-accent-green-text">✓</span>
+              </button>
+              <div class="border-t border-gh-border my-1"></div>
               <button 
                 @click="logout"
-                class="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-[#21262d] hover:text-red-300 transition"
+                class="w-full text-left px-4 py-2 text-sm text-gh-accent-red hover:bg-gh-elevated hover:text-gh-accent-red/70 transition"
               >
                 Se déconnecter
               </button>
@@ -375,44 +399,44 @@ onUnmounted(() => {
           
           <router-link to="/" class="flex items-center gap-2">
             <span class="text-2xl sm:text-3xl">🍷</span>
-            <h1 class="text-lg sm:text-xl font-bold text-white">Pinarr</h1>
+            <h1 class="text-lg sm:text-xl font-bold text-gh-text">Pinarr</h1>
           </router-link>
         </div>
         
         <div class="flex flex-col md:flex-row items-center gap-1 md:gap-6 mr-2 md:mr-4">
           <div class="text-center">
-            <div class="text-[8px] md:text-[10px] font-bold text-[#8b949e] uppercase tracking-wider">Bouteilles</div>
-            <div class="text-xs md:text-lg font-bold text-white leading-tight">{{ totalBottles }}</div>
+            <div class="text-[8px] md:text-[10px] font-bold text-gh-text-secondary uppercase tracking-wider">Bouteilles</div>
+            <div class="text-xs md:text-lg font-bold text-gh-text leading-tight">{{ totalBottles }}</div>
           </div>
-          <div class="hidden md:block w-px h-8 bg-[#30363d]"></div>
+          <div class="hidden md:block w-px h-8 bg-gh-border"></div>
           <div class="text-center">
-            <div class="text-[8px] md:text-[10px] font-bold text-[#8b949e] uppercase tracking-wider">Valeur</div>
-            <div class="text-xs md:text-lg font-bold text-[#3fb950] leading-tight">{{ totalValue }} €</div>
+            <div class="text-[8px] md:text-[10px] font-bold text-gh-text-secondary uppercase tracking-wider">Valeur</div>
+            <div class="text-xs md:text-lg font-bold text-gh-accent-green-text leading-tight">{{ totalValue }} €</div>
           </div>
         </div>
         
         <nav class="flex gap-2 sm:gap-4 items-center">
-          <router-link to="/" class="hidden sm:flex items-center gap-2 text-gray-400 hover:text-white transition px-3 py-2 rounded-md hover:bg-[#21262d]">
+          <router-link to="/" class="hidden sm:flex items-center gap-2 text-gh-text-secondary hover:text-gh-text transition px-3 py-2 rounded-md hover:bg-gh-elevated">
             <HomeIcon class="w-5 h-5" /> <span>Accueil</span>
           </router-link>
-          <router-link to="/caves" class="hidden sm:flex items-center gap-2 text-gray-400 hover:text-white transition px-3 py-2 rounded-md hover:bg-[#21262d]">
+          <router-link to="/caves" class="hidden sm:flex items-center gap-2 text-gh-text-secondary hover:text-gh-text transition px-3 py-2 rounded-md hover:bg-gh-elevated">
             <CubeIcon class="w-5 h-5" /> <span>Cave</span>
           </router-link>
-          <router-link to="/map" class="hidden sm:flex items-center gap-2 text-gray-400 hover:text-white transition px-3 py-2 rounded-md hover:bg-[#21262d]">
+          <router-link to="/map" class="hidden sm:flex items-center gap-2 text-gh-text-secondary hover:text-gh-text transition px-3 py-2 rounded-md hover:bg-gh-elevated">
             <MapIcon class="w-5 h-5" /> <span>Carte</span>
           </router-link>
           <div class="sm:hidden flex gap-1">
-            <router-link to="/" class="p-2 text-gray-400 hover:text-white rounded-md hover:bg-[#21262d]">
+            <router-link to="/" class="p-2 text-gh-text-secondary hover:text-gh-text rounded-md hover:bg-gh-elevated">
               <HomeIcon class="w-5 h-5" />
             </router-link>
-            <router-link to="/caves" class="p-2 text-gray-400 hover:text-white rounded-md hover:bg-[#21262d]">
+            <router-link to="/caves" class="p-2 text-gh-text-secondary hover:text-gh-text rounded-md hover:bg-gh-elevated">
               <CubeIcon class="w-5 h-5" />
             </router-link>
-            <router-link to="/map" class="p-2 text-gray-400 hover:text-white rounded-md hover:bg-[#21262d]">
+            <router-link to="/map" class="p-2 text-gh-text-secondary hover:text-gh-text rounded-md hover:bg-gh-elevated">
               <MapIcon class="w-5 h-5" />
             </router-link>
           </div>
-          <router-link to="/add" class="flex items-center gap-1 sm:gap-2 bg-[#238636] hover:bg-[#2ea043] text-white px-3 sm:px-4 py-2 rounded-md font-medium transition border border-[#238636]">
+          <router-link to="/add" class="flex items-center gap-1 sm:gap-2 bg-gh-accent-green hover:bg-gh-accent-green-hover text-gh-text px-3 sm:px-4 py-2 rounded-md font-medium transition border border-gh-accent-green">
             <PlusIcon class="w-5 h-5" /> <span class="hidden sm:inline">Ajouter</span>
           </router-link>
         </nav>
@@ -432,18 +456,18 @@ onUnmounted(() => {
     />
 
     <div v-if="isLocationModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" @click.self="closeLocationModal">
-      <div class="bg-[#161b22] w-full max-w-md rounded-md shadow-2xl border border-[#30363d] animate-fade-in">
-        <div class="flex justify-between items-center p-4 border-b border-[#30363d]">
-          <h2 class="text-lg font-bold text-white">{{ isEditingLocation ? 'Modifier' : 'Nouvel' }} emplacement</h2>
-          <button @click="closeLocationModal" class="text-[#8b949e] hover:text-white transition p-1"><XMarkIcon class="w-5 h-5" /></button>
+      <div class="bg-gh-surface w-full max-w-md rounded-md shadow-2xl border border-gh-border animate-fade-in">
+        <div class="flex justify-between items-center p-4 border-b border-gh-border">
+          <h2 class="text-lg font-bold text-gh-text">{{ isEditingLocation ? 'Modifier' : 'Nouvel' }} emplacement</h2>
+          <button @click="closeLocationModal" class="text-gh-text-secondary hover:text-gh-text transition p-1"><XMarkIcon class="w-5 h-5" /></button>
         </div>
         <div class="p-4">
-          <label class="block text-xs font-bold text-[#8b949e] uppercase mb-1">Nom *</label>
-          <input v-model="locationForm.name" class="w-full bg-[#0d1117] border border-[#30363d] rounded-md p-2 text-white focus:border-[#58a6ff] outline-none text-sm" placeholder="ex: Cave Principale">
+          <label class="block text-xs font-bold text-gh-text-secondary uppercase mb-1">Nom *</label>
+          <input v-model="locationForm.name" class="w-full bg-gh-bg border border-gh-border rounded-md p-2 text-gh-text focus:border-gh-border-active outline-none text-sm" placeholder="ex: Cave Principale">
         </div>
-        <div class="p-4 border-t border-[#30363d] flex justify-end gap-3">
-          <button @click="closeLocationModal" class="px-4 py-2 rounded-md text-[#8b949e] hover:bg-[#21262d] transition font-medium border border-[#30363d]">Annuler</button>
-          <button @click="saveLocation" class="px-4 py-2 rounded-md bg-[#238636] hover:bg-[#2ea043] text-white font-medium transition">Enregistrer</button>
+        <div class="p-4 border-t border-gh-border flex justify-end gap-3">
+          <button @click="closeLocationModal" class="px-4 py-2 rounded-md text-gh-text-secondary hover:bg-gh-elevated transition font-medium border border-gh-border">Annuler</button>
+          <button @click="saveLocation" class="px-4 py-2 rounded-md bg-gh-accent-green hover:bg-gh-accent-green-hover text-gh-text font-medium transition">Enregistrer</button>
         </div>
       </div>
     </div>
@@ -461,10 +485,10 @@ onUnmounted(() => {
 
     <!-- Change Password Modal -->
     <div v-if="isChangePasswordModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" @click.self="closeChangePasswordModal">
-      <div class="bg-[#161b22] w-full max-w-md rounded-md shadow-2xl border border-[#30363d] animate-fade-in">
-        <div class="flex justify-between items-center p-4 border-b border-[#30363d]">
-          <h2 class="text-lg font-bold text-white">Changer le mot de passe</h2>
-          <button @click="closeChangePasswordModal" class="text-[#8b949e] hover:text-white transition p-1">
+      <div class="bg-gh-surface w-full max-w-md rounded-md shadow-2xl border border-gh-border animate-fade-in">
+        <div class="flex justify-between items-center p-4 border-b border-gh-border">
+          <h2 class="text-lg font-bold text-gh-text">Changer le mot de passe</h2>
+          <button @click="closeChangePasswordModal" class="text-gh-text-secondary hover:text-gh-text transition p-1">
             <XMarkIcon class="w-5 h-5" />
           </button>
         </div>
@@ -481,46 +505,46 @@ onUnmounted(() => {
           </div>
           
           <div>
-            <label class="block text-xs font-bold text-[#8b949e] uppercase mb-1">Ancien mot de passe</label>
+            <label class="block text-xs font-bold text-gh-text-secondary uppercase mb-1">Ancien mot de passe</label>
             <input 
               v-model="passwordForm.oldPassword" 
               type="password"
-              class="w-full bg-[#0d1117] border border-[#30363d] rounded-md p-2 text-white focus:border-[#58a6ff] outline-none text-sm" 
+              class="w-full bg-gh-bg border border-gh-border rounded-md p-2 text-gh-text focus:border-gh-border-active outline-none text-sm" 
               placeholder="Votre mot de passe actuel"
             >
           </div>
           
           <div>
-            <label class="block text-xs font-bold text-[#8b949e] uppercase mb-1">Nouveau mot de passe</label>
+            <label class="block text-xs font-bold text-gh-text-secondary uppercase mb-1">Nouveau mot de passe</label>
             <input 
               v-model="passwordForm.newPassword" 
               type="password"
-              class="w-full bg-[#0d1117] border border-[#30363d] rounded-md p-2 text-white focus:border-[#58a6ff] outline-none text-sm" 
+              class="w-full bg-gh-bg border border-gh-border rounded-md p-2 text-gh-text focus:border-gh-border-active outline-none text-sm" 
               placeholder="Nouveau mot de passe"
             >
           </div>
           
           <div>
-            <label class="block text-xs font-bold text-[#8b949e] uppercase mb-1">Confirmer le nouveau mot de passe</label>
+            <label class="block text-xs font-bold text-gh-text-secondary uppercase mb-1">Confirmer le nouveau mot de passe</label>
             <input 
               v-model="passwordForm.confirmPassword" 
               type="password"
-              class="w-full bg-[#0d1117] border border-[#30363d] rounded-md p-2 text-white focus:border-[#58a6ff] outline-none text-sm" 
+              class="w-full bg-gh-bg border border-gh-border rounded-md p-2 text-gh-text focus:border-gh-border-active outline-none text-sm" 
               placeholder="Confirmez le nouveau mot de passe"
             >
           </div>
         </div>
         
-        <div class="p-4 border-t border-[#30363d] flex justify-end gap-3">
+        <div class="p-4 border-t border-gh-border flex justify-end gap-3">
           <button 
             @click="closeChangePasswordModal" 
-            class="px-4 py-2 rounded-md text-[#8b949e] hover:bg-[#21262d] transition font-medium border border-[#30363d]"
+            class="px-4 py-2 rounded-md text-gh-text-secondary hover:bg-gh-elevated transition font-medium border border-gh-border"
           >
             Annuler
           </button>
           <button 
             @click="changePassword" 
-            class="px-4 py-2 rounded-md bg-[#238636] hover:bg-[#2ea043] text-white font-medium transition"
+            class="px-4 py-2 rounded-md bg-gh-accent-green hover:bg-gh-accent-green-hover text-gh-text font-medium transition"
           >
             Enregistrer
           </button>
@@ -530,10 +554,10 @@ onUnmounted(() => {
 
     <!-- Change Username Modal -->
     <div v-if="isChangeUsernameModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" @click.self="closeChangeUsernameModal">
-      <div class="bg-[#161b22] w-full max-w-md rounded-md shadow-2xl border border-[#30363d] animate-fade-in">
-        <div class="flex justify-between items-center p-4 border-b border-[#30363d]">
-          <h2 class="text-lg font-bold text-white">Changer le nom d'utilisateur</h2>
-          <button @click="closeChangeUsernameModal" class="text-[#8b949e] hover:text-white transition p-1">
+      <div class="bg-gh-surface w-full max-w-md rounded-md shadow-2xl border border-gh-border animate-fade-in">
+        <div class="flex justify-between items-center p-4 border-b border-gh-border">
+          <h2 class="text-lg font-bold text-gh-text">Changer le nom d'utilisateur</h2>
+          <button @click="closeChangeUsernameModal" class="text-gh-text-secondary hover:text-gh-text transition p-1">
             <XMarkIcon class="w-5 h-5" />
           </button>
         </div>
@@ -550,26 +574,26 @@ onUnmounted(() => {
           </div>
           
           <div>
-            <label class="block text-xs font-bold text-[#8b949e] uppercase mb-1">Nouveau nom d'utilisateur</label>
+            <label class="block text-xs font-bold text-gh-text-secondary uppercase mb-1">Nouveau nom d'utilisateur</label>
             <input 
               v-model="newUsername" 
               type="text"
-              class="w-full bg-[#0d1117] border border-[#30363d] rounded-md p-2 text-white focus:border-[#58a6ff] outline-none text-sm" 
+              class="w-full bg-gh-bg border border-gh-border rounded-md p-2 text-gh-text focus:border-gh-border-active outline-none text-sm" 
               placeholder="Nouveau nom d'utilisateur"
             >
           </div>
         </div>
         
-        <div class="p-4 border-t border-[#30363d] flex justify-end gap-3">
+        <div class="p-4 border-t border-gh-border flex justify-end gap-3">
           <button 
             @click="closeChangeUsernameModal" 
-            class="px-4 py-2 rounded-md text-[#8b949e] hover:bg-[#21262d] transition font-medium border border-[#30363d]"
+            class="px-4 py-2 rounded-md text-gh-text-secondary hover:bg-gh-elevated transition font-medium border border-gh-border"
           >
             Annuler
           </button>
           <button 
             @click="changeUsername" 
-            class="px-4 py-2 rounded-md bg-[#238636] hover:bg-[#2ea043] text-white font-medium transition"
+            class="px-4 py-2 rounded-md bg-gh-accent-green hover:bg-gh-accent-green-hover text-gh-text font-medium transition"
           >
             Enregistrer
           </button>

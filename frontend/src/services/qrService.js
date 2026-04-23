@@ -33,20 +33,25 @@ export const QrService = {
    * @param {string} qrCode - Code QR (ex: "X7K9M2P4")
    * @returns {Promise<Object>} - Détails de la bouteille physique
    */
+  /**
+   * Scan un QR code (récupère les infos)
+   * @param {string} qrCode - Code QR (ex: "X7K9M2P4")
+   * @returns {Promise<Object>} - Détails de la bouteille physique
+   */
   async scanQrCode(qrCode) {
-    // Route publique sans /api/v1
-    return await apiRequest(`/bottle/${qrCode}`, {}, false)
+    // Route publique sans /api/v1 prefix
+    return await apiRequest(`/api/scan/${qrCode}`, {}, false)
   },
 
   /**
-   * Retire une bouteille de la cave
+   * Retire une bouteille de la cave (public via QR)
    * @param {number} physicalBottleId - ID de la bouteille physique
-   * @returns {Promise<Object>} - { message, redirect }
+   * @returns {Promise<Object>}
    */
   async removeBottle(physicalBottleId) {
-    return await apiRequest(`/physical-bottles/${physicalBottleId}/remove`, {
+    return await apiRequest(`/api/remove/${physicalBottleId}`, {
       method: 'POST',
-    })
+    }, false)
   },
 
   /**
@@ -68,6 +73,6 @@ export const QrService = {
    * @returns {string} - URL complète
    */
   getQrUrl(qrCode) {
-    return `${config.API_BASE_URL}/bottle/${qrCode}`
+    return `${window.location.origin}/bottle/${qrCode}`
   },
 }

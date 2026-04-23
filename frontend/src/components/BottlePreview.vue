@@ -10,10 +10,10 @@
     >
       <div
         v-if="show && bottle"
-        class="fixed z-50 bg-[#161b22] border border-[#30363d] rounded-lg shadow-2xl p-3 w-[200px] pointer-events-none"
+        class="fixed z-50 bg-gh-surface border border-gh-border rounded-lg shadow-2xl p-3 w-[200px] pointer-events-none"
         :style="{ left: position.x + 'px', top: position.y + 'px' }"
       >
-        <div class="w-full h-[100px] bg-[#0d1117] rounded-md overflow-hidden flex items-center justify-center mb-2">
+        <div class="w-full h-[100px] bg-gh-bg rounded-md overflow-hidden flex items-center justify-center mb-2">
           <img
             v-if="bottle.image_path"
             :src="getImageUrl(bottle.image_path)"
@@ -22,10 +22,10 @@
           />
           <WineBottleIcon v-else :type="bottle.type" :size="50" />
         </div>
-        <div class="text-white font-medium text-sm truncate leading-tight">{{ bottle.name }}</div>
-        <div class="text-[#8b949e] text-xs mt-1 flex items-center gap-2">
+        <div class="text-gh-text font-medium text-sm truncate leading-tight">{{ bottle.name }}</div>
+        <div class="text-gh-text-secondary text-xs mt-1 flex items-center gap-2">
           <span>{{ bottle.year }}</span>
-          <span v-if="bottle.rating" class="flex items-center gap-1 text-[#e3b341]">
+          <span v-if="bottle.rating" class="flex items-center gap-1 text-gh-accent-gold">
             <StarIcon class="w-3 h-3" /> {{ bottle.rating }}/5
           </span>
         </div>

@@ -7,9 +7,10 @@ Ce module utilise une architecture en services pour une meilleure maintenabilit�
 from fastapi import FastAPI, HTTPException, Depends, UploadFile, File, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from sqlalchemy.orm import Session
 from typing import List
+import io
 
 from config import API_TITLE, CORS_ORIGINS, UPLOAD_DIR
 from database import create_db_tables, engine
@@ -27,6 +28,7 @@ from services import (
     update_bottle,
     patch_bottle,
     delete_bottle,
+    validate_bottle_placement,
     # Cave services
     get_caves,
     get_cave,
@@ -41,7 +43,7 @@ from services import (
     delete_row,
     get_positions_for_row,
     create_position,
-    get_or_create_position,
+    assign_bottle_to_position,
     remove_bottle_from_position,
     # Physical bottle services
     get_physical_bottle_by_qr,
@@ -51,11 +53,17 @@ from services import (
     remove_physical_bottle,
     move_physical_bottle,
     get_physical_bottle_count_in_cellar,
-    # Upload service
+    # Label service
+    generate_label_zip,
+    generate_single_label_pdf,
+    # Upload services
     upload_image,
+    delete_image,
     upload_image_from_url,
+    # Geo services
+    get_geocoded_regions,
+    create_geocoded_region,
 )
-from services.geo_service import get_geocoded_regions, create_geocoded_region
 
 # Création des tables
 create_db_tables()
@@ -96,16 +104,21 @@ async def auth_middleware(request, call_next):
 
     # Routes publiques
     public_paths = [
-        "/",
         "/auth",
         "/api/v1/auth",
         "/uploads",
+        "/api/scan",
+        "/api/remove",
     ]
 
-    # Vérifier si la route est publique
-    is_public = any(path.startswith(pp) for pp in public_paths)
+    # Court-circuiter les requêtes CORS preflight
+    if request.method == "OPTIONS":
+        return await call_next(request)
 
-    if not is_public and path != "/":
+    # Vérifier si la route est publique
+    is_public = path == "/" or any(path.startswith(pp) for pp in public_paths)
+
+    if not is_public:
         try:
             # Vérifier l'authentification
             user = await get_current_user(request)
@@ -132,7 +145,6 @@ def read_bottles(skip: int = 0, limit: int = 100, db: Session = Depends(get_db))
     return get_bottles_with_positions(db, skip=skip, limit=limit)
 
 
-@api_router.get("/bottles/check-duplicate/")
 @api_router.get("/bottles/search/")
 def search_bottles(q: str = "", limit: int = 5, db: Session = Depends(get_db)):
     """Recherche des bouteilles par nom."""
@@ -140,6 +152,20 @@ def search_bottles(q: str = "", limit: int = 5, db: Session = Depends(get_db)):
 
     results = search_bottles_by_name(db, q, limit)
     return {"results": results}
+
+
+@api_router.get("/bottles/check-duplicate/")
+def check_duplicate_bottles_endpoint(
+    name: str = "", year: int = None, db: Session = Depends(get_db)
+):
+    """Vérifie si des bouteilles avec nom et millésime existent déjà."""
+    from services.bottle_service import check_duplicate_bottles
+
+    if not name or year is None:
+        return {"matches": []}
+
+    matches = check_duplicate_bottles(db, name, year)
+    return {"matches": matches}
 
 
 @api_router.get("/bottles/{bottle_id}", response_model=schemas.BottleWithPosition)
@@ -450,7 +476,8 @@ def get_bottle_physical_bottles_endpoint(bottle_id: int, db: Session = Depends(g
 
 
 # Route publique pour scanner un QR code (pas de /api/v1)
-@app.get("/bottle/{qr_code}")
+# Routes publiques pour scanner un QR code et retirer une bouteille (non préfixées par /api/v1)
+@app.get("/api/scan/{qr_code}")
 def scan_qr_code_endpoint(qr_code: str, db: Session = Depends(get_db)):
     """Récupère les informations d'une bouteille physique par son code QR (public)."""
     try:
@@ -461,25 +488,29 @@ def scan_qr_code_endpoint(qr_code: str, db: Session = Depends(get_db)):
         # Récupérer les détails complets
         details = get_physical_bottle_with_details(db, physical_bottle.id)
         return details
-    except Exception as e:
-        if "not found" in str(e).lower():
-            raise HTTPException(status_code=404, detail=str(e))
+    except HTTPException:
         raise
+    except Exception as e:
+        import traceback
+        print(f"ERROR scan_qr: {e}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Erreur serveur: {str(e)}")
 
 
-@api_router.post("/physical-bottles/{physical_bottle_id}/remove")
-def remove_physical_bottle_endpoint(
+@app.post("/api/remove/{physical_bottle_id}")
+def remove_physical_bottle_public_endpoint(
     physical_bottle_id: int,
     db: Session = Depends(get_db),
 ):
-    """Retire une bouteille de la cave (marque comme consommée)."""
+    """Retire une bouteille de la cave (marque comme consommée). Public via QR."""
     try:
         remove_physical_bottle(db, physical_bottle_id)
-        return {"message": "Bouteille retirée de la cave", "redirect": "/"}
+        return {"message": "Bouteille retirée de la cave avec succès"}
+    except HTTPException:
+        raise
     except Exception as e:
-        if "not found" in str(e).lower():
-            raise HTTPException(status_code=404, detail=str(e))
-        raise HTTPException(status_code=400, detail=str(e))
+        import traceback
+        print(f"ERROR remove_qr: {e}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Erreur serveur: {str(e)}")
 
 
 @api_router.put("/physical-bottles/{physical_bottle_id}/move")
@@ -513,6 +544,58 @@ def create_geocoded_region_endpoint(
 ):
     """Crée ou retourne une région géocodée existante."""
     return create_geocoded_region(db, region)
+
+
+@api_router.get("/bottles/{bottle_id}/batch-labels")
+def download_batch_labels_endpoint(
+    bottle_id: int, db: Session = Depends(get_db)
+):
+    """Télécharge un ZIP avec toutes les étiquettes 3×5cm des bouteilles physiques en cave."""
+    try:
+        zip_bytes = generate_label_zip(
+            db, bottle_id, frontend_url=""
+        )
+        if not zip_bytes:
+            raise HTTPException(status_code=404, detail="Aucune bouteille physique en cave")
+        return StreamingResponse(
+            io.BytesIO(zip_bytes),
+            media_type="application/zip",
+            headers={
+                "Content-Disposition": f"attachment; filename=Etiquettes_{bottle_id}.zip"
+            }
+        )
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        import traceback
+        print(f"ERROR batch_labels: {e}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Erreur génération étiquettes: {str(e)}")
+
+
+@api_router.get("/bottles/{bottle_id}/physical-bottles/{qr_code}/label")
+def download_single_label_endpoint(
+    bottle_id: int, qr_code: str, db: Session = Depends(get_db)
+):
+    """Télécharge l'étiquette PDF individuelle d'une bouteille physique."""
+    try:
+        pdf_bytes = generate_single_label_pdf(
+            db, bottle_id, qr_code, frontend_url=""
+        )
+        return StreamingResponse(
+            io.BytesIO(pdf_bytes),
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f"attachment; filename=Etiquette_{qr_code}.pdf"
+            }
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        import traceback
+        print(f"ERROR single_label: {e}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Erreur génération étiquette: {str(e)}")
 
 
 # Inclure le router API principal

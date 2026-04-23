@@ -1,32 +1,32 @@
 <template>
   <div v-if="show" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-[#161b22] rounded-xl border border-[#30363d] max-w-md w-full p-6">
-      <h3 class="text-lg font-bold text-white mb-4">Déplacer la bouteille</h3>
+    <div class="bg-gh-surface rounded-xl border border-gh-border max-w-md w-full p-6">
+      <h3 class="text-lg font-bold text-gh-text mb-4">Déplacer la bouteille</h3>
       
-      <div v-if="isLoading" class="text-center py-4 text-[#8b949e]">
+      <div v-if="isLoading" class="text-center py-4 text-gh-text-secondary">
         Chargement des caves...
       </div>
       
       <div v-else class="space-y-4">
         <div>
-          <label class="block text-sm text-[#8b949e] mb-2">Nouvelle position</label>
+          <label class="block text-sm text-gh-text-secondary mb-2">Nouvelle position</label>
           <div class="space-y-2">
-            <select v-model="selectedCave" @change="onCaveChange" class="w-full bg-[#0d1117] border border-[#30363d] rounded-lg p-2.5 text-white">
+            <select v-model="selectedCave" @change="onCaveChange" class="w-full bg-gh-bg border border-gh-border rounded-lg p-2.5 text-gh-text focus:outline-none focus:ring-2 focus:ring-gh-accent-green focus:border-transparent">
               <option :value="null">Choisir une cave...</option>
               <option v-for="cave in caves" :key="cave.id" :value="cave.id">{{ cave.name }}</option>
             </select>
             
-            <select v-model="selectedColumn" @change="onColumnChange" :disabled="!selectedCave" class="w-full bg-[#0d1117] border border-[#30363d] rounded-lg p-2.5 text-white disabled:opacity-50">
+            <select v-model="selectedColumn" @change="onColumnChange" :disabled="!selectedCave" class="w-full bg-gh-bg border border-gh-border rounded-lg p-2.5 text-gh-text disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-gh-accent-green focus:border-transparent">
               <option :value="null">Choisir une colonne...</option>
               <option v-for="col in columns" :key="col.id" :value="col.id">{{ col.name }}</option>
             </select>
             
-            <select v-model="selectedRow" @change="onRowChange" :disabled="!selectedColumn" class="w-full bg-[#0d1117] border border-[#30363d] rounded-lg p-2.5 text-white disabled:opacity-50">
+            <select v-model="selectedRow" @change="onRowChange" :disabled="!selectedColumn" class="w-full bg-gh-bg border border-gh-border rounded-lg p-2.5 text-gh-text disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-gh-accent-green focus:border-transparent">
               <option :value="null">Choisir une rangée...</option>
               <option v-for="row in rows" :key="row.id" :value="row.id">{{ row.name }}</option>
             </select>
             
-            <select v-model="selectedPosition" :disabled="!selectedRow" class="w-full bg-[#0d1117] border border-[#30363d] rounded-lg p-2.5 text-white disabled:opacity-50">
+            <select v-model="selectedPosition" :disabled="!selectedRow" class="w-full bg-gh-bg border border-gh-border rounded-lg p-2.5 text-gh-text disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-gh-accent-green focus:border-transparent">
               <option :value="null">Choisir une position...</option>
               <option v-for="pos in positions" :key="pos.id" :value="pos.id" :disabled="pos.occupied">
                 L{{ pos.line }}/P{{ pos.position }} {{ pos.occupied ? '(occupée)' : '' }}
@@ -39,14 +39,14 @@
           <button 
             @click="moveBottle" 
             :disabled="!selectedPosition || isProcessing"
-            class="flex-1 py-2.5 bg-[#238636] hover:bg-[#2ea043] disabled:opacity-50 text-white rounded-lg transition"
+            class="flex-1 py-2.5 bg-gh-accent-green hover:bg-gh-accent-green-hover disabled:opacity-50 text-white rounded-lg transition font-medium"
           >
             {{ isProcessing ? 'Déplacement...' : 'Déplacer' }}
           </button>
           
           <button 
             @click="$emit('close')"
-            class="px-4 py-2.5 text-[#8b949e] hover:text-white bg-[#21262d] hover:bg-[#30363d] rounded-lg transition"
+            class="px-4 py-2.5 text-gh-text-secondary hover:text-gh-text bg-gh-elevated hover:bg-gh-border rounded-lg transition"
           >
             Annuler
           </button>

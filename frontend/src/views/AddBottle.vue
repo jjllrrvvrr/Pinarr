@@ -546,6 +546,7 @@ import { apiRequest } from '../services/api.js'
 import RemovePositionModal from '../components/RemovePositionModal.vue'
 import WinePhaseTimeline from '../components/WinePhaseTimeline.vue'
 import { QrService } from '../services/qrService.js'
+import { useQuantityManager } from '../composables/useQuantityManager.js'
 
 const route = useRoute()
 const router = useRouter()

@@ -1,11 +1,12 @@
 """Service pour la gestion des bouteilles physiques avec QR codes."""
 
+from datetime import datetime
 from sqlalchemy.orm import Session
 from typing import List, Optional, Dict, Any
 import uuid
 import models
 import schemas
-from exceptions import BottleNotFoundException, PhysicalBottleNotFoundException
+from exceptions import BottleNotFoundException, PhysicalBottleNotFoundException, PinarrException
 
 
 def generate_qr_code() -> str:
@@ -121,12 +122,13 @@ def get_bottle_physical_bottles(db: Session, bottle_id: int) -> List[Dict[str, A
 
         if pb.position:
             item["position_code"] = pb.position.code
-            if (
-                pb.position.row
-                and pb.position.row.column
-                and pb.position.row.column.cave
-            ):
-                item["cave_name"] = pb.position.row.column.cave.name
+            if pb.position.row:
+                item["row_name"] = pb.position.row.name
+                if pb.position.row.column:
+                    item["column_name"] = pb.position.row.column.name
+                    if pb.position.row.column.cave:
+                        item["cave_name"] = pb.position.row.column.cave.name
+                        item["cave_id"] = pb.position.row.column.cave.id
 
         result.append(item)
 
@@ -186,7 +188,6 @@ def remove_physical_bottle(db: Session, physical_bottle_id: int) -> None:
 
     # Libérer la position
     if physical_bottle.position:
-        physical_bottle.position.physical_bottle_id = None
         physical_bottle.position_id = None
 
     db.commit()
@@ -209,7 +210,7 @@ def move_physical_bottle(
 
     # Libérer l'ancienne position
     if physical_bottle.position:
-        physical_bottle.position.physical_bottle_id = None
+        physical_bottle.position_id = None
 
     # Assigner la nouvelle position
     if position_id:
@@ -220,13 +221,12 @@ def move_physical_bottle(
         if new_position:
             # Vérifier que la position n'est pas déjà occupée
             if (
-                new_position.physical_bottle_id
-                and new_position.physical_bottle_id != physical_bottle_id
+                new_position.physical_bottle
+                and new_position.physical_bottle.id != physical_bottle_id
             ):
-                raise Exception(f"La position {new_position.code} est déjà occupée")
+                raise PinarrException(f"La position {new_position.code} est déjà occupée")
 
             physical_bottle.position_id = position_id
-            new_position.physical_bottle_id = physical_bottle_id
     else:
         physical_bottle.position_id = None
 
@@ -243,6 +243,3 @@ def get_physical_bottle_count_in_cellar(db: Session, bottle_id: int) -> int:
         )
         .count()
     )
-
-
-from datetime import datetime

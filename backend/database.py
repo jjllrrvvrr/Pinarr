@@ -40,6 +40,7 @@ def create_db_tables():
             CaveColumn,
             CaveRow,
             Position,
+            PhysicalBottle,
             GeocodedRegion,
             User,
         )
@@ -50,6 +51,7 @@ def create_db_tables():
             CaveColumn,
             CaveRow,
             Position,
+            PhysicalBottle,
             GeocodedRegion,
             User,
         )

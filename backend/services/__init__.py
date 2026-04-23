@@ -8,6 +8,7 @@ from .bottle_service import (
     update_bottle,
     patch_bottle,
     delete_bottle,
+    validate_bottle_placement,
 )
 
 from .cave_service import (
@@ -42,6 +43,7 @@ from .physical_bottle_service import (
 from .upload_service import upload_image, delete_image, upload_image_from_url
 
 from .geo_service import get_geocoded_regions, create_geocoded_region
+from .label_service import generate_label_zip, generate_single_label_pdf
 
 __all__ = [
     "get_bottles_with_positions",
@@ -51,6 +53,7 @@ __all__ = [
     "update_bottle",
     "patch_bottle",
     "delete_bottle",
+    "validate_bottle_placement",
     "get_caves",
     "get_cave",
     "create_cave",
@@ -79,4 +82,5 @@ __all__ = [
     "upload_image_from_url",
     "get_geocoded_regions",
     "create_geocoded_region",
+    "generate_label_zip",
 ]

@@ -39,9 +39,6 @@ try:
     def hash_password(password):
         return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     
-    # Créer les tables si elles n'existent pas
-    Base.metadata.create_all(bind=engine)
-    
     session = SessionLocal()
     user_count = session.query(User).count()
     

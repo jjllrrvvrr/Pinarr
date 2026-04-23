@@ -40,12 +40,11 @@ const router = createRouter({
       name: 'wine-detail',
       component: BottleDetail
     },
-    // Route publique pour scanner les QR codes
+    // Route publique pour scanner les QR codes (accessible sans auth)
     {
       path: '/bottle/:qrCode',
       name: 'scan-qr',
-      component: ScanResultView,
-      beforeEnter: publicGuard
+      component: ScanResultView
     },
     {
       path: '/map',
