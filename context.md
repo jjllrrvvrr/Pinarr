@@ -1,8 +1,11 @@
 # Pinarr - Contexte pour Agent AI
 
 > Ce fichier contient le contexte essentiel pour comprendre et travailler sur le projet Pinarr.
-> Dernière mise à jour : April 23, 2026 (session étiquettes PDF)
-> ✅ **ÉTAT** : Build Docker dev OK, backend démarre, QR public accessible. Feature : étiquettes 3×5cm en **PDF professionnel** via ReportLab (polices Montserrat + NunitoSans embarquées). Toutes les phases (Jeunesse/Maturité/Apogée) affichées en gras. Endpoint individuel `/api/v1/bottles/{id}/physical-bottles/{qr}/label`. Batch ZIP conservé.
+> Dernière mise à jour : April 23, 2026 (session migrations DB + étiquettes PDF + tests prod)
+> ✅ **ÉTAT** : Migration database corrigée. Build Docker dev et prod OK. Backend démarre, QR public accessible.
+> 🐛 **DB SLICE BUG FIX** : Corrigé `database.py` `[14:]` → `[12:]` qui créait un double `data/` dans le chemin.
+> 🗄️ **Migrations Alembic** : `002/003/004/005` tous disponibles. `db_bootstrap.py` détecte DB legacy et applique 004→005.
+> 🎨 **Étiquettes** : 3×5cm PDF via ReportLab (polices Montserrat + NunitoSans). Batch ZIP.
 > 📦 **Tech** : ReportLab 4.4.10 pour PDF vectoriel embarqué.
 
 ---
@@ -78,7 +81,7 @@ Pinarr/
 ├── backend/                # API FastAPI
 │   ├── routers/            # Routeurs FastAPI (auth)
 │   ├── services/           # Logique métier (pattern repository)
-│   ├── alembic/            # Migrations Alembic (001→004)
+│   ├── alembic/            # Migrations Alembic (001→005)
 │   ├── models.py           # Modèles SQLAlchemy
 │   ├── schemas.py          # Schémas Pydantic
 │   ├── main.py             # Routes API (routes uniquement)
@@ -401,7 +404,7 @@ npm run dev                           # http://localhost:5173
 ### Database
 - SQLite local : `data/pinarr.db` (persisté via volume Docker)
 - Uploads : `uploads/` (images WebP)
-- Migrations : Alembic exécute auto au démarrage du conteneur
+- Migrations : `db_bootstrap.py` détecte → Alembic upgrade head
 
 ---
 
@@ -560,8 +563,51 @@ Générée après revue exhaustive backend + frontend. Chaque ligne est actionna
 2. **QR Codes Publics** : `/api/scan/{qr_code}` et `/api/remove/{id}` sont les seules routes publiques pour les scanners mobiles. La route frontend SPA `/bottle/{qrCode}` est aussi publique (pas de `beforeEnter`).
 3. **Positions vs Quantities** : `bottle.quantity` est l'autorité conceptuelle, `PhysicalBottle` est le tracking réel
 4. **Upload** : Toutes les images sont converties en WebP 85%, max 1920px
-5. **Migrations** : Le `entrypoint.sh` exécute `alembic upgrade head` à chaque démarrage
+5. **Migrations** : `alembic upgrade head` est l'unique point d'entrée pour le schéma. Plus de `create_db_tables()` au boot.
 6. **Single User** : Le système est actuellement conçu pour un seul utilisateur admin (is_admin=True par défaut)
+
+---
+
+## 🗄️ Système de Migrations (Alembic)
+
+> **PRINCIPE** : Alembic est la seule source de vérité pour le schéma. Le `create_db_tables()` traditionnel est remplacé par un `db_bootstrap.py` intelligent.
+
+### Problème à résoudre
+- `create_db_tables()` dans `main.py` crée le schéma en silence, sans informer Alembic.
+- `alembic upgrade head` dans `entrypoint.sh` suppose une DB "jamais touchée" et crashe si les tables existent déjà (ex: installation fraîche, ou copie de prod).
+
+### Plan : Mode "Alembic Only"
+
+#### 1. `db_bootstrap.py` — Démarrage universel
+- Créé dans `backend/db_bootstrap.py`.
+- **Détecte** l'état : DB vide, legacy (sans `alembic_version`), ou versionnée.
+- **Agit** :
+  - DB vide → `create_db_tables()` puis `alembic stamp 004`.
+  - Legacy → `alembic stamp 002/003/004` (détection auto) puis `alembic upgrade head`.
+  - Versionnée → `alembic upgrade head` classique.
+
+#### 2. Modifications des migrations existantes
+  - **002** (phases) : rendu idempotent (vérifie `PRAGMA table_info` avant `op.add_column`).
+  - **003** (physical_bottles) : rendu idempotent + table reconstruction SQLite.
+  - **004** (cleanup) : table reconstruction manuelle SQLite (évite `DROP COLUMN` + FK).
+  - **005** (users) : ajoute la table `users` manquante en prod (legacy DB only).
+
+#### 3. Modifications des fichiers de lancement
+- **`entrypoint.sh`** : appelle `python3 /app/backend/db_bootstrap.py` au lieu de `alembic upgrade head`.
+- **`main.py`** : supprimer `create_db_tables()` au boot (non idempotent).
+
+#### 4. Procédure pour futures migrations
+```bash
+# Modifier models.py (ajouter colonne/table)
+# Générer automatiquement
+cd backend
+alembic revision --autogenerate -m "ajout_colonne_xyz"
+# Vérifier le fichier généré
+# Commit + push
+```
+**Nouvelles migrations (005+) n'ont PAS besoin d'idempotence** car Alembic maîtrise le point de départ.
+
+---
 
 ---
 

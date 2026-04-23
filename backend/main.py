@@ -13,7 +13,6 @@ from typing import List
 import io
 
 from config import API_TITLE, CORS_ORIGINS, UPLOAD_DIR
-from database import create_db_tables, engine
 from dependencies import get_db
 from exceptions import PinarrException, handle_pinarr_exception
 from routers import auth as auth_router
@@ -65,10 +64,6 @@ from services import (
     create_geocoded_region,
 )
 
-# Création des tables
-create_db_tables()
-
-# Initialisation FastAPI
 app = FastAPI(title=API_TITLE)
 
 # Servir les fichiers uploadés comme fichiers statiques
