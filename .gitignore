@@ -43,3 +43,7 @@ docker-compose.dev.yml
 tmp/
 temp/
 ROADMAP.md
+
+# One-shot dev scripts
+/replace_colors.py
+/smoke_test.py
