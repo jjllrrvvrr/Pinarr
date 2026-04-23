@@ -5,7 +5,7 @@ echo "=== Démarrage de Pinarr ==="
 
 # Créer les répertoires nécessaires
 mkdir -p /app/data /app/uploads
-chmod 777 /app/data /app/uploads
+chmod 755 /app/data /app/uploads
 echo "✓ Répertoires créés"
 
 # Exécuter les migrations Alembic

@@ -23,6 +23,8 @@ def get_caves(db: Session) -> List[models.Cave]:
             joinedload(models.Cave.columns)
             .joinedload(models.CaveColumn.rows)
             .joinedload(models.CaveRow.positions)
+            .joinedload(models.Position.physical_bottle)
+            .joinedload(models.PhysicalBottle.bottle)
         )
         .all()
     )
@@ -36,6 +38,8 @@ def get_cave(db: Session, cave_id: int) -> models.Cave:
             joinedload(models.Cave.columns)
             .joinedload(models.CaveColumn.rows)
             .joinedload(models.CaveRow.positions)
+            .joinedload(models.Position.physical_bottle)
+            .joinedload(models.PhysicalBottle.bottle)
         )
         .filter(models.Cave.id == cave_id)
         .first()
@@ -149,20 +153,21 @@ def create_row(
         height=row.height,
         order=row.order or 0,
     )
-    db.add(db_row)
-    db.commit()
-    db.refresh(db_row)
+    # Transaction atomique
+    with db.begin():
+        db.add(db_row)
+        db.flush()
+        db.refresh(db_row)
 
-    # Créer automatiquement les positions
-    positions_to_create = []
-    for line in range(1, row.height + 1):
-        for pos in range(1, row.width + 1):
-            positions_to_create.append(
-                models.Position(row_id=db_row.id, line=line, position=pos)
-            )
+        # Créer automatiquement les positions
+        positions_to_create = []
+        for line in range(1, row.height + 1):
+            for pos in range(1, row.width + 1):
+                positions_to_create.append(
+                    models.Position(row_id=db_row.id, line=line, position=pos)
+                )
 
-    db.add_all(positions_to_create)
-    db.commit()
+        db.add_all(positions_to_create)
 
     return db_row
 
@@ -183,6 +188,20 @@ def update_row(db: Session, row_id: int, row: schemas.CaveRowCreate) -> models.C
 
     # Recréer les positions si dimensions changées
     if row.width != old_width or row.height != old_height:
+        # Vérifier s'il y a des positions occupées
+        from sqlalchemy import exists
+        occupied = db.query(models.Position).filter(
+            models.Position.row_id == row_id,
+            exists().where(
+                models.PhysicalBottle.position_id == models.Position.id
+            )
+        ).count()
+        if occupied > 0:
+            raise Exception(
+                f"Impossible de modifier les dimensions : {occupied} position(s) occupée(s). "
+                "Veuillez d'abord retirer les bouteilles."
+            )
+
         db.query(models.Position).filter(models.Position.row_id == row_id).delete()
 
         positions_to_create = []
@@ -216,7 +235,10 @@ def get_positions_for_row(db: Session, row_id: int) -> List[models.Position]:
     """Récupère toutes les positions d'une rangée avec les bouteilles associées."""
     return (
         db.query(models.Position)
-        .options(joinedload(models.Position.bottle_at_position))
+        .options(
+            joinedload(models.Position.physical_bottle)
+            .joinedload(models.PhysicalBottle.bottle)
+        )
         .filter(models.Position.row_id == row_id)
         .all()
     )
@@ -269,14 +291,31 @@ def get_or_create_position(
 def assign_bottle_to_position(
     db: Session, position_id: int, bottle_id: Optional[int]
 ) -> models.Position:
-    """Assigne une bouteille à une position (ou la retire si None)."""
+    """Assigne une bouteille physique à une position (ou la retire si None)."""
     db_position = (
         db.query(models.Position).filter(models.Position.id == position_id).first()
     )
     if not db_position:
         raise PositionNotFoundException(f"Position {position_id} not found")
 
-    db_position.bottle_id = bottle_id  # type: ignore
+    # Si une bouteille physique est déjà présente, la libérer
+    if db_position.physical_bottle:
+        db_position.physical_bottle.position_id = None
+
+    # Assigner une nouvelle bouteille physique libre
+    if bottle_id is not None:
+        physical_bottle = (
+            db.query(models.PhysicalBottle)
+            .filter(
+                models.PhysicalBottle.bottle_id == bottle_id,
+                models.PhysicalBottle.position_id == None,
+                models.PhysicalBottle.status == "in_cellar",
+            )
+            .first()
+        )
+        if physical_bottle:
+            physical_bottle.position_id = position_id
+
     db.add(db_position)
     db.commit()
     db.refresh(db_position)
@@ -291,6 +330,9 @@ def remove_bottle_from_position(db: Session, position_id: int) -> None:
     if not db_position:
         raise PositionNotFoundException(f"Position {position_id} not found")
 
-    db_position.bottle_id = None  # type: ignore
+    # Libérer la bouteille physique si présente
+    if db_position.physical_bottle:
+        db_position.physical_bottle.position_id = None
+
     db.add(db_position)
     db.commit()

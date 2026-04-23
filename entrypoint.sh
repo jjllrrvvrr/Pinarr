@@ -19,40 +19,35 @@ mkdir -p /app/data /app/uploads
 # Se déplacer dans le répertoire backend
 cd /app/backend
 
-# Exécuter les migrations Alembic
-echo "Exécution des migrations..."
-python3 -m alembic upgrade head || echo "Avertissement: Problème avec les migrations"
+# ── Bootstrap de la base de données ──
+# Ce script détecte l'état de la DB et agit en conséquence :
+# - DB vide       → crée les tables via SQLAlchemy, puis stamp Alembic
+# - DB legacy     → détecte le schéma, stamp Alembic, puis upgrade head
+# - DB versionnée → alembic upgrade head classique (idempotent)
+echo "=== DB Bootstrap ==="
+python3 /app/backend/db_bootstrap.py
+echo "✓ DB bootstrap terminé"
 
-# Créer l'utilisateur admin si la base est vide (à la première exécution)
+# ── Vérification/Création de l'utilisateur admin ──
 echo "Vérification/Création de l'utilisateur admin..."
 python3 << 'PYTHON_SCRIPT'
-import sys
-import os
+import sys, os
 sys.path.insert(0, '/app/backend')
 
 try:
     import bcrypt
-    from database import SessionLocal, engine
+    from database import SessionLocal
     from models import User
-    from database import Base
     
     def hash_password(password):
         return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     
-    # Créer les tables si elles n'existent pas
-    Base.metadata.create_all(bind=engine)
-    
     session = SessionLocal()
     user_count = session.query(User).count()
     
-    admin_user = os.environ.get('ADMIN_USERNAME', 'admin')
-    admin_pass = os.environ.get('ADMIN_PASSWORD', 'admin123')
-    
-    # Tronquer le mot de passe à 72 bytes pour bcrypt
-    admin_pass = admin_pass[:72]
-    
     if user_count == 0:
-        print(f'Création du compte admin par défaut...')
+        admin_user = os.environ.get('ADMIN_USERNAME', 'admin')
+        admin_pass = os.environ.get('ADMIN_PASSWORD', 'admin123')[:72]
         user = User(
             username=admin_user,
             password_hash=hash_password(admin_pass),
@@ -66,20 +61,18 @@ try:
     
     session.close()
 except Exception as e:
-    print(f'⚠ Erreur lors de la création admin: {e}')
+    print(f'⚠ Erreur admin: {e}')
     import traceback
     traceback.print_exc()
-    sys.exit(0)  # Ne pas bloquer le démarrage
+    # Ne PAS bloquer le démarrage si l'admin existe déjà
 PYTHON_SCRIPT
 
-# Démarrer le backend en arrière-plan
+# ── Démarrage applications ──
 echo "Démarrage du backend..."
 python3 -m uvicorn main:app --host 0.0.0.0 --port 8000 &
 
-# Attendre que le backend soit prêt
 echo "Attente du backend..."
 sleep 3
 
-# Démarrer Nginx au premier plan
 echo "Démarrage de Nginx..."
 nginx -g 'daemon off;'

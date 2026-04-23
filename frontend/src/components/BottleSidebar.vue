@@ -36,8 +36,8 @@
           <span class="text-gh-text-secondary text-xs sm:text-sm flex-shrink-0">{{ bottle.year }}</span>
         </div>
         
-        <div class="text-xs sm:text-sm text-gh-text-secondary mt-1 ml-4 sm:ml-5">
-           {{ bottle.quantity }} en stock
+         <div class="text-xs sm:text-sm text-gh-text-secondary mt-1 ml-4 sm:ml-5">
+            {{ bottle.cellar_quantity || 0 }} en stock
             <span v-if="getRemainingToPlace(bottle) > 0" class="text-gh-accent-green-text">
               • {{ getRemainingToPlace(bottle) }} à placer
             </span>
@@ -103,11 +103,11 @@ const filteredBottles = computed(() => {
 })
 
 const visibleBottles = computed(() => {
-  return filteredBottles.value.filter(b => b.quantity > 0)
+  return filteredBottles.value.filter(b => (b.physical_bottles?.length || 0) > 0)
 })
 
 const sortedBottles = computed(() => {
-  return visibleBottles.value.sort((a, b) => {
+  return visibleBottles.value.slice().sort((a, b) => {
     const aPlaced = getPlacementCount(a) > 0
     const bPlaced = getPlacementCount(b) > 0
     
@@ -146,7 +146,8 @@ const getPlacementCount = (bottle) => {
 
 const getRemainingToPlace = (bottle) => {
   const placed = getPlacementCount(bottle)
-  return Math.max(0, bottle.quantity - placed)
+  const total = bottle.physical_bottles?.length || 0
+  return Math.max(0, total - placed)
 }
 
 const onHover = (bottle) => {

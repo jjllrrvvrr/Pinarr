@@ -1,27 +1,27 @@
 <template>
   <main class="max-w-7xl mx-auto px-4 py-8 pb-20">
-    <div class="flex items-center gap-2 mb-6 text-[#8b949e]">
-      <router-link to="/" class="hover:text-[#58a6ff]">Accueil</router-link>
+    <div class="flex items-center gap-2 mb-6 text-gh-text-secondary">
+      <router-link to="/" class="hover:text-gh-accent">Accueil</router-link>
       <span>/</span>
-      <router-link to="/map" class="hover:text-[#58a6ff]">Carte</router-link>
+      <router-link to="/map" class="hover:text-gh-accent">Carte</router-link>
       <span>/</span>
-      <span class="text-white">{{ regionName }}</span>
+      <span class="text-gh-text">{{ regionName }}</span>
     </div>
 
     <div class="flex items-center justify-between mb-6">
-      <h1 class="text-2xl font-bold text-white">
+      <h1 class="text-2xl font-bold text-gh-text">
         {{ regionName }}
-        <span class="text-[#8b949e] text-lg font-normal">({{ bottles.length }} bouteilles)</span>
+        <span class="text-gh-text-secondary text-lg font-normal">({{ bottles.length }} bouteilles)</span>
       </h1>
     </div>
 
-    <div v-if="bottles.length === 0" class="text-center py-20 text-[#8b949e]">
+    <div v-if="bottles.length === 0" class="text-center py-20 text-gh-text-secondary">
       <p>Aucune bouteille dans cette région</p>
     </div>
 
     <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       <div v-for="bottle in bottles" :key="bottle.id" 
-           class="bg-[#161b22] rounded-md border border-[#30363d] hover:border-[#8b949e] transition-all flex flex-col overflow-hidden cursor-pointer"
+           class="bg-gh-surface rounded-md border border-gh-border hover:border-gh-border-hover transition-all flex flex-col overflow-hidden cursor-pointer"
            @click="goToBottle(bottle.id)">
         
         <div class="p-4 flex justify-between items-start">
@@ -32,23 +32,23 @@
                 {{ bottle.type }}
               </span>
             </div>
-            <h3 class="text-base font-semibold text-white truncate">{{ bottle.name }}</h3>
-            <p class="text-[#8b949e] text-sm truncate">{{ bottle.domaine }}</p>
+            <h3 class="text-base font-semibold text-gh-text truncate">{{ bottle.name }}</h3>
+            <p class="text-gh-text-secondary text-sm truncate">{{ bottle.domaine }}</p>
           </div>
           <div class="text-right ml-4 flex-shrink-0">
-            <div class="text-lg font-bold text-white">{{ bottle.year }}</div>
-            <div class="flex items-center justify-end text-[#e3b341] gap-1 mt-1">
+            <div class="text-lg font-bold text-gh-text">{{ bottle.year }}</div>
+            <div class="flex items-center justify-end text-gh-accent-gold gap-1 mt-1">
               <span class="text-sm font-medium">{{ bottle.rating }}/5</span>
             </div>
           </div>
         </div>
 
         <div class="px-4 pb-3 space-y-2 flex-grow text-sm">
-          <div class="flex items-center text-[#8b949e] gap-2">
-            <span class="text-white">{{ bottle.quantity }} en stock</span>
-            <span v-if="bottle.price" class="text-[#3fb950]">{{ bottle.price }} €</span>
+          <div class="flex items-center text-gh-text-secondary gap-2">
+            <span class="text-gh-text">{{ bottle.quantity }} en stock</span>
+            <span v-if="bottle.price" class="text-gh-accent-green-text">{{ bottle.price }} €</span>
           </div>
-          <div v-if="bottle.cepage" class="text-[#8b949e]">
+          <div v-if="bottle.cepage" class="text-gh-text-secondary">
             {{ bottle.cepage }}
           </div>
         </div>
@@ -69,12 +69,12 @@ const API_URL = '/bottles'
 const regionName = ref('')
 const bottles = ref([])
 
+import { useWineTypeStyles } from '@/composables/useWineTypeStyles.js'
+
+const { getTypeBadgeClass } = useWineTypeStyles()
+
 const getTypeColor = (type) => {
-  if (type === 'Rouge') return 'bg-[#f85149]/30 text-[#f85149] border-[#f85149]/50'
-  if (type === 'Blanc') return 'bg-[#e3b341]/30 text-[#e3b341] border-[#e3b341]/50'
-  if (type === 'Rosé') return 'bg-[#db61a2]/30 text-[#db61a2] border-[#db61a2]/50'
-  if (type === 'Effervescents') return 'bg-[#a371f7]/30 text-[#a371f7] border-[#a371f7]/50'
-  return 'bg-[#30363d] text-[#8b949e] border-[#30363d]'
+  return getTypeBadgeClass(type)
 }
 
 const goToBottle = (id) => {

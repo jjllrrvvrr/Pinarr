@@ -10,3 +10,5 @@ passlib
 bcrypt
 requests
 pillow
+qrcode[pil]
+reportlab

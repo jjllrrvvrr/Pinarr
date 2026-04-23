@@ -269,22 +269,28 @@
 
           <!-- Ligne 1: Quantité | Prix | Note -->
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <!-- Quantité -->
-            <div>
+            <!-- Quantité (nombre de bouteilles à créer) -->
+            <div v-if="!isEditing">
               <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-2">
                 <QuantityIconSVG class="w-4 h-4" />
-                Quantité
+                Nombre de bouteilles <span class="text-gh-accent-red">*</span>
               </label>
               <input 
                 v-model="form.quantity" 
                 type="number" 
-                min="0"
+                min="1"
+                max="100"
+                required
                 class="w-full bg-gh-bg border border-gh-border rounded-card p-3 text-gh-text focus:border-gh-accent focus:ring-1 focus:ring-gh-accent outline-none transition-fast"
+                placeholder="1"
               />
+              <p class="mt-1 text-xs text-gh-text-secondary">
+                {{ form.quantity }} étiquette(s) QR seront générées automatiquement
+              </p>
             </div>
 
             <!-- Prix -->
-            <div>
+            <div :class="{ 'md:col-span-2': !isEditing }">
               <label class="flex items-center gap-2 text-sm font-medium text-gh-text-secondary mb-2">
                 <CurrencyDollarIcon class="w-4 h-4" />
                 Prix (€)
@@ -539,6 +545,7 @@ import config from '../config.js'
 import { apiRequest } from '../services/api.js'
 import RemovePositionModal from '../components/RemovePositionModal.vue'
 import WinePhaseTimeline from '../components/WinePhaseTimeline.vue'
+import { QrService } from '../services/qrService.js'
 import { useQuantityManager } from '../composables/useQuantityManager.js'
 
 const route = useRoute()
@@ -792,6 +799,16 @@ const saveBottle = async (force = false) => {
       method,
       body: JSON.stringify(payload)
     })
+    
+    // Si c'est une création et qu'on a des bouteilles à créer, générer les QR codes
+    if (!isEditing.value && form.value.quantity > 0) {
+      try {
+        const qrData = await QrService.generateQrCodes(savedBottle.id, parseInt(form.value.quantity))
+        console.log(`${qrData.count} QR codes générés:`, qrData.qr_codes)
+      } catch (err) {
+        console.error('Erreur génération QR codes:', err)
+      }
+    }
     
     if (form.value.position_id) {
       await apiRequest(`/positions/${form.value.position_id}`, {

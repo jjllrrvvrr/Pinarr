@@ -45,6 +45,12 @@ class MaxQuantityReachedException(PinarrException):
     pass
 
 
+class PhysicalBottleNotFoundException(PinarrException):
+    """Bouteille physique non trouvée."""
+
+    pass
+
+
 class InvalidUploadException(PinarrException):
     """Upload invalide."""
 
@@ -59,6 +65,7 @@ def handle_pinarr_exception(exc: PinarrException) -> HTTPException:
         ColumnNotFoundException: 404,
         RowNotFoundException: 404,
         PositionNotFoundException: 404,
+        PhysicalBottleNotFoundException: 404,
         MaxQuantityReachedException: 400,
         InvalidUploadException: 400,
     }

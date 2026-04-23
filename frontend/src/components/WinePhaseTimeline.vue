@@ -388,23 +388,23 @@ onUnmounted(() => {
 }
 
 .current-phase-badge.phase-jeunesse {
-  background: rgba(88, 166, 255, 0.15);
-  color: #58a6ff;
+  background: color-mix(in srgb, var(--accent-blue) 15%, transparent);
+  color: var(--accent-blue);
 }
 
 .current-phase-badge.phase-maturite {
-  background: rgba(63, 185, 80, 0.15);
-  color: #3fb950;
+  background: color-mix(in srgb, var(--accent-green) 15%, transparent);
+  color: var(--accent-green);
 }
 
 .current-phase-badge.phase-apogee {
-  background: rgba(163, 113, 247, 0.15);
-  color: #a371f7;
+  background: color-mix(in srgb, var(--accent-purple) 15%, transparent);
+  color: var(--accent-purple);
 }
 
 .current-phase-badge.phase-declin {
-  background: rgba(248, 81, 73, 0.15);
-  color: #f85149;
+  background: color-mix(in srgb, var(--accent-red) 15%, transparent);
+  color: var(--accent-red);
 }
 
 .year-range {
@@ -434,7 +434,7 @@ onUnmounted(() => {
 .timeline-background {
   position: absolute;
   inset: 0;
-  background: rgba(255, 255, 255, 0.05);
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent);
   border-radius: 4px;
 }
 
@@ -456,19 +456,19 @@ onUnmounted(() => {
 }
 
 .phase-segment.jeunesse {
-  background: linear-gradient(90deg, rgba(88, 166, 255, 0.7) 0%, rgba(88, 166, 255, 0.5) 100%);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent-blue) 70%, transparent) 0%, color-mix(in srgb, var(--accent-blue) 50%, transparent) 100%);
 }
 
 .phase-segment.maturite {
-  background: linear-gradient(90deg, rgba(63, 185, 80, 0.7) 0%, rgba(63, 185, 80, 0.5) 100%);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent-green) 70%, transparent) 0%, color-mix(in srgb, var(--accent-green) 50%, transparent) 100%);
 }
 
 .phase-segment.apogee {
-  background: linear-gradient(90deg, rgba(163, 113, 247, 0.7) 0%, rgba(163, 113, 247, 0.5) 100%);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent-purple) 70%, transparent) 0%, color-mix(in srgb, var(--accent-purple) 50%, transparent) 100%);
 }
 
 .phase-segment.declin {
-  background: linear-gradient(90deg, rgba(248, 81, 73, 0.7) 0%, rgba(248, 81, 73, 0.5) 100%);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent-red) 70%, transparent) 0%, color-mix(in srgb, var(--accent-red) 50%, transparent) 100%);
 }
 
 .segment-name {
@@ -496,8 +496,6 @@ onUnmounted(() => {
   min-width: 30px;
 }
 
-
-
 .phase-year {
   font-size: 0.6rem;
   color: var(--text-muted);
@@ -511,8 +509,6 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: flex-end;
 }
-
-
 
 /* Mode compact */
 .timeline-compact .timeline-track {

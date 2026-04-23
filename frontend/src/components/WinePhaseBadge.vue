@@ -63,6 +63,34 @@ const currentPhaseLabel = computed(() => {
 </script>
 
 <style scoped>
+:root {
+  --phase-jeunesse: #58a6ff;
+  --phase-maturite: #3fb950;
+  --phase-apogee: #a371f7;
+  --phase-declin: #f85149;
+}
+
+[data-theme="light"] {
+  --phase-jeunesse: #0969da;
+  --phase-maturite: #1a7f37;
+  --phase-apogee: #8250df;
+  --phase-declin: #cf222e;
+}
+
+[data-theme="red-wine"] {
+  --phase-jeunesse: #d45656;
+  --phase-maturite: #2a8a3a;
+  --phase-apogee: #a070e0;
+  --phase-declin: #e06666;
+}
+
+[data-theme="green-nature"] {
+  --phase-jeunesse: #56aa56;
+  --phase-maturite: #3a8a3a;
+  --phase-apogee: #7a50cf;
+  --phase-declin: #cc5555;
+}
+
 .wine-phase-badge {
   display: inline-flex;
   align-items: center;
@@ -76,22 +104,22 @@ const currentPhaseLabel = computed(() => {
 }
 
 .wine-phase-badge.phase-jeunesse {
-  background: rgba(88, 166, 255, 0.2);
-  color: #58a6ff;
+  background: color-mix(in srgb, var(--phase-jeunesse) 20%, transparent);
+  color: var(--phase-jeunesse);
 }
 
 .wine-phase-badge.phase-maturite {
-  background: rgba(63, 185, 80, 0.2);
-  color: #3fb950;
+  background: color-mix(in srgb, var(--phase-maturite) 20%, transparent);
+  color: var(--phase-maturite);
 }
 
 .wine-phase-badge.phase-apogee {
-  background: rgba(163, 113, 247, 0.2);
-  color: #a371f7;
+  background: color-mix(in srgb, var(--phase-apogee) 20%, transparent);
+  color: var(--phase-apogee);
 }
 
 .wine-phase-badge.phase-declin {
-  background: rgba(248, 81, 73, 0.2);
-  color: #f85149;
+  background: color-mix(in srgb, var(--phase-declin) 20%, transparent);
+  color: var(--phase-declin);
 }
 </style>

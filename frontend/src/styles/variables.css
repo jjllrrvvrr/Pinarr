@@ -126,6 +126,74 @@
 }
 
 /* ==========================================
+   THÈME RED WINE
+   ========================================== */
+[data-theme="red-wine"] {
+  --bg-primary: #2a0a0a;
+  --bg-surface: #3d1616;
+  --bg-elevated: #4a2020;
+  --bg-header: #1a0505;
+  --bg-overlay: rgba(0, 0, 0, 0.7);
+
+  --border-default: #5a2a2a;
+  --border-hover: #8a4a4a;
+  --border-active: #d45656;
+  --border-error: #cc4444;
+  --border-success: #2a7a2a;
+
+  --text-primary: #f0d5d5;
+  --text-secondary: #c9a0a0;
+  --text-muted: #8a6060;
+  --text-inverse: #2a0a0a;
+
+  --accent-blue: #d45656;
+  --accent-green: #2a8a3a;
+  --accent-green-hover: #3a9a4a;
+  --accent-green-text: #4aaa5a;
+  --accent-red: #e06666;
+  --accent-orange: #e0a060;
+  --accent-gold: #e0c060;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.6);
+}
+
+/* ==========================================
+   THÈME GREEN NATURE
+   ========================================== */
+[data-theme="green-nature"] {
+  --bg-primary: #0a1a0a;
+  --bg-surface: #162a16;
+  --bg-elevated: #203820;
+  --bg-header: #051005;
+  --bg-overlay: rgba(0, 0, 0, 0.7);
+
+  --border-default: #2a3d2a;
+  --border-hover: #4a6a4a;
+  --border-active: #56aa56;
+  --border-error: #aa4444;
+  --border-success: #2a7a2a;
+
+  --text-primary: #d5f0d5;
+  --text-secondary: #a0c9a0;
+  --text-muted: #608a60;
+  --text-inverse: #0a1a0a;
+
+  --accent-blue: #56aa56;
+  --accent-green: #3a8a3a;
+  --accent-green-hover: #4a9a4a;
+  --accent-green-text: #5aaa5a;
+  --accent-red: #cc5555;
+  --accent-orange: #c0a050;
+  --accent-gold: #c0b050;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.6);
+}
+
+/* ==========================================
    UTILITAIRES CSS
    ========================================== */
 

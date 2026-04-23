@@ -1,52 +1,52 @@
 <template>
   <main class="max-w-7xl mx-auto px-4 py-6 pb-20">
     <div class="flex items-center justify-between mb-6">
-      <h1 class="text-2xl font-bold text-white">Carte des régions</h1>
-      <router-link to="/" class="text-[#8b949e] hover:text-[#58a6ff]">← Retour</router-link>
+      <h1 class="text-2xl font-bold text-gh-text">Carte des régions</h1>
+      <router-link to="/" class="text-gh-text-secondary hover:text-gh-accent">← Retour</router-link>
     </div>
 
-    <div v-if="isLoadingGeocoding" class="mb-4 text-xs text-[#8b949e]">
+    <div v-if="isLoadingGeocoding" class="mb-4 text-xs text-gh-text-secondary">
       Géocodage des régions en cours...
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6">
-      <div class="bg-[#161b22] rounded-md border border-[#30363d] overflow-hidden">
+      <div class="bg-gh-surface rounded-md border border-gh-border overflow-hidden">
         <div id="map" class="h-[400px] lg:h-[600px] w-full"></div>
       </div>
 
-      <div class="bg-[#161b22] rounded-md border border-[#30363d] overflow-hidden flex flex-col">
-        <div v-if="!selectedRegion" class="flex-1 flex items-center justify-center text-[#8b949e]">
+      <div class="bg-gh-surface rounded-md border border-gh-border overflow-hidden flex flex-col">
+        <div v-if="!selectedRegion" class="flex-1 flex items-center justify-center text-gh-text-secondary">
           <div class="text-center">
-            <MapIcon class="w-12 h-12 mx-auto mb-3 text-[#30363d]" />
+            <MapIcon class="w-12 h-12 mx-auto mb-3 text-gh-border" />
             <p>Cliquez sur un marqueur pour voir les bouteilles</p>
           </div>
         </div>
         
         <div v-else class="flex-1 flex flex-col">
-          <div class="p-4 border-b border-[#30363d] flex items-center justify-between">
-            <h2 class="text-lg font-bold text-white">
+          <div class="p-4 border-b border-gh-border flex items-center justify-between">
+            <h2 class="text-lg font-bold text-gh-text">
               {{ selectedRegion.name }} 
-              <span class="text-[#8b949e] font-normal text-sm">({{ selectedRegion.bottles.length }})</span>
+              <span class="text-gh-text-secondary font-normal text-sm">({{ selectedRegion.bottles.length }})</span>
             </h2>
-            <button @click="selectedRegion = null" class="text-[#8b949e] hover:text-white">&times;</button>
+            <button @click="selectedRegion = null" class="text-gh-text-secondary hover:text-gh-text">&times;</button>
           </div>
           <div class="flex-1 overflow-y-auto p-4 space-y-3">
             <div v-for="bottle in selectedRegion.bottles.slice(0, 10)" :key="bottle.id" 
-                 class="bg-[#0d1117] rounded-md border border-[#30363d] p-3 hover:border-[#8b949e] transition cursor-pointer"
+                 class="bg-gh-bg rounded-md border border-gh-border p-3 hover:border-gh-text-secondary transition cursor-pointer"
                  @click="goToBottle(bottle.id)">
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
                   <span class="w-3 h-3 rounded-full flex-shrink-0" :class="getTypeColor(bottle.type)"></span>
-                  <span class="text-white font-medium truncate">{{ bottle.name }}</span>
+                  <span class="text-gh-text font-medium truncate">{{ bottle.name }}</span>
                 </div>
-                <span class="text-[#8b949e] text-sm flex-shrink-0">{{ bottle.year }}</span>
+                <span class="text-gh-text-secondary text-sm flex-shrink-0">{{ bottle.year }}</span>
               </div>
-              <div class="text-sm text-[#8b949e] mt-1 ml-5">
+              <div class="text-sm text-gh-text-secondary mt-1 ml-5">
                 {{ bottle.quantity }} en stock • {{ bottle.price || '-' }} €
               </div>
             </div>
             <div v-if="selectedRegion.bottles.length > 10" class="pt-2">
-              <router-link :to="`/?region=${encodeURIComponent(selectedRegion.name)}`" class="block text-center py-3 text-[#58a6ff] hover:underline">
+              <router-link :to="`/?region=${encodeURIComponent(selectedRegion.name)}`" class="block text-center py-3 text-gh-accent hover:underline">
                 Voir les {{ selectedRegion.bottles.length }} bouteilles →
               </router-link>
             </div>
@@ -145,12 +145,12 @@ const regionCoordinates = {
   'Afrique du Sud': [-30.5595, 22.9375],
 }
 
+import { useWineTypeStyles } from '@/composables/useWineTypeStyles.js'
+
+const { getTypeDotClass } = useWineTypeStyles()
+
 const getTypeColor = (type) => {
-  if (type === 'Rouge') return 'bg-[#f85149]'
-  if (type === 'Blanc') return 'bg-[#e3b341]'
-  if (type === 'Rosé') return 'bg-[#db61a2]'
-  if (type === 'Effervescents') return 'bg-[#a371f7]'
-  return 'bg-[#8b949e]'
+  return getTypeDotClass(type)
 }
 
 const goToBottle = (id) => {
@@ -339,14 +339,14 @@ onUnmounted(() => {
 </script>
 
 <style>
-.leaflet-container { background: #0d1117; }
-.leaflet-tooltip { 
-  background: #161b22; 
-  border: 1px solid #30363d; 
-  color: #fff; 
-  border-radius: 6px; 
+.leaflet-container { background: var(--bg-primary); }
+.leaflet-tooltip {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
+  border-radius: 6px;
   padding: 6px 10px;
   font-size: 13px;
 }
-.leaflet-tooltip::before { border-top-color: #30363d; }
+.leaflet-tooltip::before { border-top-color: var(--border-default); }
 </style>

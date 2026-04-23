@@ -8,6 +8,7 @@ import CaveList from '../views/CaveList.vue'
 import CaveEdit from '../views/CaveEdit.vue'
 import CaveView from '../views/CaveView.vue'
 import LoginView from '../views/LoginView.vue'
+import ScanResultView from '../views/ScanResultView.vue'
 import { authGuard, publicGuard } from './guards'
 
 const router = createRouter({
@@ -38,6 +39,12 @@ const router = createRouter({
       path: '/wine/:id',
       name: 'wine-detail',
       component: BottleDetail
+    },
+    // Route publique pour scanner les QR codes (accessible sans auth)
+    {
+      path: '/bottle/:qrCode',
+      name: 'scan-qr',
+      component: ScanResultView
     },
     {
       path: '/map',

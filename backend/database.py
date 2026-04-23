@@ -10,8 +10,11 @@ DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./pinarr.db")
 
 # Adapter le chemin pour Docker si nécessaire
 if DATABASE_URL.startswith("sqlite:///./"):
-    # Convertir chemin relatif en absolu pour Docker
-    db_path = DATABASE_URL.replace("sqlite:///./", "sqlite:////app/data/")
+    # Convertir chemin relatif en absolu sous /app/data/
+    db_file = DATABASE_URL[12:]  # après "sqlite:///./"
+    if db_file.startswith("data/"):
+        db_file = db_file[5:]
+    db_path = f"sqlite:////app/data/{db_file}"
     SQLALCHEMY_DATABASE_URL = db_path
 else:
     SQLALCHEMY_DATABASE_URL = DATABASE_URL
@@ -40,6 +43,7 @@ def create_db_tables():
             CaveColumn,
             CaveRow,
             Position,
+            PhysicalBottle,
             GeocodedRegion,
             User,
         )
@@ -50,6 +54,7 @@ def create_db_tables():
             CaveColumn,
             CaveRow,
             Position,
+            PhysicalBottle,
             GeocodedRegion,
             User,
         )
