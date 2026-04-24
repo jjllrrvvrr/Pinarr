@@ -69,6 +69,6 @@ Carte des régions viticoles :
 
 ---
 
-**Made with ❤️ for wine lovers** 🍷
+**Made with love for Pinarr lovers** 🍷
 
 **MIT License** - [GitHub](https://github.com/jjllrrvvrr/Pinarr)

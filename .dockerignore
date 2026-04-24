@@ -80,3 +80,6 @@ logs/
 
 # One-shot dev scripts
 replace_colors.py
+
+# OpenCode workspace
+.opencode/
