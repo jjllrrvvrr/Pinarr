@@ -581,12 +581,13 @@ def download_batch_labels_endpoint(
 
 @api_router.get("/bottles/{bottle_id}/physical-bottles/{qr_code}/label")
 def download_single_label_endpoint(
-    bottle_id: int, qr_code: str, db: Session = Depends(get_db)
+    bottle_id: int, qr_code: str, request: Request, db: Session = Depends(get_db)
 ):
     """Télécharge l'étiquette PDF individuelle d'une bouteille physique."""
     try:
+        frontend_url = _get_frontend_url(request)
         pdf_bytes = generate_single_label_pdf(
-            db, bottle_id, qr_code, frontend_url=""
+            db, bottle_id, qr_code, frontend_url=frontend_url
         )
         return StreamingResponse(
             io.BytesIO(pdf_bytes),
