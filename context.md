@@ -1,11 +1,11 @@
 # Pinarr - Contexte pour Agent AI
 
 > Ce fichier contient le contexte essentiel pour comprendre et travailler sur le projet Pinarr.
-> Dernière mise à jour : April 23, 2026 (session migrations DB + étiquettes PDF + tests prod)
+> Dernière mise à jour : April 24, 2026 (session tests étiquettes + tailles lisibles)
 > ✅ **ÉTAT** : Migration database corrigée. Build Docker dev et prod OK. Backend démarre, QR public accessible.
 > 🐛 **DB SLICE BUG FIX** : Corrigé `database.py` `[14:]` → `[12:]` qui créait un double `data/` dans le chemin.
 > 🗄️ **Migrations Alembic** : `002/003/004/005` tous disponibles. `db_bootstrap.py` détecte DB legacy et applique 004→005.
-> 🎨 **Étiquettes** : 3×5cm PDF via ReportLab (polices Montserrat + NunitoSans). Batch ZIP.
+> 🎨 **Étiquettes** : 3×5cm PDF @ 300dpi. Polices Montserrat + NunitoSans. **Tailles testées** : millésime 30pt, nom 20pt, phases 15pt, footer 15pt. Batch ZIP.
 > 📦 **Tech** : ReportLab 4.4.10 pour PDF vectoriel embarqué.
 
 ---

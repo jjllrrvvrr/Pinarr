@@ -108,8 +108,8 @@ def _build_label_pdf(bottle: models.Bottle, qr_code: str, url: str) -> bytes:
         year_style = ParagraphStyle(
             "Year",
             fontName="NunitoSans-Regular",
-            fontSize=20,
-            leading=24,
+            fontSize=30,
+            leading=36,
             alignment=1,  # centre
             textColor=colors.HexColor("#1a1a1a"),
         )
@@ -127,8 +127,8 @@ def _build_label_pdf(bottle: models.Bottle, qr_code: str, url: str) -> bytes:
     name_style = ParagraphStyle(
         "Name",
         fontName="Montserrat-Bold",
-        fontSize=15,
-        leading=20,
+        fontSize=20,
+        leading=26,
         alignment=1,
         textColor=colors.HexColor("#111111"),
     )
@@ -147,8 +147,8 @@ def _build_label_pdf(bottle: models.Bottle, qr_code: str, url: str) -> bytes:
         phase_style = ParagraphStyle(
             "Phase",
             fontName="NunitoSans-Bold",
-            fontSize=11,
-            leading=18,
+            fontSize=15,
+            leading=20,
             alignment=1,
             textColor=colors.HexColor("#222222"),
         )
@@ -160,7 +160,7 @@ def _build_label_pdf(bottle: models.Bottle, qr_code: str, url: str) -> bytes:
     # ---------------------------------------------------------------
     # 5. Footer (bottom = FOOTER_BOTTOM)
     # ---------------------------------------------------------------
-    c.setFont("NunitoSans-Regular", 9)
+    c.setFont("NunitoSans-Regular", 15)
     c.setFillColor(colors.HexColor("#777777"))
     c.drawCentredString(CX, FOOTER_BOTTOM, "Made with love for Pinarr lovers")
 

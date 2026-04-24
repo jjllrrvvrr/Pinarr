@@ -1,0 +1,26 @@
+services:
+  pinarr-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: Pinarr-dev
+    ports:
+      - "9080:80"
+      - "9094:8000"
+    environment:
+      - DATABASE_URL=sqlite:///./data/pinarr.db
+      - SECRET_KEY=dev-secret-key-change-me
+      - ADMIN_USERNAME=admin
+      - ADMIN_PASSWORD=admin123
+      - LOG_LEVEL=debug
+      - ENV=development
+    volumes:
+      - ./data-dev:/app/data
+      - ./uploads-dev:/app/uploads
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
