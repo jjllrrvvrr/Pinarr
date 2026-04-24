@@ -1,6 +1,6 @@
 # Multi-stage Dockerfile for Pinarr
 # Stage 1: Build Frontend
-FROM node:20-alpine AS frontend-build
+FROM --platform=$BUILDPLATFORM node:20-alpine AS frontend-build
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm ci --legacy-peer-deps
