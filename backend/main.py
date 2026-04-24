@@ -4,7 +4,7 @@ Pinarr API - Routes FastAPI refactorisées avec authentification.
 Ce module utilise une architecture en services pour une meilleure maintenabilité.
 """
 
-from fastapi import FastAPI, HTTPException, Depends, UploadFile, File, APIRouter
+from fastapi import FastAPI, HTTPException, Depends, UploadFile, File, APIRouter, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -541,14 +541,24 @@ def create_geocoded_region_endpoint(
     return create_geocoded_region(db, region)
 
 
+def _get_frontend_url(request: Request) -> str:
+    """Déduit l'URL publique du frontend à partir de la requête HTTP.
+    Supporte les reverse-proxies via X-Forwarded-*.
+    """
+    scheme = request.headers.get("x-forwarded-proto", request.url.scheme)
+    host = request.headers.get("x-forwarded-host", request.headers.get("host", "localhost"))
+    return f"{scheme}://{host}"
+
+
 @api_router.get("/bottles/{bottle_id}/batch-labels")
 def download_batch_labels_endpoint(
-    bottle_id: int, db: Session = Depends(get_db)
+    bottle_id: int, request: Request, db: Session = Depends(get_db)
 ):
     """Télécharge un ZIP avec toutes les étiquettes 3×5cm des bouteilles physiques en cave."""
     try:
+        frontend_url = _get_frontend_url(request)
         zip_bytes = generate_label_zip(
-            db, bottle_id, frontend_url=""
+            db, bottle_id, frontend_url=frontend_url
         )
         if not zip_bytes:
             raise HTTPException(status_code=404, detail="Aucune bouteille physique en cave")

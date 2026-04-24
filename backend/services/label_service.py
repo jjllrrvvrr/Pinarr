@@ -160,7 +160,7 @@ def _build_label_pdf(bottle: models.Bottle, qr_code: str, url: str) -> bytes:
     # ---------------------------------------------------------------
     # 5. Footer (bottom = FOOTER_BOTTOM)
     # ---------------------------------------------------------------
-    c.setFont("NunitoSans-Regular", 15)
+    c.setFont("NunitoSans-Bold", 18)
     c.setFillColor(colors.HexColor("#777777"))
     c.drawCentredString(CX, FOOTER_BOTTOM, "Made with love for Pinarr lovers")
 
