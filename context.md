@@ -1,12 +1,13 @@
 # Pinarr - Contexte pour Agent AI
 
 > Ce fichier contient le contexte essentiel pour comprendre et travailler sur le projet Pinarr.
-> Dernière mise à jour : April 24, 2026 (session tests étiquettes + tailles lisibles)
-> ✅ **ÉTAT** : Migration database corrigée. Build Docker dev et prod OK. Backend démarre, QR public accessible.
+> Dernière mise à jour : May 3, 2026 (après session : thèmes champagne + responsive + map fixes + fixes post-session)
+> ✅ **ÉTAT** : Conteneur healthy. Build Docker OK. Thèmes Champagne (Clair/Sombre) actifs. Map avec fitBounds et pane markers fixé.
 > 🐛 **DB SLICE BUG FIX** : Corrigé `database.py` `[14:]` → `[12:]` qui créait un double `data/` dans le chemin.
 > 🗄️ **Migrations Alembic** : `002/003/004/005` tous disponibles. `db_bootstrap.py` détecte DB legacy et applique 004→005.
-> 🎨 **Étiquettes** : 3×5cm PDF @ 300dpi. Polices Montserrat + NunitoSans. **Tailles testées** : millésime 30pt, nom 20pt, phases 15pt, footer 15pt. Batch ZIP.
+> 🎨 **Étiquettes** : 3×5cm PDF @ 300dpi. Polices Montserrat + NunitoSans. Batch ZIP.
 > 📦 **Tech** : ReportLab 4.4.10 pour PDF vectoriel embarqué.
+> ⚠️ **Fichiers non commit** : `backend/services/cave_service.py` (fix transaction SQLAlchemy), `frontend/src/views/BottleDetail.vue` (fix routing cave_id), `context.md` — prêts à committer.
 
 ---
 
@@ -15,28 +16,27 @@
 | Propriété | Valeur |
 |-----------|--------|
 | **Repo GitHub** | `https://github.com/jjllrrvvrr/Pinarr.git` |
-| **Repo local** | `/home/coder/project/Pinarr` |
-| **Branche active** | `feature/qr-code-system` |
+| **Repo local** | `/Users/julienlrvr/Documents/Pinarr` |
+| **Branche active** | `main` |
 | **Remote** | `origin https://github.com/jjllrrvvrr/Pinarr.git` |
-| **Status** | Up to date with origin |
+| **Status** | Up to date with origin — **avec fichiers non commit** (fix cave_service.py + BottleDetail.vue + docs issues) |
 | **Build dev** | `docker-compose.dev.yml` (ports 9080/9094) |
-| **Environnement** | Linux, Workspace IA (OpenCode) |
+| **Environnement** | macOS, Docker Desktop |
 
 ---
 
 ## 🍷 Vue d'ensemble
 
-**Pinarr** est une application web self-hosted de gestion de cave à vin, déployée via Docker. 
-C'est une application complète permettant de gérer une cave à vin personnelle avec une interface intuitive et un déploiement simplifié via Docker.
+**Pinarr** (frontend branding: **Pinaar**) est une application web self-hosted de gestion de cave à vin, déployée via Docker.
 
 ### Fonctionnalités clés
 - 📊 Gestion des bouteilles avec métadonnées complètes (millésime, cépage, région, prix, etc.)
 - 🏗️ Système de caves hiérarchique structuré (Caves → Colonnes → Rangées → Positions)
 - 📍 Géolocalisation des régions viticoles sur carte interactive (Leaflet/OpenStreetMap)
 - 🔐 Authentification JWT sécurisée (bcrypt + cookies sécurisés)
-- 📱 Interface responsive Vue.js 3 (Tailwind CSS, thème GitHub dark)
-- 🏷️ **NOUVEAU** : Système QR code par bouteille physique (tracking individuel)
-- 🎨 **NOUVEAU** : Multi-thème (Sombre/Clair/Vin Rouge/Nature Verte) via CSS custom properties
+- 📱 Interface responsive Vue.js 3 (Tailwind CSS, thèmes Champagne)
+- 🏷️ Système QR code par bouteille physique (tracking individuel)
+- 🎨 **2 thèmes Champagne** : Clair (crème doré) et Sombre (brun/noir profond)
 - 📸 Upload d'images auto-compressé en WebP avec support HEIC/HEIF
 - ⭐ Notation étoilée et sélection de favoris
 - 🏷 Système de tags
@@ -76,15 +76,16 @@ Pinarr/
 │   │   ├── services/       # API clients (api.js, AuthService.js, qrService.js)
 │   │   └── router/         # Vue Router avec guards
 │   ├── src/assets/         # Assets statiques
+│   ├── src/styles/         # variables.css (thèmes Champagne)
 │   ├── package.json        # Dépendances: Vue3, Tailwind, Leaflet, qrcode.vue
-│   └── index.html
+│   └── index.html          # Import Google Fonts "Beth Ellen"
 ├── backend/                # API FastAPI
 │   ├── routers/            # Routeurs FastAPI (auth)
 │   ├── services/           # Logique métier (pattern repository)
 │   ├── alembic/            # Migrations Alembic (001→005)
 │   ├── models.py           # Modèles SQLAlchemy
 │   ├── schemas.py          # Schémas Pydantic
-│   ├── main.py             # Routes API (routes uniquement)
+│   ├── main.py             # Routes API FastAPI
 │   ├── config.py           # Config centralisée
 │   ├── auth.py             # JWT, bcrypt, cookies
 │   ├── database.py         # SQLAlchemy engine + session
@@ -105,13 +106,15 @@ Pinarr/
 |---------|------|
 | `backend/main.py` | Routes API FastAPI (endpoints CRUD) |
 | `backend/models.py` | 7 modèles SQLAlchemy (Bottle, Cave, PhysicalBottle, etc.) |
-| `backend/services/*.py` | 6 services métier (bottle, cave, physical_bottle, label, upload, geo) |
+| `backend/services/*.py` | 6 services métier + consume_bottle_from_position |
 | `backend/fonts/` | Polices TTF embarquées (Montserrat-Bold, NunitoSans-Regular/Bold) |
-| `frontend/src/App.vue` | Layout principal (header, navigation, modals) |
+| `frontend/src/App.vue` | Layout principal (header "Pinaar" en Beth Ellen, navigation, modals) |
+| `frontend/src/styles/variables.css` | Thèmes Champagne Clair + Sombre |
+| `frontend/src/composables/useTheme.js` | Thème par défaut `champagne`, toggle champagne/champagne-dark |
 | `frontend/src/router/index.js` | Routes SPA avec auth guards |
 | `nginx.conf` | Reverse proxy Nginx |
 | `entrypoint.sh` | Auto-setup: migrations, admin, uvicorn, nginx |
-| `docker-compose.dev.yml` | Docker Compose dev local (ports 9080/9094, données isolées) |
+| `docker-compose.dev.yml` | Docker Compose dev local (ports 9080/9094) |
 
 ---
 
@@ -132,7 +135,7 @@ buy_link, quantity, price, description, rating, tags
 is_favorite, image_path
 physical_bottles (relationship)
 ```
-**Mécanisme de tracking physique** : Après la migration 003, `quantity` = stock logique total, et chaque unité physique est un `PhysicalBottle` avec QR code unique. Le positionnement en cave déplace le `PhysicalBottle`, pas le `Bottle`.
+**Mécanisme de tracking physique** : `quantity` = stock logique total, chaque unité physique est un `PhysicalBottle` avec QR code unique. Le positionnement en cave déplace le `PhysicalBottle`, pas le `Bottle`.
 - Pour assigner un vin à une position : le backend cherche un `PhysicalBottle` libre (`position_id == None`) de ce vin
 - Pour retirer : libère le `PhysicalBottle` (`position_id` mis à `None`)
 - La sérialisation API utilise la `property` virtuelle `bottle_at_position` pour compatibilité frontend
@@ -192,7 +195,8 @@ id, name (unique), lat, lon
 ### Positions
 - `GET /rows/{id}/positions` - Liste positions avec bouteilles assignées
 - `PUT /positions/{id}` - Assigner bouteille (ou retirer avec bottle_id: null)
-- `DELETE /positions/{id}/bottle` - Retirer bouteille
+- `DELETE /positions/{id}/bottle` - Retirer bouteille (libère position, garde en stock)
+- `POST /positions/{id}/consume` - Consommer bouteille depuis position (historique) 🆕
 
 ### Physical Bottles - QR
 - `POST /bottles/{id}/generate-qr-codes` - Génère N QR codes uniques
@@ -224,7 +228,7 @@ id, name (unique), lat, lon
 '/edit/:id'      → AddBottle (reuse component)
 '/wine/:id'      → BottleDetail (fiche vin + QR codes)
 '/bottle/:qrCode'→ ScanResultView (PUBLIC - résultat scan)
-'/map'           → MapView (Leaflet)
+'/map'           → MapView (Leaflet avec fitBounds auto)
 '/caves'         → CaveList (liste caves)
 '/caves/new'     → CaveEdit (création cave)
 '/caves/:id'     → CaveView (visualisation grille)
@@ -240,13 +244,13 @@ id, name (unique), lat, lon
 - `AuthService.js` : Login/logout/session storage/sessionStorage username
 - `qrService.js` : Génération/list/scan QR codes via API
 
-### Theme System (Multi-thème via CSS Custom Properties)
+### Theme System (Thèmes Champagne)
 
 | Fichier | Rôle |
 |---------|------|
 | `tailwind.config.js` | Mapping `gh-*` → `var(--*)` (colors, shadows, radii, zIndex) |
 | `src/styles/variables.css` | Définition des CSS custom properties pour chaque thème |
-| `src/composables/useTheme.js` | `currentTheme`, `setTheme()`, persistance `localStorage` |
+| `src/composables/useTheme.js` | Défaut `champagne`, toggle `champagne/champagne-dark`, persistance `localStorage` |
 | `src/composables/useWineTypeStyles.js` | Helper `getTypeBadgeClass`/`getTypeDotClass`/`getTypeBgClass` pour les badges de type de vin |
 
 #### Design Tokens (gh-*)
@@ -262,20 +266,31 @@ id, name (unique), lat, lon
 | `gh-accent-red` | `--accent-red` | Erreurs, suppression |
 | `wine-red` / `wine-white` / `wine-rose` / `wine-champagne` | `--wine-*` | Couleurs sémantiques des types de vin |
 
-#### Thèmes disponibles
+#### Thèmes disponibles (2 uniquement)
 | Thème | `data-theme` | Description |
-|-------|-----------|-------------|
-| Sombre (défaut) | — | `:root` — GitHub Dark-like |
-| Clair | `light` | `f6f8fa` surfaces, texte foncé |
-| Vin Rouge | `red-wine` | `2a0a0a` fond, accents bordeaux/rouges |
-| Nature Verte | `green-nature` | `0a1a0a` fond, accents vignoble/verts |
+|-------|-------------|-------------|
+| **Clair** (défaut) | — | `:root` — Crème champagne `#f5f3ee`, texte `#2d2926`, accent doré `#c5a265` |
+| **Sombre** | `champagne-dark` | `#1a1814` fond brun/noir, texte `#e8e2d9`, accent doré `#c5a265` |
 
-Le switcher de thème se trouve dans le **menu burger** de `App.vue` (en bas du menu).
+Le switcher de thème se trouve dans le **menu burger** de `App.vue`.
+
+#### Phases de vin (couleurs pastels lisibles sur les deux thèmes)
+| Phase | Clair | Sombre |
+|-------|-------|--------|
+| Jeunesse | `#3a6b52` (vert bouteille, visible sur fond clair) | `#cffd8e` (vert pastel) |
+| Maturité | `#8ecafd` (bleu pastel) | `#8ecafd` (bleu pastel) |
+| Apogée | `#fd8ea8` (rose pastel) | `#fd8ea8` (rose pastel) |
+| Déclin | `#fdb38e` (orange pastel) | `#fdb38e` (orange pastel) |
+
+#### Variables spéciales
+| Variable | Clair | Sombre | Utilisation |
+|----------|-------|--------|-------------|
+| `--card-image-bg` | `#ffffff` | `#2e2820` | Fond des miniatures image dans BottleCard et BottleDetail |
 
 ### Principaux Composants
 | Composant | Rôle |
 |-----------|------|
-| `BottleCard` | Carte vin dans liste (grid/list) |
+| `BottleCard` | Carte vin dans liste (grid/list) — fond image blanc, fond info crème |
 | `BottleSidebar` | Sidebar cave avec drag & drop |
 | `BottlePreview` | Tooltip hover sur bouteille cave |
 | `WineTypeSelector` | Sélecteur type de vin avec icons |
@@ -288,17 +303,24 @@ Le switcher de thème se trouve dans le **menu burger** de `App.vue` (en bas du 
 | `MoveBottleModal` | Modal de déplacement bouteille physique |
 | `RemovePositionModal` | Modal de retrait position cave |
 
-### Thème visuel (GitHub Dark)
+### MapView — Carte interactive
+- **Leaflet.js** avec `fitBounds` auto : cadrage sur tous les marqueurs au chargement
+- **Pane dédié** `markers-pane` (z-index 650) : les marqueurs restent visibles au zoom
+- **FlyTo** fluide : animation `flyToBounds` et `flyTo` pour transitions douces
+- **Bouton "Tout voir"** : recentre sur tous les marqueurs depuis la sidebar ou la carte
+- **Géocodage Nominatim** : fallback pour régions inconnues (rate-limité 1.1s)
+
+### Thème visuel (Champagne Elegant - défaut)
 | Couleur | Hex | Utilisation |
 |---------|-----|-------------|
-| Background | `#0d1117` | Fond principal |
-| Surface | `#161b22` | Cards, modals |
-| Border | `#30363d` | Bordures |
-| Text | `#c9d1d9` | Texte principal |
-| Text muted | `#8b949e` | Labels, secondaire |
-| Accent | `#58a6ff` | Liens, focus |
-| Success | `#238636` | Boutons positifs |
-| Danger | `#f85149` | Erreurs, suppression |
+| Background | `#f5f3ee` | Fond principal crème |
+| Surface | `#ffffff` | Cards, modals |
+| Border | `#e3dfd4` | Bordures taupe clair |
+| Text | `#2d2926` | Texte principal (gris très chaud) |
+| Text muted | `#b8b0a8` | Labels, secondaire |
+| Accent | `#c5a265` | Boutons, liens, focus (doré champagne) |
+| Success | `#3a6b52` | Boutons positifs (vert bouteille) |
+| Danger | `#c44542` | Erreurs, suppression (rouge brique) |
 
 ---
 
@@ -333,6 +355,19 @@ Le switcher de thème se trouve dans le **menu burger** de `App.vue` (en bas du 
 
 ## ✅ Fonctionnalités Récentes (Derniers commits)
 
+### `108622a` - feat: add champagne themes, responsive UI fixes, map fitBounds, and backend consume endpoint
+- **Thèmes** : Remplacement des 4 thèmes legacy par **2 thèmes Champagne** (Clair + Sombre)
+- **Branding** : Titre "Pinaar" avec font Google **Beth Ellen** dans header + login
+- **CardView** : Zone image en fond blanc (`--card-image-bg`), zone info en `--bg-primary`
+- **Responsive** : Cellules cave agrandies, boutons +/- accessibles, filtres scrollables, images compactes
+- **Map** : `fitBounds` automatique, pane markers au-dessus des tiles (fix zoom), bouton "Tout voir"
+- **Backend** : Nouvel endpoint `POST /positions/{id}/consume` pour consommer depuis la cave
+- **Divers** : `useTheme.js` key `pinarr-theme-v2`, phase "Jeunesse" lisible en clair `#3a6b52`
+
+### `5875a84` - fix(qr-labels): inject frontend URL in single label + preserve X-Forwarded headers
+### `870983e` - fix(ci): build frontend natively with BUILDPLATFORM for multi-arch
+### `72ea1cd` - fix(qr-labels): auto frontend URL + bigger bold footer
+### `8d48c6b` - fix(labels): increase font sizes for readability (year 30pt, name 20pt, phases 15pt, footer 15pt)
 ### `f583a6e` - feat: Ajout du système QR code par bouteille physique
 - Création table `physical_bottles` (Alembic migration 003)
 - Chaque bouteille physique a un QR code unique (8 chars)
@@ -340,33 +375,6 @@ Le switcher de thème se trouve dans le **menu burger** de `App.vue` (en bas du 
 - Scan QR public sans authentification
 - Tracking : acquisition, consommation, déplacement
 - Séparation quantity (total) vs cellar_count (en cave)
-
-### `8deec51` - fix(BottleSidebar): correct remaining to place
-- Correction du calcul des bouteilles restant à placer
-- Masquage des vins avec stock 0
-
-### `acdcdae` - v0.3.1 - Bug fixes and new features
-- Import image depuis URL externe
-- Corrections diverses
-
-### `7f1d7b7` - fix: add migration 002 for phase columns
-- Migration Alembic ajoutant `jeunesse_end`, `maturite_end`, `apogee_end`
-
-### `d9a2882` - feat: add wine development phases
-- Système de phases du vin : Jeunesse → Maturité → Apogée → Déclin
-- Timeline visuelle interactive
-- Filtres par phase dans la liste
-
-### `46f0285` - feat: gestion automatique du retrait des positions
-- Modal pour sélectionner quelles positions retirer quand quantity diminue
-
-### `1865d64` - feat: support des photos mobiles avec compression HEIC
-- Upload HEIC/HEIF converti automatiquement
-- Capture caméra mobile supportée
-- Compression WebP côté backend ET frontend
-
-### `ca70fee` - ui: optimise sélecteur de type de vin
-- Nouveau composant visuel pour sélectionner le type
 
 ---
 
@@ -410,151 +418,58 @@ npm run dev                           # http://localhost:5173
 
 ## 📝 État Actuel du Projet
 
-### Derniers commits sur `feature/qr-code-system`
+### Derniers commits sur `main`
 ```
+108622a feat: add champagne themes, responsive UI fixes, map fitBounds, and backend consume endpoint
+5875a84 fix(qr-labels): inject frontend URL in single label + preserve X-Forwarded headers
+870983e fix(ci): build frontend natively with BUILDPLATFORM for multi-arch
+72ea1cd fix(qr-labels): auto frontend URL + bigger bold footer
+8d48c6b fix(labels): increase font sizes for readability
 f583a6e feat: Ajout du système QR code par bouteille physique
-8deec51 fix(BottleSidebar): correct remaining to place calculation
-acdcdae v0.3.1 - Bug fixes and new features
-7f1d7b7 fix: add migration 002 for phase columns
 ```
 
-### Fichiers actuellement modifiés / en cours (session 2026-04-22)
-- `context.md` (présent, mis à jour)
-- `backend/main.py` — Middleware auth (`public_paths`, `OPTIONS`, imports consolidés)
-- `backend/models.py` — `cascade="all, delete-orphan"`, nettoyage commentaires
-- `backend/services/bottle_service.py` — `patch_bottle` null-safe, `validate_bottle_placement` compte reel, factorisation sérialisation
-- `backend/services/cave_service.py` — `update_row` protège positions occupées, `create_row` transaction atomique
-- `backend/services/physical_bottle_service.py` — `PinarrException` au lieu de `Exception`
-- `backend/services/__init__.py` — Exports complets
-- `backend/entrypoint.sh` — `chmod 755`
-- `entrypoint.sh` — Vérifié
-- `frontend/src/App.vue` — Suppression import inutilisé + `console.log`
+### Fichiers modifiés dans cette session (2026-05-03) — session initiale
+- `frontend/src/styles/variables.css` — Thèmes Champagne Clair/Sombre, suppression des 4 legacy
+- `frontend/src/composables/useTheme.js` — Défaut `champagne`, toggle 2 thèmes, key `pinarr-theme-v2`
+- `frontend/src/App.vue` — Header "Pinaar" Beth Ellen, menu burger 2 thèmes (Clair/Sombre)
+- `frontend/index.html` — Import Google Fonts "Beth Ellen", title "Pinaar"
+- `frontend/src/components/WinePhaseBadge.vue` — Nettoyage thèmes legacy, phases pastel
+- `frontend/src/components/WinePhaseTimeline.vue` — Variables `--phase-*` au lieu d'accents fixes
+- `frontend/src/components/BottleCard.vue` — `--card-image-bg` pour fond image, responsive touch
 - `frontend/src/components/BottleSidebar.vue` — `cellar_quantity`, `.slice().sort()`
-- `frontend/src/views/BottleDetail.vue` — Grille bouteilles physiques + téléchargement PDF individuel/batch ZIP
-- `frontend/src/views/ScanResultView.vue` — `scanQrCode()` au lieu de redirect après retrait
-- `frontend/src/views/BottleList.vue` — `getBottlePhase` null-safe, filtres `cellar_quantity`
-- `frontend/src/views/CaveView.vue` — Map `bottleAtPositionMap` O(1), `try/catch` drag, rollback complet
-- `frontend/src/router/guards.js` — Routes `/bottle/*` ajoutées aux publiques
-- `frontend/src/router/index.js` — Suppression `beforeEnter: publicGuard` sur `/bottle/:qrCode`
-- `frontend/src/services/qrService.js` — `getQrUrl` URL publique frontend
+- `frontend/src/views/MapView.vue` — `fitBounds`, pane markers, `invalidateSize`, ref mapContainer
+- `frontend/src/views/BottleList.vue` — Filtres scrollables, phases variables CSS
+- `frontend/src/views/BottleDetail.vue` — `--card-image-bg` zone image, tableau scrollable
+- `frontend/src/views/CaveView.vue` — Cellules agrandies, icônes visibles
+- `frontend/src/views/ScanResultView.vue` — Image compacte
+- `frontend/src/views/LoginView.vue` — Titre "Pinaar" Beth Ellen
+- `frontend/tailwind.config.js` — Ajout `gh-card-image`
+- `backend/services/cave_service.py` — `consume_bottle_from_position()`
+- `backend/services/__init__.py` — Export `consume_bottle_from_position`
+- `backend/main.py` — Route `POST /positions/{position_id}/consume`
+- `backend/services/bottle_service.py` — Fix `_sync_physical_bottles` mark consumed au lieu de delete
 
-### Corrections — Session 2026-04-21 (Partie 1)
-Corrections liées à la migration Alembic 003 (système QR) sur les 17 bugs originaux :
-
-| # | Bug | Fichier | Type |
-|---|-----|---------|------|
-| 1 | `Position.bottle_at_position` absente (relationship inexistante) | `models.py` | Backend |
-| 2 | `get_positions_for_row` utilisait `joinedload(bottle_at_position)` inexistant | `cave_service.py` | Backend |
-| 3 | `assign_bottle_to_position` assignait `bottle_id` sur colonne supprimée | `cave_service.py` | Backend |
-| 4 | `remove_bottle_from_position` utilisait `bottle_id` | `cave_service.py` | Backend |
-| 5 | `validate_bottle_placement` filtrait sur `Position.bottle_id` (inexistant) | `bottle_service.py` | Backend |
-| 6 | `get_bottles_with_positions` / `get_bottle_with_position` jointures cassées | `bottle_service.py` | Backend |
-| 7 | `datetime` importé au fond de `physical_bottle_service.py` (NameError) | `physical_bottle_service.py` | Backend |
-| 8 | Endpoint `/check-duplicate` retournait `{"results":[]}` au lieu de `{"matches":[]}` | `main.py` | Backend |
-| 9 | `PhysicalBottle` manquant dans `create_db_tables()` | `database.py` | Backend |
-| 10 | `get_caves` / `get_cave` ne chargeaient pas `PhysicalBottle` (caves affichées vides) | `cave_service.py` | Backend |
-| 11 | Compteur positions occupées dans CaveList utilisait `bottle_id` | `CaveList.vue` | Frontend |
-| 12 | `moveBottleLocally` assignait `bottle_id` au lieu de `physical_bottle_id` | `CaveView.vue` | Frontend |
-| 13 | `useQuantityManager` non importé dans `AddBottle.vue` | `AddBottle.vue` | Frontend |
-| 14 | `b.location` inexistant dans le filtre recherche `BottleList.vue` | `BottleList.vue` | Frontend |
-| 15 | QR URL `App.vue` pointait vers `/wine/{id}` (protégé, scan impossible) | `App.vue` | Frontend |
-| 16 | QR URL `BottleDetail.vue` pointait vers `/bottle/{id_conceptuel}` | `BottleDetail.vue` | Frontend |
-| 17 | `cellarCount` comptait toutes les physical_bottles, même sans position | `BottleDetail.vue` | Frontend |
-
-### Corrections — Session 2026-04-21 (Partie 2)
-Nouveaux bugs découverts et corrigés durant le test du conteneur dev :
-
-| # | Bug | Fichier | Type |
-|---|-----|---------|------|
-| 18 | Cycle de FK croisée `physical_bottles.position_id` ↔ `positions.physical_bottle_id` → `AmbiguousForeignKeysError` | `models.py` + migration 004 | Backend |
-| 19 | `Base.metadata.create_all()` dans `entrypoint.sh` forçait la création AVANT les migrations Alembic | `entrypoint.sh` | Backend |
-| 20 | `create_bottle()` ne générait pas automatiquement les `PhysicalBottle` | `bottle_service.py` | Backend |
-| 21 | `get_bottles_with_positions` / `get_bottle_with_position` ne retournaient pas `physical_bottles` ni `cellar_quantity` | `bottle_service.py` | Backend |
-| 22 | `assign_bottle_to_position` utilisait encore `db_position.physical_bottle_id` (colonne retirée) | `cave_service.py` | Backend |
-| 23 | `remove_physical_bottle` / `move_physical_bottle` utilisaient `position.physical_bottle_id` | `physical_bottle_service.py` | Backend |
-| 24 | `BottleList.vue` filtrait sur `bottle.quantity` au lieu de `bottle.physical_bottles.length` | `BottleList.vue` | Frontend |
-| 25 | `BottleSidebar.vue` filtrait sur `quantity` au lieu de `physical_bottles.length` | `BottleSidebar.vue` | Frontend |
-| 26 | `WinePhaseBadge.vue` avait un bloc CSS mal formé (`--phase-*` sans sélecteur `:root`) | `WinePhaseBadge.vue` | Frontend |
-| 27 | URL QR dans les étiquettes pointait vers `/api/v1/bottle/{qr}` (route protégée) au lieu de `/bottle/{qr}` (publique) | `QrLabelPrinter.vue` | Frontend |
-| 28 | Phases sur étiquettes QR : `apogee_start` inexistant au lieu de `maturite_end` | `QrLabelPrinter.vue` | Frontend |
-| 29 | `validate_bottle_placement` non exporté dans `services/__init__.py` → backend ne démarrait pas | `services/__init__.py` | Backend |
-| 30 | `main.py` : imports de services caves/physical_bottles manquants après l'ajout de `validate_bottle_placement` | `main.py` | Backend |
-| 31 | Schema `BottleBase` ne contenait pas `quantity` → stats `totalBottles`/`totalValue` à 0 | `schemas.py` | Backend |
-| 32 | `App.vue` stats utilisaient `b.quantity` au lieu de `b.cellar_quantity` | `App.vue` | Frontend |
-
-### Audit Complet — 2026-04-22 (TODO future session)
-
-Générée après revue exhaustive backend + frontend. Chaque ligne est actionnable.
-
-#### 🔴 CRITICAL — Backend crash ou fonctionnalité cassée (TOUS CORRIGÉS ✅)
-
-| # | Fichier | Ligne | Problème | Statut |
-|---|---------|-------|----------|--------|
-| C1 | `backend/models.py` | 36-40 | `apogee_end` dupliqué dans `Bottle` → crash SQLAlchemy | ✅ Corrigé |
-| C2 | `backend/schemas.py` | 18-22 | `apogee_end` dupliqué dans `BottleBase` → crash Pydantic | ✅ Corrigé |
-| C3 | `backend/main.py` | ~101-121 | Route publique `/bottle/{qr}` **protégée** par middleware auth | ✅ Corrigé |
-| C4 | `backend/main.py` | ~357 | `create_position` appelée mais **non importée** | ✅ Corrigé |
-| C5 | `backend/main.py` | ~89 | `OPTIONS` (CORS preflight) interceptés par middleware → 401 | ✅ Corrigé |
-| C6 | `frontend/src/views/BottleList.vue` | 364-367 | Filtre « En cave / Historique » sur `physical_bottles.length` inclut `consumed` | ✅ Corrigé |
-| C7 | `frontend/src/components/QrLabelPrinter.vue` | 84 | CSS print : `body * { visibility:hidden }` cache **tous** les enfants même avec `!important visible` | ✅ Corrigé (popup d'impression)
-
-#### 🟠 HIGH — Bugs utilisateur majeurs (TOUS CORRIGÉS ✅)
-
-| # | Fichier | Ligne | Problème | Statut |
-|---|---------|-------|----------|--------|
-| H1 | `backend/services/cave_service.py` | 291-302 | `assign_bottle_to_position` silencieux si plus de `PhysicalBottle` libre | ✅ Laissé tel (validation par caller, comportement correct) |
-| H2 | `backend/services/cave_service.py` | 189-198 | `update_row` supprime/recrée toutes les `Position` si dimensions changent → placements perdus | ✅ Bloque si positions occupées |
-| H3 | `backend/services/bottle_service.py` | 217 | `patch_bottle` saute les valeurs `None` → impossible de vider un champ | ✅ Supprimé `if value is not None` |
-| H4 | `backend/services/bottle_service.py` | 237-264 | `validate_bottle_placement` repose sur `quantity` (null possible) → `TypeError` | ✅ Compte `PhysicalBottle` réellement en stock |
-| H5 | `backend/services/physical_bottle_service.py` | 222 | `move_physical_bottle` lève `raise Exception(...)` brute | ✅ `PinarrException` |
-| H6 | `frontend/src/App.vue` | 177-212 | `updateQuantity` modifie `quantity` sans créer/supprimer `PhysicalBottle` | ⚠️ Complexe — nécessite refonte UI + API |
-| H7 | `frontend/src/services/qrService.js` | 70 | `getQrUrl()` retourne **URL API** au lieu de **URL frontend** | ✅ `window.location.origin` |
-| H8 | `frontend/src/components/BottleSidebar.vue` | 105-151 | Filtre sur `physical_bottles.length` au lieu de `cellar_quantity` | ✅ `cellar_quantity` |
-| H9 | `frontend/src/views/CaveView.vue` | 62-73 | `getBottleAtPosition` = O(n⁴) dans le DOM | ✅ Map précalculée |
-| H10 | `frontend/src/views/CaveView.vue` | 346 | Rollback optimiste partiel | ✅ `fetchCave()` + `fetchBottles()` complet |
-
-#### 🟡 MEDIUM — Dette technique / edge cases (TOUS CORRIGÉS ✅)
-
-| # | Fichier | Ligne | Problème | Statut |
-|---|---------|-------|----------|--------|
-| M1 | `backend/models.py` | 50 | `Bottle.physical_bottles` sans cascade | ✅ `cascade="all, delete-orphan"` |
-| M2 | `backend/services/physical_bottle_service.py` | 137 | Génération QR : race condition possible | ⚠️ Accepté pour volumes Pinarr (contrainte DB unique) |
-| M3 | `backend/services/physical_bottle_service.py` | 104-134 | `get_bottle_physical_bottles` construit dicts manuellement | ⚠️ Format API spécifique, laissé tel |
-| M4 | `backend/services/cave_service.py` | 160 | `create_row` sans transaction | ✅ `db.begin()` |
-| M5 | `frontend/src/views/CaveView.vue` | 434 | `swap` non atomique côté backend | ⚠️ Nécessite endpoint dédié, laissé en note |
-| M6 | `frontend/src/views/CaveView.vue` | 232 | `handleDrop` `JSON.parse` sans `try/catch` | ✅ Wrappé |
-| M7 | `frontend/src/views/BottleList.vue` | 239 | `getBottlePhase` : NaN si `year` null | ✅ Early return |
-| M8 | `frontend/src/views/BottleList.vue` | 210 | `hasTextFilters` oublie `color` et `phase` | ✅ Ajouté |
-| M9 | `frontend/src/App.vue` | 315 | `totalBottles` / `totalValue` calcul sur `bottles.value` vide | ✅ Corrigé upstream via `cellar_quantity` / `quantity` |
-
-#### 🟢 LOW — Code smells / optimisations (TOUS CORRIGÉS ✅)
-
-| # | Bug | Fichier | Statut |
-|---|-----|---------|--------|
-| L1 | `Position.bottle_id` @property compatibilité | `models.py` | ✅ Propriété correcte |
-| L2 | `chmod 777` trop permissif | `backend/entrypoint.sh` | ✅ `chmod 755` |
-| L3 | Script Python inline → fichier séparé | `entrypoint.sh` | ⚠️ Amélioration future |
-| L4 | Duplication sérialisation | `bottle_service.py` | ✅ Factorisé (`_serialize_bottle`, etc.) |
-| L5 | `console.log` exposant `newUsername` | `App.vue` | ✅ Supprimé |
-| L6 | Import inutilisé `useQuantityManager` | `App.vue` | ✅ Supprimé |
-| L7 | `.sort()` mutating sur computed | `BottleSidebar.vue` | ✅ `.slice().sort()` |
+### Fixes post-session (non commit — prêts à push)
+- `backend/services/cave_service.py` — **Issue #2** : Fix transaction SQLAlchemy `db.begin()` conflit dans `create_row()` → remplacé par `db.commit()` direct
+- `frontend/src/views/BottleDetail.vue` — **Issue #1** : Fix routing cave `cave_name` → `cave_id` dans `goToCaveFromPhysicalBottle()`
+- `docker-compose.yml` — Revert à `ghcr.io/jjllrrvvrr/pinarr:latest` (image prod)
+- `context.md` — Mise à jour de l'état du projet
 
 ---
 
-### Prochaines étapes connues (/TODO)
+## 🔴 TODO Restant
 
-**🔴 URGENT — Bugs connus restants à corriger / vérifier :**
-- [ ] **Déconnexion** : "Quitter" dans App.vue ne fonctionne pas
-- [ ] **Statistiques** : `totalBottles` / `totalValue` ne sont pas rafraîchies en temps réel
-- [ ] **QR codes** : Vérifier scan physique mobile (redirection corrigée)
-- [x] **QR public** : Route `/bottle/:qrCode` ne redirige plus vers /login ✅
-- [ ] **Thème** : Passage de thème ne persiste pas après reload
-- [x] **PDF** : Génération PDF côté backend avec ReportLab (polices Montserrat/NunitoSans embarquées, toutes les phases affichées en gras) ✅
+### Bugs connus
+- [ ] Déconnexion : "Quitter" dans App.vue ne fonctionne pas toujours
+- [ ] Statistiques : `totalBottles` / `totalValue` ne sont pas rafraîchies en temps réel après updateQuantity
+- [ ] CaveView drag & drop : `swap` non atomique côté backend (nécessite endpoint dédié)
 
-**🟡 À planifier :**
-- Endpoint `POST /positions/swap` atomique côté backend (M5)
-- Refonte `updateQuantity` dans App.vue pour créer/supprimer `PhysicalBottle` (H6)
-- Migration script init admin inline vers fichier séparé (L3)
+### Améliorations planifiées
+- [ ] Refonte `updateQuantity` dans App.vue pour créer/supprimer `PhysicalBottle` en temps réel
+- [ ] Migration script init admin inline vers fichier séparé
+- [ ] Endpoint `POST /positions/swap` atomique côté backend
+- [ ] Vérifier scan physique mobile après changements de routing
+
 ---
 
 ## 🚨 Points d'attention critiques
@@ -565,6 +480,7 @@ Générée après revue exhaustive backend + frontend. Chaque ligne est actionna
 4. **Upload** : Toutes les images sont converties en WebP 85%, max 1920px
 5. **Migrations** : `alembic upgrade head` est l'unique point d'entrée pour le schéma. Plus de `create_db_tables()` au boot.
 6. **Single User** : Le système est actuellement conçu pour un seul utilisateur admin (is_admin=True par défaut)
+7. **Thèmes** : Seuls 2 thèmes existent (`champagne` et `champagne-dark`). Les thèmes legacy (`dark`, `light`, `red-wine`, `green-nature`) ont été supprimés du CSS et du menu.
 
 ---
 
@@ -572,31 +488,7 @@ Générée après revue exhaustive backend + frontend. Chaque ligne est actionna
 
 > **PRINCIPE** : Alembic est la seule source de vérité pour le schéma. Le `create_db_tables()` traditionnel est remplacé par un `db_bootstrap.py` intelligent.
 
-### Problème à résoudre
-- `create_db_tables()` dans `main.py` crée le schéma en silence, sans informer Alembic.
-- `alembic upgrade head` dans `entrypoint.sh` suppose une DB "jamais touchée" et crashe si les tables existent déjà (ex: installation fraîche, ou copie de prod).
-
-### Plan : Mode "Alembic Only"
-
-#### 1. `db_bootstrap.py` — Démarrage universel
-- Créé dans `backend/db_bootstrap.py`.
-- **Détecte** l'état : DB vide, legacy (sans `alembic_version`), ou versionnée.
-- **Agit** :
-  - DB vide → `create_db_tables()` puis `alembic stamp 004`.
-  - Legacy → `alembic stamp 002/003/004` (détection auto) puis `alembic upgrade head`.
-  - Versionnée → `alembic upgrade head` classique.
-
-#### 2. Modifications des migrations existantes
-  - **002** (phases) : rendu idempotent (vérifie `PRAGMA table_info` avant `op.add_column`).
-  - **003** (physical_bottles) : rendu idempotent + table reconstruction SQLite.
-  - **004** (cleanup) : table reconstruction manuelle SQLite (évite `DROP COLUMN` + FK).
-  - **005** (users) : ajoute la table `users` manquante en prod (legacy DB only).
-
-#### 3. Modifications des fichiers de lancement
-- **`entrypoint.sh`** : appelle `python3 /app/backend/db_bootstrap.py` au lieu de `alembic upgrade head`.
-- **`main.py`** : supprimer `create_db_tables()` au boot (non idempotent).
-
-#### 4. Procédure pour futures migrations
+### Procédure pour futures migrations
 ```bash
 # Modifier models.py (ajouter colonne/table)
 # Générer automatiquement
@@ -606,17 +498,6 @@ alembic revision --autogenerate -m "ajout_colonne_xyz"
 # Commit + push
 ```
 **Nouvelles migrations (005+) n'ont PAS besoin d'idempotence** car Alembic maîtrise le point de départ.
-
----
-
----
-
-## 🔄 Historique des modifications du context.md
-
-| Date | Modification |
-|------|-------------|
-| 2025-04-21 (init) | Création du fichier avec architecture, modèles, API, composants |
-| 2025-04-21 (update) | Ajout état projet, repo GitHub, fichiers en cours, TODO |
 
 ---
 

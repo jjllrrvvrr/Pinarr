@@ -153,21 +153,22 @@ def create_row(
         height=row.height,
         order=row.order or 0,
     )
-    # Transaction atomique
-    with db.begin():
-        db.add(db_row)
-        db.flush()
-        db.refresh(db_row)
+    # Transaction atomique (sans db.begin, déjà ouverte par FastAPI)
+    db.add(db_row)
+    db.flush()
+    db.refresh(db_row)
 
-        # Créer automatiquement les positions
-        positions_to_create = []
-        for line in range(1, row.height + 1):
-            for pos in range(1, row.width + 1):
-                positions_to_create.append(
-                    models.Position(row_id=db_row.id, line=line, position=pos)
-                )
+    # Créer automatiquement les positions
+    positions_to_create = []
+    for line in range(1, row.height + 1):
+        for pos in range(1, row.width + 1):
+            positions_to_create.append(
+                models.Position(row_id=db_row.id, line=line, position=pos)
+            )
 
-        db.add_all(positions_to_create)
+    db.add_all(positions_to_create)
+    db.commit()
+    db.refresh(db_row)
 
     return db_row
 

@@ -442,9 +442,9 @@ const formatDate = (dateStr) => {
 
 // Route vers la cave via les infos de la bouteille physique
 const goToCaveFromPhysicalBottle = (pb) => {
-  // La position complète est dans pb avec cave_name, column_name, row_name
-  if (pb.cave_name) {
-    router.push(`/caves/${encodeURIComponent(pb.cave_name.toLowerCase().replace(/\s+/g, '-'))}`)
+  // Utilise cave_id (nombre) pour le routing, pas cave_name
+  if (pb.cave_id) {
+    router.push(`/caves/${pb.cave_id}`)
   }
 }
 
