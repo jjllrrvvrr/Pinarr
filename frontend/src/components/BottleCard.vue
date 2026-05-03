@@ -8,10 +8,10 @@
     @click="goToDetail"
   >
     <template v-if="viewMode === 'grid'">
-      <div class="w-16 sm:w-20 lg:w-24 h-[100px] sm:h-[120px] lg:h-[149px] flex-shrink-0 bg-gh-bg flex items-center justify-center overflow-hidden rounded-l-md border-r border-gh-border relative">
+      <div class="w-16 sm:w-20 lg:w-24 h-[100px] sm:h-[120px] lg:h-[149px] flex-shrink-0 bg-gh-card-image flex items-center justify-center overflow-hidden rounded-l-md border-r border-gh-border relative">
         <img v-if="bottle.image_path" :src="getImageUrl(bottle.image_path)" :alt="bottle.name" class="w-full h-[80px] sm:h-[100px] lg:h-[120px] object-contain" />
         <WineBottleIcon v-else :type="bottle.type" :size="48" class="sm:w-[60px]" />
-        <span v-if="archived" class="absolute top-1 left-1 bg-gh-accent-red text-white text-[8px] px-1 rounded">Épuisé</span>
+        <span v-if="archived" class="absolute top-1 left-1 bg-gh-accent-red text-gh-text-inverse text-[8px] px-1 rounded">Épuisé</span>
       </div>
 
       <div class="flex-1 flex flex-col min-w-0">
@@ -48,22 +48,22 @@
           <div class="flex flex-wrap gap-0.5 sm:gap-1 flex-1 min-w-0">
             <span v-for="tag in bottle.tags?.split(',').slice(0,2)" :key="tag"
                   @click.stop="$emit('filter', 'tag', tag.trim())"
-                  class="text-[8px] sm:text-[10px] px-1 sm:px-1.5 py-0.5 rounded text-gh-text-secondary bg-gh-elevated hover:text-gh-accent-pink transition cursor-pointer truncate">
+                  class="text-[8px] sm:text-[10px] px-1 sm:px-1.5 py-0.5 rounded text-gh-text-secondary bg-gh-bg hover:text-gh-accent-pink transition cursor-pointer truncate">
               {{ tag.trim() }}
             </span>
           </div>
 
-          <div class="flex items-center gap-0.5 sm:gap-1" @click.stop>
+           <div class="flex items-center gap-1" @click.stop>
             <button @click="decrement" 
-                    class="w-4 sm:w-5 h-4 sm:h-5 flex items-center justify-center text-gh-text-secondary hover:text-gh-text hover:bg-gh-elevated rounded text-xs transition">−</button>
-            <span class="w-3 sm:w-4 text-center text-gh-text font-bold text-xs">{{ bottle.quantity }}</span>
+                    class="w-8 h-8 sm:w-5 sm:h-5 flex items-center justify-center text-gh-text-secondary hover:text-gh-text hover:bg-gh-elevated rounded text-sm sm:text-xs transition">−</button>
+            <span class="w-4 sm:w-4 text-center text-gh-text font-bold text-sm sm:text-xs">{{ bottle.quantity }}</span>
             <button @click="increment" 
-                    class="w-4 sm:w-5 h-4 sm:h-5 flex items-center justify-center text-gh-text-secondary hover:text-gh-text hover:bg-gh-elevated rounded text-xs transition">+</button>
+                    class="w-8 h-8 sm:w-5 sm:h-5 flex items-center justify-center text-gh-text-secondary hover:text-gh-text hover:bg-gh-elevated rounded text-sm sm:text-xs transition">+</button>
           </div>
 
           <div class="flex flex-col items-end">
             <span v-if="bottle.price" class="text-gh-accent-green-text font-bold text-xs">{{ bottle.price }}€</span>
-            <span v-if="bottle.rating" class="flex items-center gap-0.5 text-gh-accent-gold text-[8px] sm:text-[10px]">
+            <span v-if="bottle.rating" class="flex items-center gap-0.5 text-gh-accent-gold text-[10px] sm:text-[10px]">
               <StarSolid class="w-2 h-2 sm:w-2.5 sm:h-2.5" /> {{ bottle.rating }}/5
             </span>
           </div>
@@ -83,10 +83,10 @@
     </template>
 
     <template v-else>
-      <div class="w-10 sm:w-12 h-10 sm:h-12 flex-shrink-0 bg-gh-bg flex items-center justify-center overflow-hidden rounded-l relative">
+      <div class="w-10 sm:w-12 h-10 sm:h-12 flex-shrink-0 bg-gh-card-image flex items-center justify-center overflow-hidden rounded-l relative">
         <img v-if="bottle.image_path" :src="getImageUrl(bottle.image_path)" :alt="bottle.name" class="w-full h-full object-cover" />
         <WineBottleIcon v-else :type="bottle.type" :size="20" class="sm:w-6" />
-        <span v-if="archived" class="absolute top-0 left-0 bg-gh-accent-red text-white text-[6px] px-0.5 rounded-br">0</span>
+        <span v-if="archived" class="absolute top-0 left-0 bg-gh-accent-red text-gh-text-inverse text-[6px] px-0.5 rounded-br">0</span>
       </div>
       <div class="flex-1 min-w-0 px-2 sm:px-3">
         <div class="flex items-center gap-1 sm:gap-2">
@@ -99,11 +99,11 @@
           <span v-if="bottle.location" class="hidden sm:inline">→ {{ bottle.location }}</span>
         </div>
       </div>
-      <div class="flex items-center gap-2 sm:gap-3 pr-2 sm:pr-3" @click.stop>
-        <div class="flex items-center gap-0.5 sm:gap-1">
-          <button @click="decrement" class="w-4 sm:w-5 h-4 sm:h-5 flex items-center justify-center text-gh-text-secondary hover:text-gh-text transition text-xs">−</button>
-          <span class="w-4 sm:w-5 text-center text-gh-text font-mono text-xs sm:text-sm">{{ bottle.quantity }}</span>
-          <button @click="increment" class="w-4 sm:w-5 h-4 sm:h-5 flex items-center justify-center text-gh-text-secondary hover:text-gh-text transition text-xs">+</button>
+      <div class="flex items-center gap-1 sm:gap-3 pr-2 sm:pr-3" @click.stop>
+        <div class="flex items-center gap-1">
+          <button @click="decrement" class="w-8 h-8 sm:w-5 sm:h-5 flex items-center justify-center text-gh-text-secondary hover:text-gh-text transition text-sm sm:text-xs">−</button>
+          <span class="w-4 text-center text-gh-text font-mono text-sm sm:text-sm">{{ bottle.quantity }}</span>
+          <button @click="increment" class="w-8 h-8 sm:w-5 sm:h-5 flex items-center justify-center text-gh-text-secondary hover:text-gh-text transition text-sm sm:text-xs">+</button>
         </div>
         <span v-if="bottle.price" class="text-gh-accent-green-text text-xs sm:text-sm font-mono">{{ bottle.price }}€</span>
       </div>

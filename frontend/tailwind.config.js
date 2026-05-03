@@ -14,6 +14,7 @@ export default {
         'gh-elevated': 'var(--bg-elevated)',
         'gh-header': 'var(--bg-header)',
         'gh-overlay': 'var(--bg-overlay)',
+        'gh-card-image': 'var(--card-image-bg)',
         
         // Bordures
         'gh-border': 'var(--border-default)',

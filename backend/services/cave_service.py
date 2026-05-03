@@ -190,12 +190,15 @@ def update_row(db: Session, row_id: int, row: schemas.CaveRowCreate) -> models.C
     if row.width != old_width or row.height != old_height:
         # Vérifier s'il y a des positions occupées
         from sqlalchemy import exists
-        occupied = db.query(models.Position).filter(
-            models.Position.row_id == row_id,
-            exists().where(
-                models.PhysicalBottle.position_id == models.Position.id
+
+        occupied = (
+            db.query(models.Position)
+            .filter(
+                models.Position.row_id == row_id,
+                exists().where(models.PhysicalBottle.position_id == models.Position.id),
             )
-        ).count()
+            .count()
+        )
         if occupied > 0:
             raise Exception(
                 f"Impossible de modifier les dimensions : {occupied} position(s) occupée(s). "
@@ -236,8 +239,9 @@ def get_positions_for_row(db: Session, row_id: int) -> List[models.Position]:
     return (
         db.query(models.Position)
         .options(
-            joinedload(models.Position.physical_bottle)
-            .joinedload(models.PhysicalBottle.bottle)
+            joinedload(models.Position.physical_bottle).joinedload(
+                models.PhysicalBottle.bottle
+            )
         )
         .filter(models.Position.row_id == row_id)
         .all()
@@ -323,16 +327,36 @@ def assign_bottle_to_position(
 
 
 def remove_bottle_from_position(db: Session, position_id: int) -> None:
-    """Retire une bouteille d'une position."""
+    """Retire une bouteille d'une position (bouteille devient non placée mais reste en cave en stock)."""
     db_position = (
         db.query(models.Position).filter(models.Position.id == position_id).first()
     )
     if not db_position:
         raise PositionNotFoundException(f"Position {position_id} not found")
 
-    # Libérer la bouteille physique si présente
+    # Libérer la position mais garder la bouteille en stock
     if db_position.physical_bottle:
         db_position.physical_bottle.position_id = None
+
+    db.add(db_position)
+    db.commit()
+
+
+def consume_bottle_from_position(db: Session, position_id: int) -> None:
+    """Marque une bouteille en position comme consommée (historique)."""
+    from datetime import datetime
+
+    db_position = (
+        db.query(models.Position).filter(models.Position.id == position_id).first()
+    )
+    if not db_position:
+        raise PositionNotFoundException(f"Position {position_id} not found")
+
+    if db_position.physical_bottle:
+        pb = db_position.physical_bottle
+        pb.status = "consumed"
+        pb.removal_date = datetime.utcnow()
+        pb.position_id = None
 
     db.add(db_position)
     db.commit()

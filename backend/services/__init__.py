@@ -28,6 +28,7 @@ from .cave_service import (
     get_or_create_position,
     assign_bottle_to_position,
     remove_bottle_from_position,
+    consume_bottle_from_position,
 )
 
 from .physical_bottle_service import (
@@ -70,6 +71,7 @@ __all__ = [
     "get_or_create_position",
     "assign_bottle_to_position",
     "remove_bottle_from_position",
+    "consume_bottle_from_position",
     "get_physical_bottle_by_qr",
     "get_physical_bottle_with_details",
     "get_bottle_physical_bottles",

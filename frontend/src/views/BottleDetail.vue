@@ -14,8 +14,8 @@
         <!-- SECTION HAUT : Image + Header + Caractéristiques (2 colonnes sur sm+) -->
         <div class="flex flex-col sm:flex-row">
           <!-- Image à gauche -->
-          <div class="w-full sm:w-48 lg:w-64 flex-shrink-0 bg-gh-bg border-b sm:border-b-0 sm:border-r border-gh-border flex items-center justify-center">
-            <div class="sm:sticky sm:top-0 p-4 sm:p-6 flex items-center justify-center w-full h-full min-h-[200px] sm:min-h-[300px] lg:min-h-[500px]">
+          <div class="w-full sm:w-48 lg:w-64 flex-shrink-0 bg-gh-card-image border-b sm:border-b-0 sm:border-r border-gh-border flex items-center justify-center">
+            <div class="sm:sticky sm:top-0 p-4 sm:p-6 flex items-center justify-center w-full h-full min-h-[150px] sm:min-h-[250px] lg:min-h-[500px]">
               <div class="relative flex items-center justify-center w-full h-full">
                 <img v-if="bottle.image_path" :src="getImageUrl(bottle.image_path)" :alt="bottle.name" class="w-full h-full max-w-[150px] sm:max-w-[180px] lg:max-w-[200px] max-h-[250px] sm:max-h-[300px] lg:max-h-[350px] object-contain" />
                 <WineBottleIcon v-else :type="bottle.type" :size="100" class="sm:w-[120px] lg:w-[140px]" />
@@ -202,7 +202,7 @@
             </button>
           </div>
           <div class="overflow-x-auto border border-gh-border rounded-lg">
-            <table class="w-full text-sm text-left">
+            <table class="min-w-[500px] w-full text-sm text-left">
               <thead class="bg-gh-bg text-xs uppercase text-gh-text-secondary">
                 <tr>
                   <th class="px-3 py-2.5">Position</th>
@@ -228,27 +228,29 @@
                         {{ pb.cave_name }} → {{ pb.position_code }}
                       </button>
                       <span v-else class="text-gh-text-secondary text-xs italic">(non placée)</span>
-                      <span class="text-[10px] text-gh-text-secondary/70 font-mono">{{ pb.qr_code }}</span>
+                      <span class="text-[10px] sm:text-sm text-gh-text-secondary/70 font-mono truncate max-w-[200px]">{{ pb.qr_code }}</span>
                     </div>
                   </td>
                   <td class="px-3 py-2.5 text-gh-text-secondary text-xs whitespace-nowrap">
                     {{ formatDate(pb.acquisition_date) }}
                   </td>
                   <td class="px-3 py-2.5 text-right">
-                    <div class="inline-flex items-center gap-1">
+                    <div class="inline-flex items-center gap-2">
                       <button
                         @click="openQrPopup(pb)"
-                        class="p-1.5 text-gh-accent bg-gh-elevated hover:bg-gh-border border border-gh-border rounded-md transition"
+                        class="flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-gh-accent bg-gh-elevated hover:bg-gh-border border border-gh-border rounded-md transition text-sm"
                         title="Voir l'étiquette QR"
                       >
                         <QrCodeIcon class="w-4 h-4" />
+                        <span class="hidden sm:inline text-xs">QR</span>
                       </button>
                       <button
                         @click="showRemoveConfirm(pb)"
-                        class="p-1.5 text-gh-accent-red bg-gh-accent-red/10 hover:bg-gh-accent-red/20 border border-gh-accent-red/30 rounded-md transition"
+                        class="flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-gh-accent-red bg-gh-accent-red/10 hover:bg-gh-accent-red/20 border border-gh-accent-red/30 rounded-md transition text-sm"
                         title="Retirer (marquer comme consommée)"
                       >
                         <TrashIcon class="w-4 h-4" />
+                        <span class="hidden sm:inline text-xs">Retirer</span>
                       </button>
                     </div>
                   </td>

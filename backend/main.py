@@ -4,7 +4,15 @@ Pinarr API - Routes FastAPI refactorisées avec authentification.
 Ce module utilise une architecture en services pour une meilleure maintenabilité.
 """
 
-from fastapi import FastAPI, HTTPException, Depends, UploadFile, File, APIRouter, Request
+from fastapi import (
+    FastAPI,
+    HTTPException,
+    Depends,
+    UploadFile,
+    File,
+    APIRouter,
+    Request,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -44,6 +52,7 @@ from services import (
     create_position,
     assign_bottle_to_position,
     remove_bottle_from_position,
+    consume_bottle_from_position,
     # Physical bottle services
     get_physical_bottle_by_qr,
     get_physical_bottle_with_details,
@@ -404,10 +413,24 @@ def update_position(
 def remove_bottle_from_position_endpoint(
     position_id: int, db: Session = Depends(get_db)
 ):
-    """Retire une bouteille d'une position."""
+    """Retire une bouteille d'une position (libère la position)."""
     try:
         remove_bottle_from_position(db, position_id)
         return {"message": "Bottle removed from position"}
+    except Exception as e:
+        if "not found" in str(e).lower():
+            raise HTTPException(status_code=404, detail=str(e))
+        raise
+
+
+@api_router.post("/positions/{position_id}/consume")
+def consume_bottle_from_position_endpoint(
+    position_id: int, db: Session = Depends(get_db)
+):
+    """Consommer une bouteille depuis sa position (historique)."""
+    try:
+        consume_bottle_from_position(db, position_id)
+        return {"message": "Bottle consumed"}
     except Exception as e:
         if "not found" in str(e).lower():
             raise HTTPException(status_code=404, detail=str(e))
@@ -487,6 +510,7 @@ def scan_qr_code_endpoint(qr_code: str, db: Session = Depends(get_db)):
         raise
     except Exception as e:
         import traceback
+
         print(f"ERROR scan_qr: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Erreur serveur: {str(e)}")
 
@@ -504,6 +528,7 @@ def remove_physical_bottle_public_endpoint(
         raise
     except Exception as e:
         import traceback
+
         print(f"ERROR remove_qr: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Erreur serveur: {str(e)}")
 
@@ -546,7 +571,9 @@ def _get_frontend_url(request: Request) -> str:
     Supporte les reverse-proxies via X-Forwarded-*.
     """
     scheme = request.headers.get("x-forwarded-proto", request.url.scheme)
-    host = request.headers.get("x-forwarded-host", request.headers.get("host", "localhost"))
+    host = request.headers.get(
+        "x-forwarded-host", request.headers.get("host", "localhost")
+    )
     return f"{scheme}://{host}"
 
 
@@ -557,17 +584,17 @@ def download_batch_labels_endpoint(
     """Télécharge un ZIP avec toutes les étiquettes 3×5cm des bouteilles physiques en cave."""
     try:
         frontend_url = _get_frontend_url(request)
-        zip_bytes = generate_label_zip(
-            db, bottle_id, frontend_url=frontend_url
-        )
+        zip_bytes = generate_label_zip(db, bottle_id, frontend_url=frontend_url)
         if not zip_bytes:
-            raise HTTPException(status_code=404, detail="Aucune bouteille physique en cave")
+            raise HTTPException(
+                status_code=404, detail="Aucune bouteille physique en cave"
+            )
         return StreamingResponse(
             io.BytesIO(zip_bytes),
             media_type="application/zip",
             headers={
                 "Content-Disposition": f"attachment; filename=Etiquettes_{bottle_id}.zip"
-            }
+            },
         )
     except HTTPException:
         raise
@@ -575,8 +602,11 @@ def download_batch_labels_endpoint(
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         import traceback
+
         print(f"ERROR batch_labels: {e}\n{traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=f"Erreur génération étiquettes: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Erreur génération étiquettes: {str(e)}"
+        )
 
 
 @api_router.get("/bottles/{bottle_id}/physical-bottles/{qr_code}/label")
@@ -594,14 +624,17 @@ def download_single_label_endpoint(
             media_type="application/pdf",
             headers={
                 "Content-Disposition": f"attachment; filename=Etiquette_{qr_code}.pdf"
-            }
+            },
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         import traceback
+
         print(f"ERROR single_label: {e}\n{traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=f"Erreur génération étiquette: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Erreur génération étiquette: {str(e)}"
+        )
 
 
 # Inclure le router API principal

@@ -42,7 +42,9 @@ def _serialize_physical_bottle(pb: models.PhysicalBottle) -> Dict[str, Any]:
         "position_code": pb.position.code if pb.position else None,
         "cave_name": (
             pb.position.row.column.cave.name
-            if pb.position and pb.position.row and pb.position.row.column
+            if pb.position
+            and pb.position.row
+            and pb.position.row.column
             and pb.position.row.column.cave
             else None
         ),
@@ -155,12 +157,13 @@ def create_bottle(db: Session, bottle: schemas.BottleCreate) -> models.Bottle:
     db.add(db_bottle)
     db.commit()
     db.refresh(db_bottle)
-    
+
     # Générer automatiquement les bouteilles physiques (QR codes) si quantity > 0
     if db_bottle.quantity and db_bottle.quantity > 0:
         from services.physical_bottle_service import generate_qr_codes_for_bottle
+
         generate_qr_codes_for_bottle(db, db_bottle.id, db_bottle.quantity)
-    
+
     return db_bottle
 
 
@@ -212,7 +215,9 @@ def patch_bottle(
     return db_bottle
 
 
-def _sync_physical_bottles(db: Session, bottle_id: int, target_quantity: Optional[int]) -> None:
+def _sync_physical_bottles(
+    db: Session, bottle_id: int, target_quantity: Optional[int]
+) -> None:
     """Synchronise le nombre de physical_bottles en cave avec la quantity souhaitée.
 
     - Si target_quantity > physical actuelles : génère des QR supplémentaires
@@ -228,7 +233,9 @@ def _sync_physical_bottles(db: Session, bottle_id: int, target_quantity: Optiona
             models.PhysicalBottle.bottle_id == bottle_id,
             models.PhysicalBottle.status == "in_cellar",
         )
-        .order_by(models.PhysicalBottle.position_id.is_(None).desc(), models.PhysicalBottle.id)
+        .order_by(
+            models.PhysicalBottle.position_id.is_(None).desc(), models.PhysicalBottle.id
+        )
         .all()
     )
 
@@ -236,6 +243,7 @@ def _sync_physical_bottles(db: Session, bottle_id: int, target_quantity: Optiona
 
     if target_quantity > current:
         from services.physical_bottle_service import generate_qr_codes_for_bottle
+
         generate_qr_codes_for_bottle(db, bottle_id, target_quantity - current)
 
     elif target_quantity < current:
@@ -245,7 +253,8 @@ def _sync_physical_bottles(db: Session, bottle_id: int, target_quantity: Optiona
             if removed >= to_remove:
                 break
             if pb.position_id is None:
-                db.delete(pb)
+                pb.status = "consumed"
+                pb.removal_date = datetime.utcnow()
                 removed += 1
 
         for pb in physical_bottles:
@@ -279,18 +288,13 @@ def validate_bottle_placement(
         raise BottleNotFoundException(f"Bottle {bottle_id} not found")
 
     # Compter combien de physical_bottles de ce vin sont actuellement placés
-    query = (
-        db.query(models.PhysicalBottle)
-        .filter(
-            models.PhysicalBottle.bottle_id == bottle_id,
-            models.PhysicalBottle.status == "in_cellar",
-            models.PhysicalBottle.position_id != None,
-        )
+    query = db.query(models.PhysicalBottle).filter(
+        models.PhysicalBottle.bottle_id == bottle_id,
+        models.PhysicalBottle.status == "in_cellar",
+        models.PhysicalBottle.position_id != None,
     )
     if exclude_position_id:
-        query = query.filter(
-            models.PhysicalBottle.position_id != exclude_position_id
-        )
+        query = query.filter(models.PhysicalBottle.position_id != exclude_position_id)
 
     existing_placements = query.count()
 

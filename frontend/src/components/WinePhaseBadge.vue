@@ -63,32 +63,18 @@ const currentPhaseLabel = computed(() => {
 </script>
 
 <style scoped>
-:root {
-  --phase-jeunesse: #58a6ff;
-  --phase-maturite: #3fb950;
-  --phase-apogee: #a371f7;
-  --phase-declin: #f85149;
+[data-theme="champagne"] {
+  --phase-jeunesse: #cffd8e;
+  --phase-maturite: #8ecafd;
+  --phase-apogee: #fd8ea8;
+  --phase-declin: #fdb38e;
 }
 
-[data-theme="light"] {
-  --phase-jeunesse: #0969da;
-  --phase-maturite: #1a7f37;
-  --phase-apogee: #8250df;
-  --phase-declin: #cf222e;
-}
-
-[data-theme="red-wine"] {
-  --phase-jeunesse: #d45656;
-  --phase-maturite: #2a8a3a;
-  --phase-apogee: #a070e0;
-  --phase-declin: #e06666;
-}
-
-[data-theme="green-nature"] {
-  --phase-jeunesse: #56aa56;
-  --phase-maturite: #3a8a3a;
-  --phase-apogee: #7a50cf;
-  --phase-declin: #cc5555;
+[data-theme="champagne-dark"] {
+  --phase-jeunesse: #cffd8e;
+  --phase-maturite: #8ecafd;
+  --phase-apogee: #fd8ea8;
+  --phase-declin: #fdb38e;
 }
 
 .wine-phase-badge {

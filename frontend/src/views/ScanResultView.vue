@@ -23,12 +23,12 @@
       <!-- Card principale -->
       <div class="bg-gh-surface rounded-lg sm:rounded-xl border border-gh-border overflow-hidden">
         <!-- Header avec image et infos -->
-        <div class="flex flex-col sm:flex-row">
+            <div class="flex flex-col sm:flex-row">
           <!-- Image -->
           <div class="w-full sm:w-48 lg:w-64 flex-shrink-0 bg-gh-bg border-b sm:border-b-0 sm:border-r border-gh-border flex items-center justify-center">
             <div class="p-4 sm:p-6 flex items-center justify-center">
               <div class="relative flex items-center justify-center">
-                <img v-if="bottle.image_path" :src="getImageUrl(bottle.image_path)" :alt="bottle.name" class="w-full max-w-[150px] sm:max-w-[180px] max-h-[250px] sm:max-h-[300px] object-contain" />
+                <img v-if="bottle.image_path" :src="getImageUrl(bottle.image_path)" :alt="bottle.name" class="w-full max-w-[150px] sm:max-w-[180px] max-h-[200px] sm:max-h-[280px] object-contain" />
                 <div v-else class="w-32 h-32 sm:w-40 sm:h-40 bg-gh-elevated rounded-lg flex items-center justify-center">
                   <WineBottleIcon :type="bottle.type" :size="80" />
                 </div>

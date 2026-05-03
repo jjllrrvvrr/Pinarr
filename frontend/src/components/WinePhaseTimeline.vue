@@ -388,23 +388,23 @@ onUnmounted(() => {
 }
 
 .current-phase-badge.phase-jeunesse {
-  background: color-mix(in srgb, var(--accent-blue) 15%, transparent);
-  color: var(--accent-blue);
+  background: color-mix(in srgb, var(--phase-jeunesse) 15%, transparent);
+  color: var(--phase-jeunesse);
 }
 
 .current-phase-badge.phase-maturite {
-  background: color-mix(in srgb, var(--accent-green) 15%, transparent);
-  color: var(--accent-green);
+  background: color-mix(in srgb, var(--phase-maturite) 15%, transparent);
+  color: var(--phase-maturite);
 }
 
 .current-phase-badge.phase-apogee {
-  background: color-mix(in srgb, var(--accent-purple) 15%, transparent);
-  color: var(--accent-purple);
+  background: color-mix(in srgb, var(--phase-apogee) 15%, transparent);
+  color: var(--phase-apogee);
 }
 
 .current-phase-badge.phase-declin {
-  background: color-mix(in srgb, var(--accent-red) 15%, transparent);
-  color: var(--accent-red);
+  background: color-mix(in srgb, var(--phase-declin) 15%, transparent);
+  color: var(--phase-declin);
 }
 
 .year-range {
@@ -456,19 +456,19 @@ onUnmounted(() => {
 }
 
 .phase-segment.jeunesse {
-  background: linear-gradient(90deg, color-mix(in srgb, var(--accent-blue) 70%, transparent) 0%, color-mix(in srgb, var(--accent-blue) 50%, transparent) 100%);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--phase-jeunesse) 70%, transparent) 0%, color-mix(in srgb, var(--phase-jeunesse) 50%, transparent) 100%);
 }
 
 .phase-segment.maturite {
-  background: linear-gradient(90deg, color-mix(in srgb, var(--accent-green) 70%, transparent) 0%, color-mix(in srgb, var(--accent-green) 50%, transparent) 100%);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--phase-maturite) 70%, transparent) 0%, color-mix(in srgb, var(--phase-maturite) 50%, transparent) 100%);
 }
 
 .phase-segment.apogee {
-  background: linear-gradient(90deg, color-mix(in srgb, var(--accent-purple) 70%, transparent) 0%, color-mix(in srgb, var(--accent-purple) 50%, transparent) 100%);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--phase-apogee) 70%, transparent) 0%, color-mix(in srgb, var(--phase-apogee) 50%, transparent) 100%);
 }
 
 .phase-segment.declin {
-  background: linear-gradient(90deg, color-mix(in srgb, var(--accent-red) 70%, transparent) 0%, color-mix(in srgb, var(--accent-red) 50%, transparent) 100%);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--phase-declin) 70%, transparent) 0%, color-mix(in srgb, var(--phase-declin) 50%, transparent) 100%);
 }
 
 .segment-name {
@@ -478,6 +478,13 @@ onUnmounted(() => {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+@media (max-width: 640px) {
+  .segment-name {
+    font-size: 0.5rem;
+    letter-spacing: 0;
+  }
 }
 
 /* Ligne des dates sous la barre */

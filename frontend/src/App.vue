@@ -374,10 +374,8 @@ onUnmounted(() => {
               </div>
               <button
                 v-for="t in [
-                  { key: 'dark', label: 'Sombre (GitHub Dark)' },
-                  { key: 'light', label: 'Clair (GitHub Light)' },
-                  { key: 'red-wine', label: 'Rouge Vin' },
-                  { key: 'green-nature', label: 'Nature' }
+                  { key: 'champagne', label: 'Clair' },
+                  { key: 'champagne-dark', label: 'Sombre' }
                 ]"
                 :key="t.key"
                 @click="setTheme(t.key)"
@@ -399,18 +397,18 @@ onUnmounted(() => {
           
           <router-link to="/" class="flex items-center gap-2">
             <span class="text-2xl sm:text-3xl">🍷</span>
-            <h1 class="text-lg sm:text-xl font-bold text-gh-text">Pinarr</h1>
+            <h1 class="text-lg sm:text-xl font-bold text-gh-text" style="font-family: 'Beth Ellen', cursive;">Pinaar</h1>
           </router-link>
         </div>
         
         <div class="flex flex-col md:flex-row items-center gap-1 md:gap-6 mr-2 md:mr-4">
           <div class="text-center">
-            <div class="text-[8px] md:text-[10px] font-bold text-gh-text-secondary uppercase tracking-wider">Bouteilles</div>
-            <div class="text-xs md:text-lg font-bold text-gh-text leading-tight">{{ totalBottles }}</div>
+            <div class="text-[10px] sm:text-xs md:text-[10px] font-bold text-gh-text-secondary uppercase tracking-wider">Bouteilles</div>
+            <div class="text-xs md:text-lg font-bold text-gh-accent-green-text leading-tight">{{ totalBottles }}</div>
           </div>
           <div class="hidden md:block w-px h-8 bg-gh-border"></div>
           <div class="text-center">
-            <div class="text-[8px] md:text-[10px] font-bold text-gh-text-secondary uppercase tracking-wider">Valeur</div>
+            <div class="text-[10px] sm:text-xs md:text-[10px] font-bold text-gh-text-secondary uppercase tracking-wider">Valeur</div>
             <div class="text-xs md:text-lg font-bold text-gh-accent-green-text leading-tight">{{ totalValue }} €</div>
           </div>
         </div>
@@ -436,7 +434,7 @@ onUnmounted(() => {
               <MapIcon class="w-5 h-5" />
             </router-link>
           </div>
-          <router-link to="/add" class="flex items-center gap-1 sm:gap-2 bg-gh-accent-green hover:bg-gh-accent-green-hover text-gh-text px-3 sm:px-4 py-2 rounded-md font-medium transition border border-gh-accent-green">
+          <router-link to="/add" class="flex items-center gap-1 sm:gap-2 bg-gh-accent-green hover:bg-gh-accent-green-hover text-white px-3 sm:px-4 py-2 rounded-md font-medium transition border border-gh-accent-green">
             <PlusIcon class="w-5 h-5" /> <span class="hidden sm:inline">Ajouter</span>
           </router-link>
         </nav>

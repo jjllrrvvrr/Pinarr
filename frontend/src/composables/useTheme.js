@@ -1,15 +1,18 @@
 import { ref, watch, onMounted } from 'vue'
 
-const THEME_KEY = 'pinarr-theme'
-const theme = ref('dark')
+const THEME_KEY = 'pinarr-theme-v2'
+const theme = ref('champagne')
 
 export function useTheme() {
   const isDark = ref(true)
   
   onMounted(() => {
     const savedTheme = localStorage.getItem(THEME_KEY)
-    if (savedTheme) {
+    if (savedTheme === 'champagne' || savedTheme === 'champagne-dark') {
       theme.value = savedTheme
+    } else {
+      theme.value = 'champagne'
+      localStorage.setItem(THEME_KEY, 'champagne')
     }
     applyTheme(theme.value)
   })
@@ -21,11 +24,11 @@ export function useTheme() {
   
   const applyTheme = (newTheme) => {
     document.documentElement.setAttribute('data-theme', newTheme)
-    isDark.value = newTheme === 'dark'
+    isDark.value = newTheme === 'champagne-dark'
   }
   
   const toggleTheme = () => {
-    theme.value = theme.value === 'dark' ? 'light' : 'dark'
+    theme.value = theme.value === 'champagne' ? 'champagne-dark' : 'champagne'
   }
   
   const setTheme = (newTheme) => {

@@ -655,12 +655,12 @@ const placeBottleFromSidebar = async (bottle, targetRow, targetLine, targetPos) 
       <div class="grid grid-cols-1 lg:grid-cols-[1fr_minmax(280px,350px)] gap-4 sm:gap-6">
         <!-- GAUCHE: Grille de la cave -->
         <div class="space-y-4 sm:space-y-6">
-          <div v-if="cave.columns?.length > 1" class="flex gap-2 overflow-x-auto pb-2">
+          <div v-if="cave.columns?.length > 1" class="flex items-center gap-2 mb-4">
           <button
             v-for="col in cave.columns"
             :key="col.id"
             @click="selectedColumn = col"
-            :class="['px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition whitespace-nowrap', selectedColumn?.id === col.id ? 'bg-gh-accent-green text-gh-text' : 'bg-gh-elevated text-gh-text-secondary hover:bg-gh-border']"
+            :class="['px-3 py-1 rounded-md text-xs font-medium transition whitespace-nowrap', selectedColumn?.id === col.id ? 'bg-gh-accent-green text-white' : 'bg-gh-elevated text-gh-text-secondary hover:text-gh-text']"
           >
             {{ col.name }}
           </button>
@@ -691,7 +691,7 @@ const placeBottleFromSidebar = async (bottle, targetRow, targetLine, targetPos) 
                   @dragleave="handleDragLeave"
                   @drop="(e) => handleDrop(e, row, row.height - line + 1, pos)"
                   :class="[
-                    'w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 rounded border flex items-center justify-center cursor-pointer transition relative',
+                    'w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-18 lg:h-18 rounded border flex items-center justify-center cursor-pointer transition relative',
                     getBottleAtPosition(row.id, row.height - line + 1, pos)
                       ? 'bg-gh-accent-green/20 border-gh-accent-green'
                       : 'bg-gh-bg border-gh-border',
@@ -717,8 +717,8 @@ const placeBottleFromSidebar = async (bottle, targetRow, targetLine, targetPos) 
                   :class="{ 'opacity-50': draggedBottle?.id === getBottleAtPosition(row.id, row.height - line + 1, pos).id }"
                 >
                   <div class="flex flex-col items-center">
-                    <WineBottleIcon :type="getBottleAtPosition(row.id, row.height - line + 1, pos).type" class="w-4 h-6 sm:w-5 sm:h-8 md:w-6 md:h-10" />
-                    <div class="text-[8px] sm:text-[10px] text-gh-text truncate px-0.5 sm:px-1 max-w-full hidden sm:block">
+                    <WineBottleIcon :type="getBottleAtPosition(row.id, row.height - line + 1, pos).type" class="w-5 h-8 sm:w-6 sm:h-10" />
+                    <div class="text-[8px] sm:text-[10px] text-gh-text truncate px-0.5 sm:px-1 max-w-full">
                       {{ getBottleAtPosition(row.id, row.height - line + 1, pos).name?.substring(0, 6) }}
                     </div>
                   </div>

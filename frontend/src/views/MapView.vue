@@ -10,8 +10,8 @@
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6">
-      <div class="bg-gh-surface rounded-md border border-gh-border overflow-hidden">
-        <div id="map" class="h-[400px] lg:h-[600px] w-full"></div>
+      <div class="bg-gh-surface rounded-md border border-gh-border overflow-hidden relative">
+        <div ref="mapContainer" class="h-[50vh] sm:h-[400px] lg:h-[600px] w-full"></div>
       </div>
 
       <div class="bg-gh-surface rounded-md border border-gh-border overflow-hidden flex flex-col">
@@ -21,17 +21,22 @@
             <p>Cliquez sur un marqueur pour voir les bouteilles</p>
           </div>
         </div>
-        
+
         <div v-else class="flex-1 flex flex-col">
           <div class="p-4 border-b border-gh-border flex items-center justify-between">
             <h2 class="text-lg font-bold text-gh-text">
-              {{ selectedRegion.name }} 
+              {{ selectedRegion.name }}
               <span class="text-gh-text-secondary font-normal text-sm">({{ selectedRegion.bottles.length }})</span>
             </h2>
-            <button @click="selectedRegion = null" class="text-gh-text-secondary hover:text-gh-text">&times;</button>
+            <div class="flex items-center gap-2">
+              <button @click="fitAllMarkers" class="text-gh-text-secondary hover:text-gh-accent text-xs" title="Retour à la vue globale">
+                Tout voir
+              </button>
+              <button @click="selectedRegion = null" class="text-gh-text-secondary hover:text-gh-text">&times;</button>
+            </div>
           </div>
           <div class="flex-1 overflow-y-auto p-4 space-y-3">
-            <div v-for="bottle in selectedRegion.bottles.slice(0, 10)" :key="bottle.id" 
+            <div v-for="bottle in selectedRegion.bottles.slice(0, 10)" :key="bottle.id"
                  class="bg-gh-bg rounded-md border border-gh-border p-3 hover:border-gh-text-secondary transition cursor-pointer"
                  @click="goToBottle(bottle.id)">
               <div class="flex items-center justify-between">
@@ -58,7 +63,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -72,10 +77,14 @@ const API_GEOCODED_URL = '/geocoded-regions'
 
 const bottles = ref([])
 const map = ref(null)
+const mapContainer = ref(null)
 const markersLayer = ref(null)
+const markerPane = 'markers-pane'
+
 const selectedRegion = ref(null)
 const geocodedRegionsCache = ref({})
 const isLoadingGeocoding = ref(false)
+const visibleMarkers = ref([])
 
 const regionCoordinates = {
   'Bordeaux': [44.8378, -0.5792],
@@ -170,20 +179,20 @@ const normalize = (text) => {
 
 const findRegionCoords = (region) => {
   const normalized = normalize(region)
-  
+
   for (const [key, value] of Object.entries(regionCoordinates)) {
     if (normalize(key) === normalized) {
       return value
     }
   }
-  
+
   for (const [key, value] of Object.entries(regionCoordinates)) {
     const normalizedKey = normalize(key)
     if (normalized.includes(normalizedKey) || normalizedKey.includes(normalized)) {
       return value
     }
   }
-  
+
   const regionWords = normalized.split(' ').filter(w => w.length > 3)
   for (const [key, value] of Object.entries(regionCoordinates)) {
     const keyWords = normalize(key).split(' ')
@@ -191,11 +200,11 @@ const findRegionCoords = (region) => {
       return value
     }
   }
-  
+
   if (geocodedRegionsCache.value[region]) {
     return geocodedRegionsCache.value[region]
   }
-  
+
   return null
 }
 
@@ -228,7 +237,7 @@ const geocodeRegion = async (region) => {
     `${region}, France`,
     `${region}, Europe`,
   ]
-  
+
   for (const query of queries) {
     try {
       const res = await fetch(
@@ -259,9 +268,10 @@ const fetchBottles = async () => {
 
 const updateMap = async () => {
   if (!map.value || !markersLayer.value) return
-  
+
   markersLayer.value.clearLayers()
-  
+  visibleMarkers.value = []
+
   const regionBottles = {}
   bottles.value.forEach(b => {
     if (b.region) {
@@ -271,9 +281,9 @@ const updateMap = async () => {
       regionBottles[b.region].push(b)
     }
   })
-  
+
   const regionsToGeocode = []
-  
+
   Object.entries(regionBottles).forEach(([region, bottleList]) => {
     const coords = findRegionCoords(region)
     if (coords) {
@@ -282,7 +292,7 @@ const updateMap = async () => {
       regionsToGeocode.push({ region, bottleList })
     }
   })
-  
+
   if (regionsToGeocode.length > 0) {
     isLoadingGeocoding.value = true
     for (const { region, bottleList } of regionsToGeocode) {
@@ -294,6 +304,13 @@ const updateMap = async () => {
     }
     isLoadingGeocoding.value = false
   }
+
+  // Ajuster la carte après un tick pour que les tiles soient rendues
+  await nextTick()
+  setTimeout(() => {
+    map.value.invalidateSize()
+    fitAllMarkers()
+  }, 200)
 }
 
 const addMarker = (region, bottleList, coords) => {
@@ -303,37 +320,85 @@ const addMarker = (region, bottleList, coords) => {
     color: '#fff',
     weight: 2,
     opacity: 1,
-    fillOpacity: 0.8
+    fillOpacity: 0.8,
+    pane: markerPane
   })
-  
+
   marker.bindTooltip(`<strong>${region}</strong><br>${bottleList.length} bouteille${bottleList.length > 1 ? 's' : ''}`, {
     direction: 'top'
   })
-  
+
   marker.on('click', () => {
     selectedRegion.value = { name: region, bottles: bottleList }
+    map.value.flyTo(coords, 10, { duration: 0.8 })
   })
-  
+
   markersLayer.value.addLayer(marker)
+  visibleMarkers.value.push(coords)
+}
+
+const fitAllMarkers = () => {
+  if (!map.value || visibleMarkers.value.length === 0) return
+
+  map.value.invalidateSize()
+
+  // Petite pause pour que Leaflet prenne en compte la taille réelle
+  requestAnimationFrame(() => {
+    if (visibleMarkers.value.length === 1) {
+      map.value.flyTo(visibleMarkers.value[0], 8, { duration: 0.8 })
+    } else {
+      const bounds = L.latLngBounds(visibleMarkers.value)
+      map.value.fitBounds(bounds, {
+        padding: [60, 60],
+        maxZoom: 10,
+        animate: true,
+        duration: 0.8
+      })
+    }
+  })
 }
 
 onMounted(async () => {
-  map.value = L.map('map').setView([46.603354, 1.888334], 6)
-  
+  // 1. Attendre que le DOM soit prêt
+  await nextTick()
+
+  // 2. Créer la carte avec une vue initiale neutre
+  if (!mapContainer.value) return
+
+  map.value = L.map(mapContainer.value).setView([46.603354, 1.888334], 6)
+
+  // Pane dédié pour les marqueurs au-dessus des tiles
+  map.value.createPane(markerPane)
+  map.value.getPane(markerPane).style.zIndex = '650'
+
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap'
   }).addTo(map.value)
-  
+
   markersLayer.value = L.layerGroup().addTo(map.value)
-  
+
+  // 3. Forcer le recalcul de la taille après le rendu CSS
+  await nextTick()
+  setTimeout(() => {
+    map.value.invalidateSize()
+  }, 100)
+
+  // 4. Charger les données
   await loadGeocodedRegions()
   await fetchBottles()
   await updateMap()
+
+  // 5. Forcer un second invalidateSize après que tout est monté
+  setTimeout(() => {
+    map.value.invalidateSize()
+    fitAllMarkers()
+  }, 400)
 })
 
 onUnmounted(() => {
   if (map.value) {
     map.value.remove()
+    map.value = null
   }
 })
 </script>

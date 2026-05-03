@@ -1,196 +1,164 @@
 /* ============================================
    PINARR - CSS Custom Properties (Design System)
-   Thème sombre par défaut (GitHub Dark-like)
+   Thèmes Champagne Elegant & Champagne Sombre
    ============================================ */
 
+/* ==========================================
+   THÈME CHAMPAGNE ÉLÉGANT (défaut)
+   ========================================== */
 :root {
-  /* ==========================================
-     COULEURS DE BASE - Fonds
-     ========================================== */
-  --bg-primary: #0d1117;
-  --bg-surface: #161b22;
-  --bg-elevated: #21262d;
-  --bg-header: #020408;
-  --bg-overlay: rgba(0, 0, 0, 0.8);
+  --bg-primary: #f5f3ee;
+  --bg-surface: #ffffff;
+  --bg-elevated: #f0ede6;
+  --bg-header: #ffffff;
+  --bg-overlay: rgba(55, 48, 38, 0.5);
 
-  /* ==========================================
-     COULEURS DE BASE - Bordures
-     ========================================== */
-  --border-default: #30363d;
-  --border-hover: #8b949e;
-  --border-active: #58a6ff;
-  --border-error: #f85149;
-  --border-success: #238636;
+  --border-default: #e3dfd4;
+  --border-hover: #c5a265;
+  --border-active: #b89452;
+  --border-error: #c44542;
+  --border-success: #a3c9b8;
 
-  /* ==========================================
-     COULEURS DE BASE - Texte
-     ========================================== */
-  --text-primary: #c9d1d9;
-  --text-secondary: #8b949e;
-  --text-muted: #484f58;
-  --text-inverse: #0d1117;
+  --text-primary: #2d2926;
+  --text-secondary: #7a7470;
+  --text-muted: #b8b0a8;
+  --text-inverse: #ffffff;
 
-  /* ==========================================
-     COULEURS D'ACCENT
-     ========================================== */
-  --accent-blue: #58a6ff;
-  --accent-green: #238636;
-  --accent-green-hover: #2ea043;
-  --accent-green-text: #3fb950;
-  --accent-red: #f85149;
-  --accent-red-hover: #f85149;
-  --accent-orange: #f0883e;
-  --accent-gold: #e3b341;
-  --accent-pink: #db61a2;
-  --accent-purple: #a371f7;
+  --accent-blue: #b89452;
+  --accent-green: #3a6b52;
+  --accent-green-hover: #2e5642;
+  --accent-green-text: #3a6b52;
+  --accent-red: #c44542;
+  --accent-red-hover: #a33736;
+  --accent-orange: #d4885a;
+  --accent-gold: #c5a265;
+  --accent-purple: #a67c5b;
+  --accent-pink: #c4a5b0;
 
-  /* ==========================================
-     COULEURS DES TYPES DE VIN
-     ========================================== */
-  --wine-red: #f85149;
-  --wine-white: #e3b341;
-  --wine-rose: #db61a2;
-  --wine-champagne: #a371f7;
-  --wine-default: #8b949e;
+  --wine-red: #c44542;
+  --wine-white: #d4a843;
+  --wine-rose: #d488a0;
+  --wine-champagne: #c5a265;
+  --wine-default: #b8b0a8;
 
-  /* ==========================================
-     TAILLES ET ESPACEMENTS
-     ========================================== */
-  --radius-sm: 0.25rem;   /* 4px - tags, badges */
-  --radius-md: 0.375rem;  /* 6px - cards, buttons, inputs */
-  --radius-lg: 0.5rem;    /* 8px - modals */
-  --radius-full: 9999px;  /* pills, avatars */
+  --phase-jeunesse: #3a6b52;
+  --phase-maturite: #8ecafd;
+  --phase-apogee: #fd8ea8;
+  --phase-declin: #fdb38e;
 
-  /* ==========================================
-     Z-INDEX SCALE
-     ========================================== */
+  --card-image-bg: #ffffff;
+
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-full: 9999px;
+
   --z-dropdown: 100;
   --z-sticky: 200;
   --z-modal: 300;
   --z-tooltip: 400;
   --z-toast: 500;
 
-  /* ==========================================
-     TRANSITIONS
-     ========================================== */
   --transition-fast: 150ms ease;
   --transition-base: 200ms ease;
   --transition-slow: 300ms ease;
 
-  /* ==========================================
-     OMBRES
-     ========================================== */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
-  --shadow-glow-blue: 0 0 10px rgba(88, 166, 255, 0.3);
-  --shadow-glow-red: 0 0 10px rgba(248, 81, 73, 0.3);
-  --shadow-glow-yellow: 0 0 10px rgba(227, 179, 65, 0.3);
-  --shadow-glow-pink: 0 0 10px rgba(219, 97, 162, 0.3);
-  --shadow-glow-purple: 0 0 10px rgba(163, 113, 247, 0.3);
-  --shadow-glow-gray: 0 0 10px rgba(139, 148, 158, 0.3);
+  --shadow-sm: 0 1px 3px rgba(80, 60, 35, 0.08);
+  --shadow-md: 0 4px 12px rgba(80, 60, 35, 0.1);
+  --shadow-lg: 0 12px 32px rgba(80, 60, 35, 0.12);
+  --shadow-glow-blue: 0 0 12px rgba(184, 148, 82, 0.25);
+  --shadow-glow-red: 0 0 12px rgba(196, 69, 66, 0.2);
+  --shadow-glow-yellow: 0 0 12px rgba(196, 162, 101, 0.25);
+  --shadow-glow-gray: 0 0 12px rgba(122, 116, 112, 0.15);
+}
+
+/* Header champagne */
+[data-theme="champagne"] header {
+  --text-primary: #2d2926;
+  --text-secondary: #7a7470;
+  --text-muted: #b8b0a8;
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-bottom-color: var(--border-default);
+}
+
+[data-theme="champagne"] ::selection {
+  background: #c5a265;
+  color: #ffffff;
+}
+
+[data-theme="champagne"] :focus-visible {
+  outline-color: #b89452;
 }
 
 /* ==========================================
-   THÈME CLAIR (prêt pour futur toggle)
+   THÈME CHAMPAGNE SOMBRE
    ========================================== */
-[data-theme="light"] {
-  --bg-primary: #ffffff;
-  --bg-surface: #f6f8fa;
-  --bg-elevated: #ffffff;
-  --bg-header: #24292f;
-  --bg-overlay: rgba(0, 0, 0, 0.6);
-
-  --border-default: #d0d7de;
-  --border-hover: #8c959f;
-  --border-active: #0969da;
-  --border-error: #cf222e;
-  --border-success: #1a7f37;
-
-  --text-primary: #24292f;
-  --text-secondary: #57606a;
-  --text-muted: #8c959f;
-  --text-inverse: #ffffff;
-
-  --accent-blue: #0969da;
-  --accent-green: #1a7f37;
-  --accent-green-hover: #1f8f3f;
-  --accent-green-text: #1a7f37;
-  --accent-red: #cf222e;
-  --accent-orange: #9a6700;
-  --accent-gold: #9a6700;
-
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.15);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.2);
-}
-
-/* ==========================================
-   THÈME RED WINE
-   ========================================== */
-[data-theme="red-wine"] {
-  --bg-primary: #2a0a0a;
-  --bg-surface: #3d1616;
-  --bg-elevated: #4a2020;
-  --bg-header: #1a0505;
+[data-theme="champagne-dark"] {
+  --bg-primary: #1a1814;
+  --bg-surface: #252018;
+  --bg-elevated: #2e2820;
+  --bg-header: #12100c;
   --bg-overlay: rgba(0, 0, 0, 0.7);
 
-  --border-default: #5a2a2a;
-  --border-hover: #8a4a4a;
-  --border-active: #d45656;
-  --border-error: #cc4444;
-  --border-success: #2a7a2a;
+  --border-default: #3d3528;
+  --border-hover: #5a4e3a;
+  --border-active: #c5a265;
+  --border-error: #c44542;
+  --border-success: #4a7a5a;
 
-  --text-primary: #f0d5d5;
-  --text-secondary: #c9a0a0;
-  --text-muted: #8a6060;
-  --text-inverse: #2a0a0a;
+  --text-primary: #e8e2d9;
+  --text-secondary: #9a948a;
+  --text-muted: #5a5448;
+  --text-inverse: #1a1814;
 
-  --accent-blue: #d45656;
-  --accent-green: #2a8a3a;
-  --accent-green-hover: #3a9a4a;
-  --accent-green-text: #4aaa5a;
-  --accent-red: #e06666;
-  --accent-orange: #e0a060;
-  --accent-gold: #e0c060;
+  --accent-blue: #c5a265;
+  --accent-green: #4a7a5a;
+  --accent-green-hover: #5a8a6a;
+  --accent-green-text: #6a9a7a;
+  --accent-red: #c44542;
+  --accent-red-hover: #d45550;
+  --accent-orange: #d4885a;
+  --accent-gold: #c5a265;
+  --accent-purple: #b0906a;
+  --accent-pink: #d0b0a0;
+
+  --wine-red: #d45552;
+  --wine-white: #e0c060;
+  --wine-rose: #e0a0c0;
+  --wine-champagne: #c5a265;
+  --wine-default: #8a8070;
+
+  --phase-jeunesse: #cffd8e;
+  --phase-maturite: #8ecafd;
+  --phase-apogee: #fd8ea8;
+  --phase-declin: #fdb38e;
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.5);
   --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.6);
+  --shadow-glow-blue: 0 0 12px rgba(197, 162, 101, 0.3);
+  --shadow-glow-red: 0 0 12px rgba(196, 69, 66, 0.25);
+  --shadow-glow-yellow: 0 0 12px rgba(197, 162, 101, 0.3);
+  --shadow-glow-gray: 0 0 12px rgba(90, 84, 72, 0.2);
+  --card-image-bg: #2e2820;
 }
 
-/* ==========================================
-   THÈME GREEN NATURE
-   ========================================== */
-[data-theme="green-nature"] {
-  --bg-primary: #0a1a0a;
-  --bg-surface: #162a16;
-  --bg-elevated: #203820;
-  --bg-header: #051005;
-  --bg-overlay: rgba(0, 0, 0, 0.7);
+/* Header champagne-dark */
+[data-theme="champagne-dark"] header {
+  --text-primary: #e8e2d9;
+  --text-secondary: #9a948a;
+  --text-muted: #5a5448;
+  background: rgba(18, 16, 12, 0.92) !important;
+  border-bottom-color: var(--border-default);
+}
 
-  --border-default: #2a3d2a;
-  --border-hover: #4a6a4a;
-  --border-active: #56aa56;
-  --border-error: #aa4444;
-  --border-success: #2a7a2a;
+[data-theme="champagne-dark"] ::selection {
+  background: #c5a265;
+  color: #1a1814;
+}
 
-  --text-primary: #d5f0d5;
-  --text-secondary: #a0c9a0;
-  --text-muted: #608a60;
-  --text-inverse: #0a1a0a;
-
-  --accent-blue: #56aa56;
-  --accent-green: #3a8a3a;
-  --accent-green-hover: #4a9a4a;
-  --accent-green-text: #5aaa5a;
-  --accent-red: #cc5555;
-  --accent-orange: #c0a050;
-  --accent-gold: #c0b050;
-
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.6);
+[data-theme="champagne-dark"] :focus-visible {
+  outline-color: #c5a265;
 }
 
 /* ==========================================
@@ -198,6 +166,11 @@
    ========================================== */
 
 /* Scrollbar personnalisée */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-default) var(--bg-surface);
+}
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -217,15 +190,15 @@
   background: var(--border-hover);
 }
 
-/* Sélection de texte */
+/* Sélection de texte globale */
 ::selection {
-  background: var(--accent-blue);
-  color: var(--bg-primary);
+  background: var(--accent-gold);
+  color: var(--text-inverse);
 }
 
 /* Focus visible pour accessibilité */
 :focus-visible {
-  outline: 2px solid var(--accent-blue);
+  outline: 2px solid var(--accent-gold);
   outline-offset: 2px;
 }
 

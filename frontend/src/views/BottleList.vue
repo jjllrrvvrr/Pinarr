@@ -69,7 +69,7 @@
 
     <!-- MODE NORMAL (sans recherche) -->
     <template v-else>
-      <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+      <div class="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-3 mb-4">
         <div class="flex items-center gap-2">
           <button @click="showHistory = false" 
                   :class="['px-3 py-1 rounded-md text-xs font-medium transition', !showHistory ? 'bg-gh-accent-green text-white' : 'bg-gh-elevated text-gh-text-secondary hover:text-gh-text']">
@@ -82,9 +82,8 @@
         </div>
         
         <!-- Boutons de filtres Couleur et Évolution -->
-        <div class="flex items-center gap-2">
-          <!-- Filtre Couleur -->
-          <div class="flex items-center gap-1">
+        <div class="flex items-center gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 snap-x scrollbar-hide">
+          <div class="flex items-center gap-1 flex-shrink-0">
             <button
               v-for="color in colorOptions"
               :key="color.value"
@@ -226,10 +225,10 @@ const colorOptions = [
 ]
 
 const phaseOptions = [
-  { value: 'JEUNESSE', label: 'Jeunesse', color: 'bg-[var(--accent-blue)]', text: 'text-[var(--accent-blue)]' },
-  { value: 'MATURITE', label: 'Maturité', color: 'bg-[var(--accent-green-text)]', text: 'text-[var(--accent-green-text)]' },
-  { value: 'APOGEE', label: 'Apogée', color: 'bg-[var(--accent-purple)]', text: 'text-[var(--accent-purple)]' },
-  { value: 'DECLIN', label: 'Déclin', color: 'bg-[var(--accent-red)]', text: 'text-[var(--accent-red)]' }
+  { value: 'JEUNESSE', label: 'Jeunesse', color: 'bg-[var(--phase-jeunesse)]', text: 'text-[var(--phase-jeunesse)]' },
+  { value: 'MATURITE', label: 'Maturité', color: 'bg-[var(--phase-maturite)]', text: 'text-[var(--phase-maturite)]' },
+  { value: 'APOGEE', label: 'Apogée', color: 'bg-[var(--phase-apogee)]', text: 'text-[var(--phase-apogee)]' },
+  { value: 'DECLIN', label: 'Déclin', color: 'bg-[var(--phase-declin)]', text: 'text-[var(--phase-declin)]' }
 ]
 
 const getColorLabel = (value) => colorOptions.find(c => c.value === value)?.label || value

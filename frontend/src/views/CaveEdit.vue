@@ -273,9 +273,9 @@ onMounted(fetchCave)
                 </div>
                 <div class="flex items-center gap-2 ml-6 sm:ml-0">
                   <div class="flex items-center gap-1">
-                    <input v-model.number="row.width" type="number" min="1" max="20" class="w-10 sm:w-12 bg-transparent border border-gh-border rounded px-1 py-1 text-gh-text text-xs text-center focus:border-gh-border-active outline-none" title="Largeur (positions par ligne)">
+                    <input v-model.number="row.width" type="number" min="1" max="20" class="w-14 sm:w-16 bg-transparent border border-gh-border rounded px-2 py-1 text-gh-text text-xs text-center focus:border-gh-border-active outline-none" title="Largeur (positions par ligne)">
                     <span class="text-gh-text-secondary text-xs">×</span>
-                    <input v-model.number="row.height" type="number" min="1" max="10" class="w-10 sm:w-12 bg-transparent border border-gh-border rounded px-1 py-1 text-gh-text text-xs text-center focus:border-gh-border-active outline-none" title="Hauteur (lignes)">
+                    <input v-model.number="row.height" type="number" min="1" max="10" class="w-14 sm:w-16 bg-transparent border border-gh-border rounded px-2 py-1 text-gh-text text-xs text-center focus:border-gh-border-active outline-none" title="Hauteur (lignes)">
                   </div>
                   <span class="text-gh-text-secondary text-xs">{{ row.width * row.height }} pos</span>
                   <button @click="removeRow(colIndex, rowIndex)" class="p-1 text-gh-text-secondary hover:text-gh-accent-red">
