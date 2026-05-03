@@ -510,4 +510,4 @@ alembic revision --autogenerate -m "ajout_colonne_xyz"
 
 ---
 
-*Made with ❤️ for wine lovers* 🍷
+*Made with love for Pinarr lovers* 🍷
