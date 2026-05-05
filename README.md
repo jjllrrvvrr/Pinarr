@@ -71,7 +71,7 @@ Carte des régions viticoles :
 
 **Made with love for Pinarr lovers** 🍷
 
-/* 
+ 
   Copyright (C) 2026 jjllrrvrr
   
   This program is free software: you can redistribute it and/or modify
@@ -82,4 +82,3 @@ Carte des régions viticoles :
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY. See the GNU General Public License for 
   more details.
-*/
