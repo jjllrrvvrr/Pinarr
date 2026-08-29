@@ -223,7 +223,7 @@ const removeBottle = async () => {
 
   isProcessing.value = true
   try {
-    await QrService.removeBottle(physicalBottle.value.id)
+    await QrService.removeBottle(physicalBottle.value.qr_code)
     alert('Bouteille retirée avec succès')
     await scanQrCode()   // recharger les données (statut devient "consumed")
   } catch (e) {

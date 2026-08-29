@@ -515,14 +515,22 @@ def scan_qr_code_endpoint(qr_code: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Erreur serveur: {str(e)}")
 
 
-@app.post("/api/remove/{physical_bottle_id}")
+@app.post("/api/remove/{qr_code}")
 def remove_physical_bottle_public_endpoint(
-    physical_bottle_id: int,
+    qr_code: str,
     db: Session = Depends(get_db),
 ):
-    """Retire une bouteille de la cave (marque comme consommée). Public via QR."""
+    """Retire une bouteille de la cave (marque comme consommée). Public via QR.
+
+    Identifié par le qr_code (token non devinable) et non par l'ID interne
+    séquentiel, pour éviter qu'un tiers non authentifié puisse énumérer les
+    IDs et retirer des bouteilles sans avoir scanné le QR physique (IDOR).
+    """
     try:
-        remove_physical_bottle(db, physical_bottle_id)
+        physical_bottle = get_physical_bottle_by_qr(db, qr_code)
+        if not physical_bottle:
+            raise HTTPException(status_code=404, detail="Code QR non trouvé")
+        remove_physical_bottle(db, physical_bottle.id)
         return {"message": "Bouteille retirée de la cave avec succès"}
     except HTTPException:
         raise
