@@ -45,11 +45,11 @@ export const QrService = {
 
   /**
    * Retire une bouteille de la cave (public via QR)
-   * @param {number} physicalBottleId - ID de la bouteille physique
+   * @param {string} qrCode - Code QR de la bouteille physique
    * @returns {Promise<Object>}
    */
-  async removeBottle(physicalBottleId) {
-    return await apiRequest(`/api/remove/${physicalBottleId}`, {
+  async removeBottle(qrCode) {
+    return await apiRequest(`/api/remove/${qrCode}`, {
       method: 'POST',
     }, false)
   },

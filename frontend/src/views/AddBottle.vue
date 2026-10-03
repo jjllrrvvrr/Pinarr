@@ -545,7 +545,6 @@ import config from '../config.js'
 import { apiRequest } from '../services/api.js'
 import RemovePositionModal from '../components/RemovePositionModal.vue'
 import WinePhaseTimeline from '../components/WinePhaseTimeline.vue'
-import { QrService } from '../services/qrService.js'
 import { useQuantityManager } from '../composables/useQuantityManager.js'
 
 const route = useRoute()
@@ -800,16 +799,10 @@ const saveBottle = async (force = false) => {
       body: JSON.stringify(payload)
     })
     
-    // Si c'est une création et qu'on a des bouteilles à créer, générer les QR codes
-    if (!isEditing.value && form.value.quantity > 0) {
-      try {
-        const qrData = await QrService.generateQrCodes(savedBottle.id, parseInt(form.value.quantity))
-        console.log(`${qrData.count} QR codes générés:`, qrData.qr_codes)
-      } catch (err) {
-        console.error('Erreur génération QR codes:', err)
-      }
-    }
-    
+    // Note: les bouteilles physiques (QR codes) sont déjà générées côté backend
+    // par create_bottle() selon la quantity fournie. Ne pas les régénérer ici
+    // (sinon on double les emplacements disponibles).
+
     if (form.value.position_id) {
       await apiRequest(`/positions/${form.value.position_id}`, {
         method: 'PUT',

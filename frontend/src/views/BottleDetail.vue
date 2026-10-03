@@ -419,7 +419,7 @@ const getQrUrl = (qrCode) => {
 const showRemoveConfirm = async (pb) => {
   if (!confirm(`Retirer la bouteille ${pb.qr_code} ? Son statut sera changé en « consommée ».`)) return
   try {
-    await QrService.removeBottle(pb.id)
+    await QrService.removeBottle(pb.qr_code)
     pb.status = 'consumed'
     await fetchPhysicalBottles()
     emit('refresh-data')
