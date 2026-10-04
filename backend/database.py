@@ -35,6 +35,18 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
+# Activer les foreign keys SQLite (défaut OFF) :
+# garantit l'intégrité position_id -> positions.id, etc.
+from sqlalchemy import event
+
+
+@event.listens_for(engine, "connect")
+def _fk_pragma_on_connect(dbapi_connection, connection_record):
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()
+
+
 def create_db_tables():
     try:
         from models import (

@@ -9,6 +9,8 @@ from exceptions import (
     ColumnNotFoundException,
     RowNotFoundException,
     PositionNotFoundException,
+    RowOccupiedException,
+    PinarrException,
 )
 
 
@@ -73,11 +75,41 @@ def update_cave(db: Session, cave_id: int, cave: schemas.CaveCreate) -> models.C
     return db_cave
 
 
+def _get_occupied_count(db: Session, filter_cond) -> int:
+    """Compte les positions occupées (physical_bottle placée) pour un scope donné.
+
+    filter_cond : conditions SQL joignant positions au scope visé
+    (rangée, colonne ou cave).
+    """
+    return (
+        db.query(models.Position)
+        .filter(
+            *filter_cond,
+            models.PhysicalBottle.position_id == models.Position.id,
+        )
+        .count()
+    )
+
+
 def delete_cave(db: Session, cave_id: int) -> None:
-    """Supprime une cave."""
+    """Supprime une cave. Refusée si des bouteilles y sont encore placées."""
     db_cave = db.query(models.Cave).filter(models.Cave.id == cave_id).first()
     if not db_cave:
         raise CaveNotFoundException(f"Cave {cave_id} not found")
+
+    occupied = _get_occupied_count(
+        db,
+        [
+            models.Position.row_id == models.CaveRow.id,
+            models.CaveRow.column_id == models.CaveColumn.id,
+            models.CaveColumn.cave_id == cave_id,
+        ],
+    )
+    if occupied > 0:
+        raise RowOccupiedException(
+            f"Impossible de supprimer la cave : {occupied} bouteille(s) placée(s). "
+            "Retirez-les d'abord."
+        )
 
     db.delete(db_cave)
     db.commit()
@@ -122,12 +154,25 @@ def update_column(
 
 
 def delete_column(db: Session, column_id: int) -> None:
-    """Supprime une colonne."""
+    """Supprime une colonne. Refusée si des bouteilles y sont encore placées."""
     db_column = (
         db.query(models.CaveColumn).filter(models.CaveColumn.id == column_id).first()
     )
     if not db_column:
         raise ColumnNotFoundException(f"Column {column_id} not found")
+
+    occupied = _get_occupied_count(
+        db,
+        [
+            models.Position.row_id == models.CaveRow.id,
+            models.CaveRow.column_id == column_id,
+        ],
+    )
+    if occupied > 0:
+        raise RowOccupiedException(
+            f"Impossible de supprimer la colonne : {occupied} bouteille(s) placée(s). "
+            "Retirez-les d'abord."
+        )
 
     db.delete(db_column)
     db.commit()
@@ -201,7 +246,7 @@ def update_row(db: Session, row_id: int, row: schemas.CaveRowCreate) -> models.C
             .count()
         )
         if occupied > 0:
-            raise Exception(
+            raise RowOccupiedException(
                 f"Impossible de modifier les dimensions : {occupied} position(s) occupée(s). "
                 "Veuillez d'abord retirer les bouteilles."
             )
@@ -223,10 +268,17 @@ def update_row(db: Session, row_id: int, row: schemas.CaveRowCreate) -> models.C
 
 
 def delete_row(db: Session, row_id: int) -> None:
-    """Supprime une rangée."""
+    """Supprime une rangée. Refusée si des bouteilles y sont encore placées."""
     db_row = db.query(models.CaveRow).filter(models.CaveRow.id == row_id).first()
     if not db_row:
         raise RowNotFoundException(f"Row {row_id} not found")
+
+    occupied = _get_occupied_count(db, [models.Position.row_id == row_id])
+    if occupied > 0:
+        raise RowOccupiedException(
+            f"Impossible de supprimer la rangée : {occupied} bouteille(s) placée(s). "
+            "Retirez-les d'abord."
+        )
 
     db.delete(db_row)
     db.commit()
@@ -313,7 +365,7 @@ def assign_bottle_to_position(
             db.query(models.PhysicalBottle)
             .filter(
                 models.PhysicalBottle.bottle_id == bottle_id,
-                models.PhysicalBottle.position_id == None,
+                models.PhysicalBottle.position_id.is_(None),
                 models.PhysicalBottle.status == "in_cellar",
             )
             .first()
@@ -343,9 +395,87 @@ def remove_bottle_from_position(db: Session, position_id: int) -> None:
     db.commit()
 
 
+def move_bottle_to_position(
+    db: Session, from_position_id: int, to_position_id: int
+) -> None:
+    """Déplace atomiquement la bouteille d'une position vers une autre.
+
+    Transaction unique : si la cible est occupée, la bouteille existante
+    repart en stock libre (position_id=None). Tout ou rien.
+    """
+    src = (
+        db.query(models.Position)
+        .filter(models.Position.id == from_position_id)
+        .first()
+    )
+    if not src:
+        raise PositionNotFoundException(f"Position {from_position_id} not found")
+
+    dst = (
+        db.query(models.Position)
+        .filter(models.Position.id == to_position_id)
+        .first()
+    )
+    if not dst:
+        raise PositionNotFoundException(f"Position {to_position_id} not found")
+
+    if not src.physical_bottle:
+        raise PinarrException("La position source ne contient pas de bouteille")
+
+    # Libérer la cible si occupée (retour en stock libre)
+    if dst.physical_bottle:
+        dst.physical_bottle.position_id = None
+
+    # Déplacer
+    src.physical_bottle.position_id = dst.id
+    db.commit()
+
+
+def swap_positions(
+    db: Session, position_a_id: int, position_b_id: int
+) -> None:
+    """Échange atomiquement les bouteilles de deux positions.
+
+    Remplace les 4-6 requêtes HTTP du frontend par une transaction unique.
+    Une position vide est autorisée (le swap devient un move simple).
+    """
+    pos_a = (
+        db.query(models.Position)
+        .filter(models.Position.id == position_a_id)
+        .first()
+    )
+    if not pos_a:
+        raise PositionNotFoundException(f"Position {position_a_id} not found")
+
+    pos_b = (
+        db.query(models.Position)
+        .filter(models.Position.id == position_b_id)
+        .first()
+    )
+    if not pos_b:
+        raise PositionNotFoundException(f"Position {position_b_id} not found")
+
+    if position_a_id == position_b_id:
+        return
+
+    pb_a = pos_a.physical_bottle
+    pb_b = pos_b.physical_bottle
+
+    # Échanger les liens (None si vide)
+    if pb_a:
+        pb_a.position_id = pos_b.id
+    if pb_b:
+        pb_b.position_id = pos_a.id
+    db.commit()
+
+
 def consume_bottle_from_position(db: Session, position_id: int) -> None:
-    """Marque une bouteille en position comme consommée (historique)."""
-    from datetime import datetime
+    """Marque une bouteille en position comme consommée (historique).
+
+    Décrémente aussi Bottle.quantity (source de vérité partagée avec
+    physical_bottles) pour éviter la divergence stock/consommation.
+    """
+    from services.physical_bottle_service import consume_physical_bottle
 
     db_position = (
         db.query(models.Position).filter(models.Position.id == position_id).first()
@@ -354,10 +484,7 @@ def consume_bottle_from_position(db: Session, position_id: int) -> None:
         raise PositionNotFoundException(f"Position {position_id} not found")
 
     if db_position.physical_bottle:
-        pb = db_position.physical_bottle
-        pb.status = "consumed"
-        pb.removal_date = datetime.utcnow()
-        pb.position_id = None
+        consume_physical_bottle(db, db_position.physical_bottle)
 
     db.add(db_position)
     db.commit()

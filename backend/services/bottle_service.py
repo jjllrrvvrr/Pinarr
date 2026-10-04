@@ -179,15 +179,14 @@ def update_bottle(
     for key, value in data.items():
         setattr(db_bottle, key, value)
 
+    # Synchroniser les bouteilles physiques si quantity modifiée
+    # (transaction unique : pas de commit intermédiaire, tout ou rien)
+    if "quantity" in data:
+        _sync_physical_bottles(db, db_bottle, data.get("quantity"))
+
     db.add(db_bottle)
     db.commit()
     db.refresh(db_bottle)
-
-    # Synchroniser les bouteilles physiques si quantity modifiée
-    if "quantity" in data:
-        _sync_physical_bottles(db, bottle_id, data.get("quantity"))
-        db.refresh(db_bottle)
-
     return db_bottle
 
 
@@ -203,26 +202,26 @@ def patch_bottle(
     for key, value in data.items():
         setattr(db_bottle, key, value)
 
+    if "quantity" in data:
+        _sync_physical_bottles(db, db_bottle, data.get("quantity"))
+
     db.add(db_bottle)
     db.commit()
     db.refresh(db_bottle)
-
-    # Synchroniser les bouteilles physiques si quantity modifiée
-    if "quantity" in data:
-        _sync_physical_bottles(db, bottle_id, data.get("quantity"))
-        db.refresh(db_bottle)
-
     return db_bottle
 
 
 def _sync_physical_bottles(
-    db: Session, bottle_id: int, target_quantity: Optional[int]
+    db: Session, db_bottle: models.Bottle, target_quantity: Optional[int]
 ) -> None:
     """Synchronise le nombre de physical_bottles en cave avec la quantity souhaitée.
 
     - Si target_quantity > physical actuelles : génère des QR supplémentaires
-    - Si target_quantity < physical actuelles : supprime d'abord les non-placées,
-      puis consomme les placées
+    - Si target_quantity < physical actuelles : consomme d'abord les non-placées,
+      puis les placées (libérées)
+
+    Ne commit PAS : la transaction appartient à l'appelant (update/patch),
+    garantissant que quantity et physical_bottles restent cohérentes.
     """
     if target_quantity is None or target_quantity < 0:
         return
@@ -230,7 +229,7 @@ def _sync_physical_bottles(
     physical_bottles = (
         db.query(models.PhysicalBottle)
         .filter(
-            models.PhysicalBottle.bottle_id == bottle_id,
+            models.PhysicalBottle.bottle_id == db_bottle.id,
             models.PhysicalBottle.status == "in_cellar",
         )
         .order_by(
@@ -244,29 +243,31 @@ def _sync_physical_bottles(
     if target_quantity > current:
         from services.physical_bottle_service import generate_qr_codes_for_bottle
 
-        generate_qr_codes_for_bottle(db, bottle_id, target_quantity - current)
+        qr_codes = generate_qr_codes_for_bottle(
+            db, db_bottle.id, target_quantity - current, commit=False
+        )
+        assert len(qr_codes) == target_quantity - current
 
     elif target_quantity < current:
+        from services.physical_bottle_service import consume_physical_bottle
+
         to_remove = current - target_quantity
         removed = 0
         for pb in physical_bottles:
             if removed >= to_remove:
                 break
             if pb.position_id is None:
-                pb.status = "consumed"
-                pb.removal_date = datetime.utcnow()
+                # quantity déjà positionnée sur la cible par l'appelant :
+                # pas de décrément supplémentaire (double comptage sinon)
+                consume_physical_bottle(db, pb, decrement_quantity=False)
                 removed += 1
 
         for pb in physical_bottles:
             if removed >= to_remove:
                 break
             if pb.position_id is not None:
-                pb.status = "consumed"
-                pb.removal_date = datetime.utcnow()
-                pb.position_id = None
+                consume_physical_bottle(db, pb, decrement_quantity=False)
                 removed += 1
-
-        db.commit()
 
 
 def delete_bottle(db: Session, bottle_id: int) -> None:
@@ -291,7 +292,7 @@ def validate_bottle_placement(
     query = db.query(models.PhysicalBottle).filter(
         models.PhysicalBottle.bottle_id == bottle_id,
         models.PhysicalBottle.status == "in_cellar",
-        models.PhysicalBottle.position_id != None,
+        models.PhysicalBottle.position_id.isnot(None),
     )
     if exclude_position_id:
         query = query.filter(models.PhysicalBottle.position_id != exclude_position_id)

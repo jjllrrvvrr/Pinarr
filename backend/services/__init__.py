@@ -29,6 +29,8 @@ from .cave_service import (
     assign_bottle_to_position,
     remove_bottle_from_position,
     consume_bottle_from_position,
+    move_bottle_to_position,
+    swap_positions,
 )
 
 from .physical_bottle_service import (
@@ -36,6 +38,7 @@ from .physical_bottle_service import (
     get_physical_bottle_with_details,
     get_bottle_physical_bottles,
     generate_qr_codes_for_bottle,
+    consume_physical_bottle,
     remove_physical_bottle,
     move_physical_bottle,
     get_physical_bottle_count_in_cellar,
@@ -72,10 +75,13 @@ __all__ = [
     "assign_bottle_to_position",
     "remove_bottle_from_position",
     "consume_bottle_from_position",
+    "move_bottle_to_position",
+    "swap_positions",
     "get_physical_bottle_by_qr",
     "get_physical_bottle_with_details",
     "get_bottle_physical_bottles",
     "generate_qr_codes_for_bottle",
+    "consume_physical_bottle",
     "remove_physical_bottle",
     "move_physical_bottle",
     "get_physical_bottle_count_in_cellar",

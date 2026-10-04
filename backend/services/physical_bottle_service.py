@@ -135,8 +135,13 @@ def get_bottle_physical_bottles(db: Session, bottle_id: int) -> List[Dict[str, A
     return result
 
 
-def generate_qr_codes_for_bottle(db: Session, bottle_id: int, count: int) -> List[str]:
-    """Génère N codes QR pour un vin et crée les bouteilles physiques."""
+def generate_qr_codes_for_bottle(
+    db: Session, bottle_id: int, count: int, commit: bool = True
+) -> List[str]:
+    """Génère N codes QR pour un vin et crée les bouteilles physiques.
+
+    commit=False laisse la transaction à l'appelant (sync transactionnel).
+    """
     # Vérifier que le vin existe
     bottle = db.query(models.Bottle).filter(models.Bottle.id == bottle_id).first()
     if not bottle:
@@ -165,8 +170,36 @@ def generate_qr_codes_for_bottle(db: Session, bottle_id: int, count: int) -> Lis
 
         qr_codes.append(qr_code)
 
-    db.commit()
+    if commit:
+        db.commit()
     return qr_codes
+
+
+def consume_physical_bottle(
+    db: Session,
+    physical_bottle: models.PhysicalBottle,
+    decrement_quantity: bool = True,
+) -> None:
+    """Marque une bouteille physique comme consommée.
+
+    Source de vérité pour la consommation : garde Bottle.quantity
+    synchronisée avec cellar_quantity (sinon une ré-édition de la fiche
+    "ressuscitait" la bouteille bue via _sync_physical_bottles).
+
+    decrement_quantity=False : pour les ajustements de stock (sync), où
+    Bottle.quantity a déjà été mise à la valeur cible par l'appelant —
+    éviter le double comptage.
+
+    Ne commit PAS : la transaction appartient à l'appelant.
+    """
+    physical_bottle.status = "consumed"
+    physical_bottle.removal_date = datetime.utcnow()
+    physical_bottle.position_id = None
+
+    if decrement_quantity:
+        bottle = physical_bottle.bottle
+        if bottle is not None and bottle.quantity and bottle.quantity > 0:
+            bottle.quantity -= 1
 
 
 def remove_physical_bottle(db: Session, physical_bottle_id: int) -> None:
@@ -182,14 +215,7 @@ def remove_physical_bottle(db: Session, physical_bottle_id: int) -> None:
             f"Bouteille physique {physical_bottle_id} non trouvée"
         )
 
-    # Mettre à jour le statut
-    physical_bottle.status = "consumed"
-    physical_bottle.removal_date = datetime.utcnow()
-
-    # Libérer la position
-    if physical_bottle.position:
-        physical_bottle.position_id = None
-
+    consume_physical_bottle(db, physical_bottle)
     db.commit()
 
 

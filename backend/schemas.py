@@ -1,32 +1,51 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, model_validator
 from typing import Optional, List
 from pydantic import ConfigDict
 from datetime import datetime
 
 
 class BottleBase(BaseModel):
-    name: str
+    name: str = Field(min_length=1)
     domaine: Optional[str] = None
     country: Optional[str] = None
-    year: Optional[int] = None
+    year: Optional[int] = Field(default=None, ge=1500, le=2100)
     type: Optional[str] = None
     region: Optional[str] = None
     cepage: Optional[str] = None
-    alcohol: Optional[float] = None
+    alcohol: Optional[float] = Field(default=None, ge=0, le=100)
     size: Optional[str] = "75cl"
-    apogee_start: Optional[int] = None
-    apogee_end: Optional[int] = None
+    apogee_start: Optional[int] = Field(default=None, ge=1500, le=2300)
+    apogee_end: Optional[int] = Field(default=None, ge=1500, le=2300)
     # Phases de développement
-    jeunesse_end: Optional[int] = None
-    maturite_end: Optional[int] = None
+    jeunesse_end: Optional[int] = Field(default=None, ge=1500, le=2300)
+    maturite_end: Optional[int] = Field(default=None, ge=1500, le=2300)
     buy_link: Optional[str] = None
-    quantity: Optional[int] = None
-    price: Optional[float] = None
+    quantity: Optional[int] = Field(default=None, ge=0, le=1000)
+    price: Optional[float] = Field(default=None, ge=0)
     description: Optional[str] = None
-    rating: Optional[int] = None
+    rating: Optional[int] = Field(default=None, ge=0, le=5)
     tags: Optional[str] = None
     is_favorite: Optional[bool] = False
     image_path: Optional[str] = None
+
+    @model_validator(mode="after")
+    def check_phase_coherence(self):
+        """Cohérence des bornes de phases et de l'apogée."""
+        if (
+            self.apogee_start is not None
+            and self.apogee_end is not None
+            and self.apogee_end < self.apogee_start
+        ):
+            raise ValueError("apogee_end doit être postérieur ou égal à apogee_start")
+        if (
+            self.jeunesse_end is not None
+            and self.maturite_end is not None
+            and self.maturite_end < self.jeunesse_end
+        ):
+            raise ValueError(
+                "maturite_end doit être postérieur ou égal à jeunesse_end"
+            )
+        return self
 
 
 class BottleCreate(BottleBase):
@@ -34,25 +53,25 @@ class BottleCreate(BottleBase):
 
 
 class BottlePatch(BaseModel):
-    name: Optional[str] = None
+    name: Optional[str] = Field(default=None, min_length=1)
     domaine: Optional[str] = None
     country: Optional[str] = None
-    year: Optional[int] = None
+    year: Optional[int] = Field(default=None, ge=1500, le=2100)
     type: Optional[str] = None
     region: Optional[str] = None
     cepage: Optional[str] = None
-    alcohol: Optional[float] = None
+    alcohol: Optional[float] = Field(default=None, ge=0, le=100)
     size: Optional[str] = None
-    apogee_start: Optional[int] = None
-    apogee_end: Optional[int] = None
+    apogee_start: Optional[int] = Field(default=None, ge=1500, le=2300)
+    apogee_end: Optional[int] = Field(default=None, ge=1500, le=2300)
     # Phases de développement
-    jeunesse_end: Optional[int] = None
-    maturite_end: Optional[int] = None
+    jeunesse_end: Optional[int] = Field(default=None, ge=1500, le=2300)
+    maturite_end: Optional[int] = Field(default=None, ge=1500, le=2300)
     buy_link: Optional[str] = None
-    quantity: Optional[int] = None
-    price: Optional[float] = None
+    quantity: Optional[int] = Field(default=None, ge=0, le=1000)
+    price: Optional[float] = Field(default=None, ge=0)
     description: Optional[str] = None
-    rating: Optional[int] = None
+    rating: Optional[int] = Field(default=None, ge=0, le=5)
     tags: Optional[str] = None
     is_favorite: Optional[bool] = None
     image_path: Optional[str] = None

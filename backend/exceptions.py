@@ -51,6 +51,12 @@ class PhysicalBottleNotFoundException(PinarrException):
     pass
 
 
+class RowOccupiedException(PinarrException):
+    """Modification impossible : des positions sont occupées."""
+
+    pass
+
+
 class InvalidUploadException(PinarrException):
     """Upload invalide."""
 
@@ -68,6 +74,7 @@ def handle_pinarr_exception(exc: PinarrException) -> HTTPException:
         PhysicalBottleNotFoundException: 404,
         MaxQuantityReachedException: 400,
         InvalidUploadException: 400,
+        RowOccupiedException: 400,
     }
     status_code = status_map.get(type(exc), 500)
     return HTTPException(status_code=status_code, detail=str(exc))
