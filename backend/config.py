@@ -10,8 +10,8 @@ BASE_DIR = Path(__file__).parent
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./pinarr.db")
 
 # Configuration uploads
-UPLOAD_DIR = Path("/app/uploads")
-UPLOAD_DIR.mkdir(exist_ok=True)
+UPLOAD_DIR = Path(os.getenv("UPLOAD_DIR", "/app/uploads"))
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 # Sécurité uploads
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"}
