@@ -32,6 +32,7 @@ jobs:
         working-directory: backend
         env:
           SECRET_KEY: ci-secret-key
+          UPLOAD_DIR: /tmp/pinarr-uploads
         run: python -m pytest tests/ -v
 
   frontend-build:
