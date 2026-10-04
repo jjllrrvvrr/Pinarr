@@ -1,10 +1,19 @@
 #!/bin/sh
 set -e
 
-# Générer un SECRET_KEY aléatoire si non défini
+# Générer un SECRET_KEY aléatoire si non défini, une seule fois
+# (persistée dans /app/data pour survivre aux redémarrages du conteneur)
 if [ -z "$SECRET_KEY" ]; then
-    export SECRET_KEY=$(openssl rand -hex 32)
-    echo "SECRET_KEY généré automatiquement"
+    SECRET_KEY_FILE="/app/data/secret_key"
+    if [ -f "$SECRET_KEY_FILE" ] && [ -s "$SECRET_KEY_FILE" ]; then
+        export SECRET_KEY=$(cat "$SECRET_KEY_FILE")
+        echo "SECRET_KEY restaurée depuis /app/data"
+    else
+        export SECRET_KEY=$(openssl rand -hex 32)
+        echo "$SECRET_KEY" > "$SECRET_KEY_FILE"
+        chmod 600 "$SECRET_KEY_FILE"
+        echo "SECRET_KEY générée et persistée dans /app/data"
+    fi
 fi
 
 # Définir les valeurs par défaut pour admin

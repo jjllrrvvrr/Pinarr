@@ -58,16 +58,12 @@ def upgrade():
     # ── 2. Ajouter la colonne temporaire physical_bottle_id dans positions si absente ──
     # NOTE: cette colonne est temporaire (créée ici, supprimée par 004)
     if not _column_exists(connection, "positions", "physical_bottle_id"):
+        # SQLite ne supporte pas ADD CONSTRAINT: la FK est assurée par la
+        # reconstruction de la table à l'étape 4 (copy-and-move), pas par
+        # create_foreign_key qui lève NotImplementedError sur SQLite.
         op.add_column(
             "positions",
             sa.Column("physical_bottle_id", sa.Integer(), nullable=True)
-        )
-        op.create_foreign_key(
-            "fk_positions_physical_bottle",
-            "positions",
-            "physical_bottles",
-            ["physical_bottle_id"],
-            ["id"],
         )
 
     # ── 3. Migrer les données existantes (si table vient d'être créée) ──
@@ -174,10 +170,9 @@ def upgrade():
 
 
 def downgrade():
+    # SQLite: pas de create_foreign_key direct, colonne simple sans FK
+    # (la FK historique n'est pas restaurée, seule la donnée compte)
     op.add_column("positions", sa.Column("bottle_id", sa.Integer(), nullable=True))
-    op.create_foreign_key(
-        "fk_positions_bottle", "positions", "bottles", ["bottle_id"], ["id"]
-    )
 
     connection = op.get_bind()
     connection.execute(

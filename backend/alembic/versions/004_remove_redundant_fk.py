@@ -71,13 +71,8 @@ def upgrade():
 
 
 def downgrade():
+    # SQLite ne supporte pas ADD CONSTRAINT: simple colonne sans FK
+    # (même approche que 003, la FK n'est pas restaurée)
     op.add_column(
         "positions", sa.Column("physical_bottle_id", sa.Integer(), nullable=True)
-    )
-    op.create_foreign_key(
-        "fk_positions_physical_bottle",
-        "positions",
-        "physical_bottles",
-        ["physical_bottle_id"],
-        ["id"],
     )
