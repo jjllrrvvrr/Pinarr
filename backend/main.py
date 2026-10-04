@@ -4,6 +4,8 @@ Pinarr API - Routes FastAPI refactorisées avec authentification.
 Ce module utilise une architecture en services pour une meilleure maintenabilité.
 """
 
+import logging
+
 from fastapi import (
     FastAPI,
     HTTPException,
@@ -21,8 +23,9 @@ from typing import List
 import io
 
 from config import API_TITLE, CORS_ORIGINS, UPLOAD_DIR
-from dependencies import get_db
+from dependencies import get_db, pinarr_exception_handler
 from exceptions import PinarrException, handle_pinarr_exception
+from ratelimit import check_login_rate_limit, check_public_qr_rate_limit
 from routers import auth as auth_router
 from auth import get_current_user
 import schemas
@@ -53,6 +56,8 @@ from services import (
     assign_bottle_to_position,
     remove_bottle_from_position,
     consume_bottle_from_position,
+    move_bottle_to_position,
+    swap_positions,
     # Physical bottle services
     get_physical_bottle_by_qr,
     get_physical_bottle_with_details,
@@ -73,7 +78,13 @@ from services import (
     create_geocoded_region,
 )
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 app = FastAPI(title=API_TITLE)
+
+# Convertir les exceptions métier en réponses HTTP propres (404/400)
+app.add_exception_handler(PinarrException, pinarr_exception_handler)
 
 # Servir les fichiers uploadés comme fichiers statiques
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
@@ -437,6 +448,38 @@ def consume_bottle_from_position_endpoint(
         raise
 
 
+@api_router.post("/positions/{from_position_id}/move/{to_position_id}")
+def move_bottle_to_position_endpoint(
+    from_position_id: int, to_position_id: int, db: Session = Depends(get_db)
+):
+    """Déplace atomiquement la bouteille d'une position vers une autre.
+
+    Transaction unique côté backend : remplace l'enchaînement de requêtes
+    HTTP du frontend qui pouvait laisser une bouteille sans emplacement.
+    """
+    try:
+        move_bottle_to_position(db, from_position_id, to_position_id)
+        return {"message": "Bouteille déplacée avec succès"}
+    except Exception as e:
+        if "not found" in str(e).lower():
+            raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@api_router.post("/positions/{position_a_id}/swap/{position_b_id}")
+def swap_positions_endpoint(
+    position_a_id: int, position_b_id: int, db: Session = Depends(get_db)
+):
+    """Échange atomiquement les bouteilles de deux positions."""
+    try:
+        swap_positions(db, position_a_id, position_b_id)
+        return {"message": "Bouteilles échangées avec succès"}
+    except Exception as e:
+        if "not found" in str(e).lower():
+            raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 # === UPLOAD ===
 
 
@@ -496,8 +539,9 @@ def get_bottle_physical_bottles_endpoint(bottle_id: int, db: Session = Depends(g
 # Route publique pour scanner un QR code (pas de /api/v1)
 # Routes publiques pour scanner un QR code et retirer une bouteille (non préfixées par /api/v1)
 @app.get("/api/scan/{qr_code}")
-def scan_qr_code_endpoint(qr_code: str, db: Session = Depends(get_db)):
+def scan_qr_code_endpoint(qr_code: str, request: Request, db: Session = Depends(get_db)):
     """Récupère les informations d'une bouteille physique par son code QR (public)."""
+    check_public_qr_rate_limit(request)
     try:
         physical_bottle = get_physical_bottle_by_qr(db, qr_code)
         if not physical_bottle:
@@ -509,15 +553,14 @@ def scan_qr_code_endpoint(qr_code: str, db: Session = Depends(get_db)):
     except HTTPException:
         raise
     except Exception as e:
-        import traceback
-
-        print(f"ERROR scan_qr: {e}\n{traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=f"Erreur serveur: {str(e)}")
+        logger.exception("Erreur scan_qr (%s): %s", qr_code, e)
+        raise HTTPException(status_code=500, detail="Erreur serveur")
 
 
 @app.post("/api/remove/{qr_code}")
 def remove_physical_bottle_public_endpoint(
     qr_code: str,
+    request: Request,
     db: Session = Depends(get_db),
 ):
     """Retire une bouteille de la cave (marque comme consommée). Public via QR.
@@ -526,6 +569,7 @@ def remove_physical_bottle_public_endpoint(
     séquentiel, pour éviter qu'un tiers non authentifié puisse énumérer les
     IDs et retirer des bouteilles sans avoir scanné le QR physique (IDOR).
     """
+    check_public_qr_rate_limit(request)
     try:
         physical_bottle = get_physical_bottle_by_qr(db, qr_code)
         if not physical_bottle:
@@ -535,10 +579,8 @@ def remove_physical_bottle_public_endpoint(
     except HTTPException:
         raise
     except Exception as e:
-        import traceback
-
-        print(f"ERROR remove_qr: {e}\n{traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=f"Erreur serveur: {str(e)}")
+        logger.exception("Erreur remove_qr (%s): %s", qr_code, e)
+        raise HTTPException(status_code=500, detail="Erreur serveur")
 
 
 @api_router.put("/physical-bottles/{physical_bottle_id}/move")
@@ -609,12 +651,8 @@ def download_batch_labels_endpoint(
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        import traceback
-
-        print(f"ERROR batch_labels: {e}\n{traceback.format_exc()}")
-        raise HTTPException(
-            status_code=500, detail=f"Erreur génération étiquettes: {str(e)}"
-        )
+        logger.exception("Erreur batch_labels (bottle %s): %s", bottle_id, e)
+        raise HTTPException(status_code=500, detail="Erreur génération étiquettes")
 
 
 @api_router.get("/bottles/{bottle_id}/physical-bottles/{qr_code}/label")
@@ -637,12 +675,8 @@ def download_single_label_endpoint(
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        import traceback
-
-        print(f"ERROR single_label: {e}\n{traceback.format_exc()}")
-        raise HTTPException(
-            status_code=500, detail=f"Erreur génération étiquette: {str(e)}"
-        )
+        logger.exception("Erreur single_label (%s): %s", qr_code, e)
+        raise HTTPException(status_code=500, detail="Erreur génération étiquette")
 
 
 # Inclure le router API principal
