@@ -1,5 +1,8 @@
 """Service pour la gestion des uploads."""
 
+import ipaddress
+import logging
+import socket
 import os
 import uuid
 from pathlib import Path
@@ -7,6 +10,7 @@ from io import BytesIO
 from PIL import Image
 from fastapi import UploadFile
 import requests
+from urllib.parse import urlparse
 from config import (
     ALLOWED_EXTENSIONS,
     ALLOWED_MIME_TYPES,
@@ -15,6 +19,8 @@ from config import (
     MAX_FILE_SIZE_MB,
 )
 from exceptions import InvalidUploadException
+
+logger = logging.getLogger(__name__)
 
 
 # Signatures de fichiers pour validation
@@ -192,6 +198,53 @@ def delete_image(filename: str) -> bool:
     return False
 
 
+def _is_private_ip(ip_str: str) -> bool:
+    """Vérifie si une IP est privée/réservée (SSRF guard)."""
+    try:
+        ip = ipaddress.ip_address(ip_str)
+    except ValueError:
+        return True  # IP invalide = suspect
+
+    return (
+        ip.is_private
+        or ip.is_loopback
+        or ip.is_link_local
+        or ip.is_reserved
+        or ip.is_multicast
+        or ip.is_unspecified
+    )
+
+
+def _validate_url_host(url: str) -> None:
+    """Valide que l'URL pointe vers un hôte public (anti-SSRF)."""
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        raise InvalidUploadException("Seuls les URLs http/https sont supportés")
+
+    hostname = parsed.hostname
+    if not hostname:
+        raise InvalidUploadException("URL invalide")
+
+    # Si c'est déjà une IP littérale, vérifier directement
+    try:
+        ipaddress.ip_address(hostname)
+        if _is_private_ip(hostname):
+            raise InvalidUploadException("URL pointant vers une adresse privée")
+        return
+    except ValueError:
+        pass  # c'est un hostname, résoudre
+
+    try:
+        addrinfos = socket.getaddrinfo(hostname, None)
+    except socket.gaierror:
+        raise InvalidUploadException("Hôte introuvable")
+
+    for addrinfo in addrinfos:
+        ip_str = addrinfo[4][0]
+        if _is_private_ip(ip_str):
+            raise InvalidUploadException("URL pointant vers une adresse privée")
+
+
 def upload_image_from_url(url: str) -> dict:
     """
     Télécharge une image depuis une URL et la sauvegarde localement.
@@ -203,6 +256,9 @@ def upload_image_from_url(url: str) -> dict:
         Dict avec filename et path
     """
     try:
+        # Anti-SSRF : vérifier l'hôte avant tout téléchargement
+        _validate_url_host(url)
+
         # Headers pour simuler un navigateur
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
@@ -210,10 +266,28 @@ def upload_image_from_url(url: str) -> dict:
             "Referer": "https://www.google.com/",
         }
 
-        # Télécharger l'image avec streaming et redirections
+        # Télécharger l'image avec streaming
+        # allow_redirects=False : chaque redirection est revalidée
+        # manuellement contre le guard SSRF.
         response = requests.get(
-            url, timeout=60, stream=True, headers=headers, allow_redirects=True
+            url, timeout=60, stream=True, headers=headers, allow_redirects=False
         )
+
+        # Suivre les redirections manuellement avec revalidation anti-SSRF
+        redirects = 0
+        while response.status_code in (301, 302, 303, 307, 308):
+            redirects += 1
+            if redirects > 5:
+                raise InvalidUploadException("Trop de redirections")
+            next_url = response.headers.get("location")
+            if not next_url:
+                raise InvalidUploadException("Redirection invalide")
+            _validate_url_host(next_url)
+            response = requests.get(
+                next_url, timeout=60, stream=True, headers=headers,
+                allow_redirects=False,
+            )
+
         response.raise_for_status()
 
         # Détecter le type de contenu
@@ -251,15 +325,18 @@ def upload_image_from_url(url: str) -> dict:
             )
 
         # Lire le contenu en streaming
-        content = b""
+        content = BytesIO()
+        total = 0
         for chunk in response.iter_content(chunk_size=8192):
             if chunk:
-                content += chunk
+                total += len(chunk)
                 # Vérifier la taille pendant le téléchargement
-                if len(content) > MAX_FILE_SIZE_BYTES:
+                if total > MAX_FILE_SIZE_BYTES:
                     raise InvalidUploadException(
                         f"Fichier trop volumineux. Maximum: {MAX_FILE_SIZE_MB}MB"
                     )
+                content.write(chunk)
+        content = content.getvalue()
 
         # Valider le contenu téléchargé
         _validate_image_content(content)
@@ -277,9 +354,12 @@ def upload_image_from_url(url: str) -> dict:
 
         return {"filename": filename, "path": f"/uploads/{filename}"}
 
+    except InvalidUploadException:
+        raise
     except requests.exceptions.Timeout:
         raise InvalidUploadException("Le téléchargement a pris trop de temps (timeout)")
     except requests.exceptions.RequestException as e:
         raise InvalidUploadException(f"Erreur lors du téléchargement: {str(e)}")
     except Exception as e:
-        raise InvalidUploadException(f"Erreur: {str(e)}")
+        logger.exception("Erreur upload depuis URL: %s", e)
+        raise InvalidUploadException("Erreur lors du téléchargement de l'image")

@@ -19,6 +19,7 @@ from auth import (
     get_current_user,
     hash_password,
 )
+from ratelimit import check_login_rate_limit
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
@@ -61,6 +62,9 @@ async def login(
     """
     Connexion utilisateur
     """
+    # Anti brute-force
+    check_login_rate_limit(request)
+
     # Récupérer l'utilisateur
     user = get_user_by_username(db, credentials.username)
 
