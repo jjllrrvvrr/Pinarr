@@ -151,13 +151,30 @@
         </button>
       </div>
 
+      <!-- Tri -->
+      <div v-if="visibleBottles.length > 0" class="mb-4 flex items-center justify-between gap-2">
+        <span class="text-gh-text-secondary text-xs">{{ visibleBottles.length }} vin(s)</span>
+        <div class="flex items-center gap-1.5">
+          <label class="text-gh-text-secondary text-xs" for="sort-select">Tri :</label>
+          <select id="sort-select" v-model="sortBy"
+                  class="bg-gh-bg border border-gh-border rounded-md px-2 py-1 text-xs text-gh-text focus:border-gh-accent outline-none">
+            <option value="name">Nom (A→Z)</option>
+            <option value="year">Millésime (ancien d'abord)</option>
+            <option value="price">Prix (élevé d'abord)</option>
+            <option value="rating">Note (haute d'abord)</option>
+          </select>
+        </div>
+      </div>
+
       <div v-if="visibleBottles.length === 0" class="text-center py-20 border border-gh-border rounded-md bg-gh-bg">
-        <div class="text-gh-text-secondary text-sm">{{ showHistory ? 'Aucune bouteille dans l\'historique' : 'Aucune bouteille en cave' }}</div>
+        <div v-if="bottlesLoading" class="text-gh-text-secondary text-sm">Chargement des bouteilles…</div>
+        <div v-else-if="bottlesError" class="text-gh-accent-red text-sm">{{ bottlesError }}</div>
+        <div v-else class="text-gh-text-secondary text-sm">{{ showHistory ? 'Aucune bouteille dans l\'historique' : 'Aucune bouteille en cave' }}</div>
       </div>
 
       <div v-else :class="viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4' : 'space-y-2'">
         <BottleCard 
-          v-for="bottle in visibleBottles" 
+          v-for="bottle in paginatedBottles" 
           :key="bottle.id"
           :bottle="bottle"
           :view-mode="viewMode"
@@ -167,6 +184,14 @@
           @update-quantity="updateQty"
           @delete="deleteBottle"
         />
+      </div>
+
+      <!-- Pagination "Voir plus" -->
+      <div v-if="visibleBottles.length > visibleCount" class="mt-6 text-center">
+        <button @click="showMore"
+                class="px-5 py-2.5 text-sm font-medium text-gh-accent bg-gh-elevated hover:bg-gh-border border border-gh-border rounded-lg transition">
+          Voir plus ({{ visibleBottles.length - visibleCount }} restants)
+        </button>
       </div>
     </template>
   </main>
@@ -187,13 +212,20 @@ const router = useRouter()
 const props = defineProps({
   bottles: Array,
   storageLocations: Array,
-  shelves: Array
+  shelves: Array,
+  bottlesLoading: Boolean,
+  bottlesError: String
 })
 const emit = defineEmits(['edit-bottle', 'delete-bottle', 'show-qr', 'update-quantity', 'refresh-data'])
 
 const searchQuery = ref('')
 const viewMode = ref('grid')
 const showHistory = ref(false)
+
+// Tri + pagination
+const sortBy = ref('name')  // name | year | price | rating
+const pageSize = 60
+const visibleCount = ref(pageSize)
 
 const filters = ref({
   cepage: null,
@@ -293,9 +325,9 @@ const goToBottle = (id) => {
 
 const updateQty = (id, qty) => {
   if (qty < 0) return
+  // update-quantity déclenche déjà fetchBottles côté App.vue :
+  // pas de refresh-data supplémentaire (double fetch sinon)
   emit('update-quantity', id, qty)
-  // Rafraîchir les données parent (App.vue fetchBottles)
-  emit('refresh-data')
 }
 
 const deleteBottle = (id) => {
@@ -362,11 +394,36 @@ const filteredBottles = computed(() => {
 })
 
 const visibleBottles = computed(() => {
+  let list
   if (showHistory.value) {
-    return filteredBottles.value.filter(b => (b.cellar_quantity || 0) === 0 && (b.physical_bottles?.length || 0) > 0)
+    list = filteredBottles.value.filter(b => (b.cellar_quantity || 0) === 0 && (b.physical_bottles?.length || 0) > 0)
+  } else {
+    list = filteredBottles.value.filter(b => (b.cellar_quantity || 0) > 0)
   }
-  return filteredBottles.value.filter(b => (b.cellar_quantity || 0) > 0)
+
+  // Tri déterministe
+  const sorted = [...list]
+  switch (sortBy.value) {
+    case 'year':
+      sorted.sort((a, b) => (a.year || 0) - (b.year || 0) || a.name.localeCompare(b.name))
+      break
+    case 'price':
+      sorted.sort((a, b) => (b.price || 0) - (a.price || 0) || a.name.localeCompare(b.name))
+      break
+    case 'rating':
+      sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0) || a.name.localeCompare(b.name))
+      break
+    default: // name
+      sorted.sort((a, b) => a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }))
+  }
+  return sorted
 })
+
+const paginatedBottles = computed(() => visibleBottles.value.slice(0, visibleCount.value))
+
+const showMore = () => {
+  visibleCount.value += pageSize
+}
 
 // Nouvelles computed properties pour la recherche séparée
 const inStockSearchResults = computed(() => {

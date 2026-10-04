@@ -6,8 +6,8 @@ const baseUrl = isProduction ? '' : (import.meta.env.VITE_API_URL || 'http://loc
 
 const config = {
   API_BASE_URL: `${baseUrl}/api/v1`,
-  // Configuration uploads
-  MAX_FILE_SIZE_MB: 5,
+  // Configuration uploads - doit rester synchro avec backend/config.py (10MB)
+  MAX_FILE_SIZE_MB: 10,
   ALLOWED_IMAGE_TYPES: ['image/jpeg', 'image/png', 'image/webp'],
 }
 

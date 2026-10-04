@@ -19,7 +19,7 @@
               <div class="relative flex items-center justify-center w-full h-full">
                 <img v-if="bottle.image_path" :src="getImageUrl(bottle.image_path)" :alt="bottle.name" class="w-full h-full max-w-[150px] sm:max-w-[180px] lg:max-w-[200px] max-h-[250px] sm:max-h-[300px] lg:max-h-[350px] object-contain" />
                 <WineBottleIcon v-else :type="bottle.type" :size="100" class="sm:w-[120px] lg:w-[140px]" />
-                <span v-if="bottle.quantity === 0" class="absolute top-0 left-0 bg-gh-accent-red text-gh-text text-xs px-2 sm:px-3 py-0.5 sm:py-1 rounded-full font-medium">Épuisé</span>
+                <span v-if="cellarCount === 0 && physicalBottles.length > 0" class="absolute top-0 left-0 bg-gh-accent-red text-gh-text text-xs px-2 sm:px-3 py-0.5 sm:py-1 rounded-full font-medium">Épuisé</span>
               </div>
             </div>
           </div>
@@ -183,14 +183,29 @@
         </div>
 
         <!-- Bouteilles physiques (tableau compact) -->
-        <div v-if="activePhysicalBottles.length > 0" class="p-3 sm:p-6 border-t border-gh-border">
+        <div v-if="physicalBottles.length > 0" class="p-3 sm:p-6 border-t border-gh-border">
           <div class="flex items-center justify-between mb-3 sm:mb-4">
-            <h2 class="text-xs uppercase tracking-wider text-gh-text-secondary font-medium flex items-center gap-2">
-              <QrCodeIcon class="w-4 h-4" />
-              Bouteilles physiques ({{ activePhysicalBottles.length }})
-            </h2>
+            <div class="flex items-center gap-3">
+              <h2 class="text-xs uppercase tracking-wider text-gh-text-secondary font-medium flex items-center gap-2">
+                <QrCodeIcon class="w-4 h-4" />
+                Bouteilles physiques
+              </h2>
+              <!-- Onglets En cave / Historique -->
+              <div class="flex items-center gap-1 text-xs">
+                <button @click="physicalTab = 'cellar'"
+                        :class="physicalTab === 'cellar' ? 'bg-gh-elevated text-gh-text border-gh-border' : 'text-gh-text-secondary hover:text-gh-text border-transparent'"
+                        class="px-2.5 py-1 rounded-md border transition">
+                  En cave ({{ activePhysicalBottles.length }})
+                </button>
+                <button @click="physicalTab = 'history'"
+                        :class="physicalTab === 'history' ? 'bg-gh-elevated text-gh-text border-gh-border' : 'text-gh-text-secondary hover:text-gh-text border-transparent'"
+                        class="px-2.5 py-1 rounded-md border transition">
+                  Historique ({{ consumedPhysicalBottles.length }})
+                </button>
+              </div>
+            </div>
             <button
-              v-if="activePhysicalBottles.length > 0"
+              v-if="physicalTab === 'cellar' && activePhysicalBottles.length > 0"
               @click="downloadAllLabels"
               :disabled="isDownloadingLabels"
               class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gh-accent bg-gh-elevated hover:bg-gh-border border border-gh-border rounded-md transition disabled:opacity-40"
@@ -206,13 +221,13 @@
               <thead class="bg-gh-bg text-xs uppercase text-gh-text-secondary">
                 <tr>
                   <th class="px-3 py-2.5">Position</th>
-                  <th class="px-3 py-2.5">Acquis.</th>
+                  <th class="px-3 py-2.5">{{ physicalTab === 'cellar' ? 'Acquis.' : 'Consommée le' }}</th>
                   <th class="px-3 py-2.5 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gh-border bg-gh-surface">
                 <tr
-                  v-for="pb in activePhysicalBottles"
+                  v-for="pb in physicalTab === 'cellar' ? activePhysicalBottles : consumedPhysicalBottles"
                   :key="pb.id"
                   class="hover:bg-gh-bg/40 transition"
                 >
@@ -232,7 +247,7 @@
                     </div>
                   </td>
                   <td class="px-3 py-2.5 text-gh-text-secondary text-xs whitespace-nowrap">
-                    {{ formatDate(pb.acquisition_date) }}
+                    {{ physicalTab === 'cellar' ? formatDate(pb.acquisition_date) : formatDate(pb.removal_date) }}
                   </td>
                   <td class="px-3 py-2.5 text-right">
                     <div class="inline-flex items-center gap-2">
@@ -245,6 +260,7 @@
                         <span class="hidden sm:inline text-xs">QR</span>
                       </button>
                       <button
+                        v-if="physicalTab === 'cellar'"
                         @click="showRemoveConfirm(pb)"
                         class="flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-gh-accent-red bg-gh-accent-red/10 hover:bg-gh-accent-red/20 border border-gh-accent-red/30 rounded-md transition text-sm"
                         title="Retirer (marquer comme consommée)"
@@ -344,6 +360,18 @@
       </div>
     </div>
 
+    <div v-else-if="loadError" class="text-center py-20">
+      <p class="text-gh-accent-red font-medium mb-3">⚠ {{ loadError }}</p>
+      <div class="flex items-center justify-center gap-3">
+        <button @click="fetchBottle" class="px-4 py-2 text-sm text-gh-accent bg-gh-elevated hover:bg-gh-border border border-gh-border rounded-md transition">
+          Réessayer
+        </button>
+        <router-link to="/" class="px-4 py-2 text-sm text-gh-text-secondary hover:text-gh-text transition">
+          Retour à l'accueil
+        </router-link>
+      </div>
+    </div>
+
     <div v-else class="text-center py-20 text-gh-text-secondary">
       <p>Chargement...</p>
     </div>
@@ -352,7 +380,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import QrcodeVue from 'qrcode.vue'
 import { 
@@ -394,6 +422,7 @@ const emit = defineEmits(['refresh-data'])
 const bottle = ref(null)
 const physicalBottles = ref([])
 const isLoading = ref(false)
+const loadError = ref(null)
 const selectedQrBottle = ref(null)
 const isDownloadingLabels = ref(false)
 
@@ -403,13 +432,15 @@ const activePhysicalBottles = computed(() => {
   return physicalBottles.value.filter(pb => pb.status === 'in_cellar')
 })
 
-const cellarCount = computed(() => {
-  return activePhysicalBottles.value.filter(pb => pb.position_code).length
+const consumedPhysicalBottles = computed(() => {
+  return physicalBottles.value.filter(pb => pb.status === 'consumed')
 })
 
-const qrValue = computed(() => {
-    const pb = physicalBottles.value.find(pb => pb.status === 'in_cellar')
-    return pb ? `${window.location.origin}/bottle/${pb.qr_code}` : ''
+const physicalTab = ref('cellar')
+
+const cellarCount = computed(() => {
+  // Toutes les bouteilles physiques "en cave" (placées OU en stock libre)
+  return activePhysicalBottles.value.length
 })
 
 const getQrUrl = (qrCode) => {
@@ -451,12 +482,17 @@ const goToCaveFromPhysicalBottle = (pb) => {
 const fetchBottle = async () => {
   const id = route.params.id
   if (!id) return
+  isLoading.value = true
+  loadError.value = null
   try {
     bottle.value = await apiRequest(`${API_URL}/${id}`)
     // Récupérer les bouteilles physiques
     await fetchPhysicalBottles()
   } catch (e) {
     console.error('Erreur:', e)
+    loadError.value = e.message || 'Impossible de charger la bouteille'
+  } finally {
+    isLoading.value = false
   }
 }
 
@@ -544,7 +580,7 @@ const downloadAllLabels = async () => {
 }
 
 const deleteBottle = async () => {
-  if (confirm(`Supprimer "${bottle.value.name}" ?`)) {
+  if (confirm(`Supprimer "${bottle.value.name}" ?\n\nL'historique des bouteilles consommées associées sera également supprimé.`)) {
     try {
       await apiRequest(`${API_URL}/${route.params.id}`, {
         method: 'DELETE'
@@ -553,16 +589,13 @@ const deleteBottle = async () => {
       router.push('/')
     } catch (e) {
       console.error('Erreur lors de la suppression:', e)
+      alert('Impossible de supprimer : ' + e.message)
     }
   }
 }
 
 const goToFilter = (key, value) => {
   router.push(`/?${key}=${encodeURIComponent(value)}`)
-}
-
-const goToCavePosition = (pos) => {
-  router.push(`/caves/${pos.cave_id}?column=${pos.column_name}&row=${pos.row_name}&position=${pos.code}`)
 }
 
 import { useWineTypeStyles } from '@/composables/useWineTypeStyles.js'
@@ -580,7 +613,6 @@ const getImageUrl = (path) => {
   return `${config.API_BASE_URL}${path}`
 }
 
-onMounted(() => {
-  fetchBottle()
-})
+// Le watch(route.params.id, ..., { immediate: true }) ci-dessus couvre déjà
+// le montage initial ET les changements de route : pas de double fetch ici.
 </script>

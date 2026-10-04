@@ -49,6 +49,8 @@ const addColumn = () => {
 }
 
 const removeColumn = (colIndex) => {
+  const col = columns.value[colIndex]
+  if (col.id && !confirm(`Supprimer la colonne "${col.name}" et toutes ses étagères à la sauvegarde ?`)) return
   columns.value.splice(colIndex, 1)
   columns.value.forEach((col, i) => col.order = i)
 }
@@ -64,6 +66,8 @@ const addRow = (colIndex) => {
 }
 
 const removeRow = (colIndex, rowIndex) => {
+  const row = columns.value[colIndex].rows[rowIndex]
+  if (row.id && !confirm(`Supprimer l'étagère "${row.name}" à la sauvegarde ?`)) return
   columns.value[colIndex].rows.splice(rowIndex, 1)
   columns.value[colIndex].rows.forEach((row, i) => row.order = i)
 }
@@ -137,13 +141,14 @@ const saveCave = async () => {
 
     for (const col of columns.value) {
       let savedColId = col.id
-      
+
       if (!col.id) {
         const saved = await apiRequest(`/caves/${savedCaveId}/columns/`, {
           method: 'POST',
           body: JSON.stringify({ name: col.name, order: col.order })
         })
         savedColId = saved.id
+        col.id = saved.id  // mémoriser l'ID : évite de re-POSTer au 2e save
       } else {
         await apiRequest(`/columns/${col.id}`, {
           method: 'PUT',
@@ -152,7 +157,7 @@ const saveCave = async () => {
       }
 
       const existingRowIds = col.rows.filter(r => r.id).map(r => r.id)
-      if (col.id) {
+      if (savedColId) {
         const caveData = await apiRequest(`/caves/${savedCaveId}`)
         const existingCol = caveData.columns?.find(c => c.id === savedColId)
         if (existingCol?.rows) {
@@ -166,7 +171,7 @@ const saveCave = async () => {
 
       for (const row of col.rows) {
         if (!row.id) {
-          await apiRequest(`/columns/${savedColId}/rows/`, {
+          const savedRow = await apiRequest(`/columns/${savedColId}/rows/`, {
             method: 'POST',
             body: JSON.stringify({
               name: row.name,
@@ -175,6 +180,7 @@ const saveCave = async () => {
               order: row.order
             })
           })
+          row.id = savedRow.id  // mémoriser l'ID : évite les doublons au 2e save
         } else {
           await apiRequest(`/rows/${row.id}`, {
             method: 'PUT',

@@ -19,6 +19,8 @@ const API_URL = `${config.API_BASE_URL}/bottles`
 const API_LOCATIONS_URL = `${config.API_BASE_URL}/caves`
 
 const bottles = ref([])
+const bottlesLoading = ref(false)
+const bottlesError = ref(null)
 const storageLocations = ref([])
 const isQRModalOpen = ref(false)
 const isLocationModalOpen = ref(false)
@@ -84,7 +86,9 @@ const changePassword = async () => {
 
 const logout = async () => {
   await AuthService.logout()
-  router.push('/login')
+  // Forcer le rechargement complet : garantit que le guard ré-évalue
+  // l'état (cookie + storage nettoyés) au lieu de re-authentifier
+  window.location.href = '/login'
 }
 
 // Username change state
@@ -136,14 +140,25 @@ const changeUsername = async () => {
 }
 
 const fetchBottles = async () => {
+  bottlesLoading.value = true
   try {
     const res = await fetch(API_URL, {
       headers: {
         'Authorization': `Bearer ${sessionStorage.getItem('auth_token') || ''}`
       }
     })
-    if (res.ok) bottles.value = await res.json()
-  } catch (e) { console.error("Erreur connexion:", e) }
+    if (res.ok) {
+      bottles.value = await res.json()
+      bottlesError.value = null
+    } else {
+      bottlesError.value = `Erreur de chargement (HTTP ${res.status})`
+    }
+  } catch (e) {
+    console.error("Erreur connexion:", e)
+    bottlesError.value = 'Impossible de charger les bouteilles'
+  } finally {
+    bottlesLoading.value = false
+  }
 }
 
 const fetchStorageLocations = async () => {
@@ -159,16 +174,23 @@ watch(() => router.currentRoute.value.path, (newPath) => {
 })
 
 const deleteBottle = async (id) => {
-  try { 
-    await fetch(`${API_URL}/${id}`, { 
+  try {
+    const res = await fetch(`${API_URL}/${id}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${sessionStorage.getItem('auth_token') || ''}`
       }
-    }); 
-    fetchBottles() 
+    });
+    if (!res.ok) {
+      alert(`Impossible de supprimer (HTTP ${res.status})`)
+      return
+    }
+    fetchBottles()
   }
-  catch (e) { console.error(e) }
+  catch (e) {
+    console.error(e)
+    alert('Erreur réseau lors de la suppression')
+  }
 }
 
 const updateQuantity = async (id, newQuantity) => {
@@ -205,8 +227,17 @@ const updateQuantity = async (id, newQuantity) => {
       },
       body: JSON.stringify({ quantity: newQuantity })
     })
-    if (res.ok) fetchBottles()
-  } catch (e) { console.error(e) }
+    if (res.ok) {
+      fetchBottles()
+    } else {
+      const err = await res.json().catch(() => ({}))
+      alert(err.detail || `Impossible de mettre à jour la quantité (HTTP ${res.status})`)
+      fetchBottles() // resynchroniser l'affichage avec l'état réel
+    }
+  } catch (e) {
+    console.error(e)
+    alert('Erreur réseau lors de la mise à jour de la quantité')
+  }
 }
 
 // État pour le modal de retrait
@@ -443,6 +474,8 @@ onUnmounted(() => {
 
     <router-view 
       :bottles="bottles"
+      :bottles-loading="bottlesLoading"
+      :bottles-error="bottlesError"
       :storageLocations="storageLocations"
       @delete-bottle="deleteBottle"
       @update-quantity="updateQuantity"

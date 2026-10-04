@@ -152,12 +152,16 @@ const goToDetail = () => {
   router.push(`/wine/${props.bottle.id}`)
 }
 
+// cellar_quantity = stock réel (physical_bottles en cave) ;
+// quantity legacy peut être désynchronisé après consommation via QR
+const cellarQty = () => props.bottle.cellar_quantity ?? props.bottle.quantity ?? 0
+
 const increment = () => {
-  emit('update-quantity', props.bottle.id, props.bottle.quantity + 1)
+  emit('update-quantity', props.bottle.id, cellarQty() + 1)
 }
 
 const decrement = () => {
-  const newQty = props.bottle.quantity - 1
+  const newQty = cellarQty() - 1
   if (newQty < 0) return
   emit('update-quantity', props.bottle.id, newQty)
 }

@@ -55,20 +55,23 @@ class AuthService {
 
   /**
    * Déconnexion
+   * Nettoie le stockage local AVANT la requête serveur :
+   * même si l'appel échoue (réseau, cookie SameSite), le client est
+   * déconnecté côté UI et le guard ne "re-authentifie" plus.
    */
   static async logout() {
+    // Nettoyer le storage immédiatement (état local = source de vérité UI)
+    sessionStorage.removeItem('auth_token')
+    sessionStorage.removeItem('username')
+
     try {
       await fetch(`${API_URL}/auth/logout`, {
         method: 'POST',
         credentials: 'include'
       })
     } catch (e) {
-      // Ignorer les erreurs réseau
+      // Ignorer les erreurs réseau : le cookie expirera naturellement
     }
-    
-    // Nettoyer le storage
-    sessionStorage.removeItem('auth_token')
-    sessionStorage.removeItem('username')
   }
 
   /**

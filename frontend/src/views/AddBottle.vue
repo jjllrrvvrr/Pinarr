@@ -613,6 +613,7 @@ const defaultForm = {
   buy_link: '', 
   image_path: null,
   position_id: null,
+  initial_position_id: null,
   position_cave_id: null,
   position_column_id: null,
   position_row_id: null
@@ -649,7 +650,6 @@ watch(() => form.value.quantity, (newVal, oldVal) => {
       oldVal,
       async (finalQuantity) => {
         // Callback de succès - la quantité sera mise à jour par le watch
-        console.log('Positions retirées, quantité finale:', finalQuantity)
       },
       (originalQuantity) => {
         // Callback d'annulation - restaurer la quantité
@@ -804,6 +804,15 @@ const saveBottle = async (force = false) => {
     // (sinon on double les emplacements disponibles).
 
     if (form.value.position_id) {
+      // Libérer l'ancienne position si la bouteille en avait une autre
+      // (sinon elle apparaissait sur deux emplacements simultanément)
+      const oldPositionId = form.value.initial_position_id
+      if (isEditing.value && oldPositionId && oldPositionId !== form.value.position_id) {
+        await apiRequest(`/positions/${oldPositionId}`, {
+          method: 'PUT',
+          body: JSON.stringify({ bottle_id: null })
+        })
+      }
       await apiRequest(`/positions/${form.value.position_id}`, {
         method: 'PUT',
         body: JSON.stringify({ bottle_id: savedBottle.id })
@@ -831,23 +840,28 @@ const uploadImage = async () => {
   if (!imageFile.value) return null
   const formData = new FormData()
   formData.append('file', imageFile.value)
-  
+
   const headers = {}
   const token = sessionStorage.getItem('auth_token')
   if (token) headers['Authorization'] = `Bearer ${token}`
-  
+
   try {
-    const res = await fetch(API_UPLOAD_URL, { 
-      method: 'POST', 
+    const res = await fetch(API_UPLOAD_URL, {
+      method: 'POST',
       headers,
-      body: formData 
+      body: formData
     })
     if (res.ok) {
       const data = await res.json()
       return data.path
     }
-  } catch (e) { console.error(e) }
-  return null
+    // Échec explicite : ne pas perdre l'image silencieusement
+    throw new Error(`Upload refusé (HTTP ${res.status})`)
+  } catch (e) {
+    console.error(e)
+    alert("Impossible d'envoyer l'image : " + e.message + ". La bouteille sera enregistrée sans photo.")
+    return null
+  }
 }
 
 const compressImage = (file) => {
@@ -966,8 +980,15 @@ const useImageUrl = async () => {
 const fetchBottle = async (id) => {
   try {
     const bottle = await apiRequest(`${API_URL}/${id}`)
-    form.value = { ...defaultForm, ...bottle }
-    
+    // cellar_quantity = stock réel (quantity backend peut être obsolète
+    // si des bouteilles ont été consommées via QR depuis la dernière édition)
+    const stockQuantity = bottle.cellar_quantity ?? bottle.quantity ?? 1
+    form.value = { ...defaultForm, ...bottle, quantity: stockQuantity }
+
+    // Mémoriser la position initiale pour pouvoir libérer l'ancienne
+    // emplacement en cas de relocalisation
+    form.value.initial_position_id = bottle.position ? bottle.position.id : null
+
     // Stocker les positions pour la gestion du retrait
     if (bottle.positions) {
       form.value.positions = bottle.positions
@@ -983,19 +1004,26 @@ const fetchBottle = async (id) => {
     if (bottle.position) {
       form.value.position_row_id = bottle.position.row_id
       if (caves.value.length > 0) {
+        let rowFound = null, foundCave = null, foundCol = null
         for (const cave of caves.value) {
           for (const col of cave.columns || []) {
             const row = col.rows?.find(r => r.id === bottle.position.row_id)
             if (row) {
-              form.value.position_cave_id = cave.id
-              form.value.position_column_id = col.id
-              availableColumns.value = cave.columns || []
-              availableRows.value = col.rows || []
-              await loadPositions(bottle.position.row_id)
-              form.value.position_id = bottle.position.id
+              rowFound = row
+              foundCave = cave
+              foundCol = col
               break
             }
           }
+          if (rowFound) break
+        }
+        if (rowFound) {
+          form.value.position_cave_id = foundCave.id
+          form.value.position_column_id = foundCol.id
+          availableColumns.value = foundCave.columns || []
+          availableRows.value = foundCol.rows || []
+          await loadPositions(bottle.position.row_id)
+          form.value.position_id = bottle.position.id
         }
       }
     }
